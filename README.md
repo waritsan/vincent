@@ -1,3 +1,14 @@
+# Project Vincent
+```bash
+curl -s -X POST https://func-ja67jva7pfqfc.azurewebsites.net/api/chat -H "Content-Type: application/json" -d '{"message": "Say hi in 3 words"}' | jq
+```
+
+```bash
+azd down --force --purge  # Deletes everything
+azd up                    # Recreates everything automatically
+```
+
+
 # Azure Developer CLI (azd) Bicep Starter
 
 A starter blueprint for getting your application up on Azure using [Azure Developer CLI](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/overview) (azd). Add your application code, write Infrastructure as Code assets in [Bicep](https://aka.ms/bicep) to get your application up and running quickly.

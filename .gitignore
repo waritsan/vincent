@@ -1,1 +1,53 @@
+# Azure Developer CLI
 .azure
+
+# Environment variables (contains secrets)
+.env
+.env.local
+.env.*.local
+
+# Azure local settings (may contain connection strings)
+local.settings.json
+**/local.settings.json
+
+# Azure Functions artifacts
+bin/
+obj/
+.azurefunctions/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+npm-debug.log*
+.next/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Build outputs
+dist/
+build/
+
+# Temporary files
+*.tmp
+tmp/

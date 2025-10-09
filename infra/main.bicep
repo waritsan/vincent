@@ -103,11 +103,11 @@ module functionApp 'core/host/functions.bicep' = {
     runtimeName: 'python'
     runtimeVersion: '3.11'
     storageAccountName: storage.outputs.name
+    managedIdentity: true
     alwaysOn: false
     appSettings: {
-      AZURE_AI_ENDPOINT: ''
-      AZURE_AI_PROJECT_NAME: ''
-      AZURE_AI_DEPLOYMENT_NAME: ''
+      AZURE_AI_ENDPOINT: aiFoundry.outputs.aiFoundryEndpoint
+      AZURE_AI_DEPLOYMENT_NAME: aiFoundry.outputs.modelDeploymentName
     }
   }
 }
@@ -117,9 +117,33 @@ module web 'core/host/staticwebapp.bicep' = {
   name: 'web'
   scope: rg
   params: {
-    name: '${abbrs.webStaticSites}${environmentName}'
+    name: '${abbrs.webStaticSites}${resourceToken}'
     location: location
     tags: union(tags, { 'azd-service-name': webServiceName })
+  }
+}
+
+// create an AI Foundry account with model deployment
+module aiFoundry 'core/ai/ai-foundry-project.bicep' = {
+  name: 'aifoundry'
+  scope: rg
+  params: {
+    aiFoundryName: '${abbrs.cognitiveServicesAccounts}${resourceToken}'
+    location: location
+    tags: tags
+    deployGPT4o: true
+    modelDeploymentName: 'gpt-4o'
+  }
+}
+
+// Grant the Function App access to AI Foundry
+module aiFoundryRoleAssignment 'core/security/role-rg.bicep' = {
+  name: 'ai-foundry-role-assignment'
+  scope: rg
+  params: {
+    principalId: functionApp.outputs.identityPrincipalId
+    roleDefinitionId: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd' // Cognitive Services OpenAI User
+    principalType: 'ServicePrincipal'
   }
 }
 
@@ -135,3 +159,5 @@ output AZURE_LOCATION string = location
 output AZURE_TENANT_ID string = tenant().tenantId
 output AZURE_FUNCTION_APP_NAME string = functionApp.outputs.name
 output AZURE_FUNCTION_URI string = functionApp.outputs.uri
+output AZURE_AI_ENDPOINT string = aiFoundry.outputs.aiFoundryEndpoint
+output AZURE_AI_DEPLOYMENT_NAME string = aiFoundry.outputs.modelDeploymentName

@@ -3,23 +3,36 @@ import logging
 import json
 import os
 from datetime import datetime
-from azure.ai.inference import ChatCompletionsClient
-from azure.identity import DefaultAzureCredential
-from azure.core.credentials import AzureKeyCredential
+from openai import AzureOpenAI
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 # Initialize Azure AI client
 def get_ai_client():
-    """Initialize and return Azure AI Inference client"""
+    """Initialize and return Azure OpenAI client"""
     endpoint = os.environ.get("AZURE_AI_ENDPOINT")
     
-    # Use DefaultAzureCredential for production, or AzureKeyCredential for development
+    if not endpoint:
+        logging.warning("AZURE_AI_ENDPOINT not configured")
+        return None
+    
     try:
+        # Use Managed Identity for authentication
         credential = DefaultAzureCredential()
-        return ChatCompletionsClient(endpoint=endpoint, credential=credential)
+        token_provider = get_bearer_token_provider(
+            credential,
+            "https://cognitiveservices.azure.com/.default"
+        )
+        
+        client = AzureOpenAI(
+            azure_endpoint=endpoint,
+            azure_ad_token_provider=token_provider,
+            api_version="2024-10-21"
+        )
+        return client
     except Exception as e:
-        logging.warning(f"Failed to use DefaultAzureCredential: {e}")
+        logging.error(f"Failed to create Azure OpenAI client: {e}")
         return None
 
 @app.route(route="chat", methods=["POST"])
@@ -44,23 +57,49 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
                 status_code=400
             )
         
-        # TODO: Integrate with Azure AI Foundry
-        # For now, return a mock response
-        response_data = {
-            "conversation_id": conversation_id,
-            "message": user_message,
-            "response": "This is a placeholder response. Configure AZURE_AI_ENDPOINT to enable AI features.",
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        
-        # Example of how to use Azure AI client when configured:
-        # client = get_ai_client()
-        # if client:
-        #     response = client.complete(
-        #         messages=[{"role": "user", "content": user_message}],
-        #         model=os.environ.get("AZURE_AI_DEPLOYMENT_NAME")
-        #     )
-        #     response_data["response"] = response.choices[0].message.content
+        # Try to use Azure AI Foundry
+        client = get_ai_client()
+        if client:
+            try:
+                deployment_name = os.environ.get("AZURE_AI_DEPLOYMENT_NAME", "gpt-4o")
+                logging.info(f"Calling Azure OpenAI with deployment: {deployment_name}")
+                
+                completion = client.chat.completions.create(
+                    model=deployment_name,
+                    messages=[
+                        {"role": "user", "content": user_message}
+                    ],
+                    temperature=0.7,
+                    max_tokens=800
+                )
+                
+                ai_response = completion.choices[0].message.content
+                
+                response_data = {
+                    "conversation_id": conversation_id,
+                    "message": user_message,
+                    "response": ai_response,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "model": deployment_name
+                }
+            except Exception as ai_error:
+                logging.error(f"Azure AI error: {ai_error}")
+                response_data = {
+                    "conversation_id": conversation_id,
+                    "message": user_message,
+                    "response": f"AI service error: {str(ai_error)}",
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "error": True
+                }
+        else:
+            # Fallback if AI client not configured
+            response_data = {
+                "conversation_id": conversation_id,
+                "message": user_message,
+                "response": "Azure AI Foundry is not configured. Set AZURE_AI_ENDPOINT environment variable.",
+                "timestamp": datetime.utcnow().isoformat(),
+                "configured": False
+            }
         
         return func.HttpResponse(
             json.dumps(response_data),

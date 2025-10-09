@@ -1,5 +1,4 @@
 azure-functions
-azure-ai-inference
+openai
 azure-identity
-azure-ai-projects
 python-dotenv
