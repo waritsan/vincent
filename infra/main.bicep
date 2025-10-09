@@ -38,8 +38,7 @@ var resourceToken = toLower(uniqueString(subscription().id, environmentName, loc
 //   Microsoft.Web/sites for appservice, function
 // Example usage:
 //   tags: union(tags, { 'azd-service-name': apiServiceName })
-#disable-next-line no-unused-vars
-var apiServiceName = 'python-api'
+var apiServiceName = 'api'
 var webServiceName = 'web'
 
 // Organize resources in a resource group
@@ -52,6 +51,66 @@ resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
 // Add resources to be provisioned below.
 // A full example that leverages azd bicep modules can be seen in the todo-python-mongo template:
 // https://github.com/Azure-Samples/todo-python-mongo/tree/main/infra
+
+// Monitoring resources
+module monitoring 'core/monitor/monitoring.bicep' = {
+  name: 'monitoring'
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    logAnalyticsName: '${abbrs.operationalInsightsWorkspaces}${resourceToken}'
+    applicationInsightsName: '${abbrs.insightsComponents}${resourceToken}'
+  }
+}
+
+// Storage account for Azure Functions
+module storage 'core/storage/storage-account.bicep' = {
+  name: 'storage'
+  scope: rg
+  params: {
+    name: '${abbrs.storageStorageAccounts}${resourceToken}'
+    location: location
+    tags: tags
+  }
+}
+
+// App Service Plan for Azure Functions
+module appServicePlan 'core/host/appserviceplan.bicep' = {
+  name: 'appserviceplan'
+  scope: rg
+  params: {
+    name: '${abbrs.webServerFarms}${resourceToken}'
+    location: location
+    tags: tags
+    sku: {
+      name: 'Y1'
+      tier: 'Dynamic'
+    }
+  }
+}
+
+// Azure Functions App
+module functionApp 'core/host/functions.bicep' = {
+  name: 'function'
+  scope: rg
+  params: {
+    name: '${abbrs.webSitesFunctions}${resourceToken}'
+    location: location
+    tags: union(tags, { 'azd-service-name': apiServiceName })
+    applicationInsightsName: monitoring.outputs.applicationInsightsName
+    appServicePlanId: appServicePlan.outputs.id
+    runtimeName: 'python'
+    runtimeVersion: '3.11'
+    storageAccountName: storage.outputs.name
+    alwaysOn: false
+    appSettings: {
+      AZURE_AI_ENDPOINT: ''
+      AZURE_AI_PROJECT_NAME: ''
+      AZURE_AI_DEPLOYMENT_NAME: ''
+    }
+  }
+}
 
 // create a static web app
 module web 'core/host/staticwebapp.bicep' = {
@@ -74,3 +133,5 @@ module web 'core/host/staticwebapp.bicep' = {
 // To see these outputs, run `azd env get-values`,  or `azd env get-values --output json` for json output.
 output AZURE_LOCATION string = location
 output AZURE_TENANT_ID string = tenant().tenantId
+output AZURE_FUNCTION_APP_NAME string = functionApp.outputs.name
+output AZURE_FUNCTION_URI string = functionApp.outputs.uri
