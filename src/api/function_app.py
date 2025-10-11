@@ -8,6 +8,22 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
+# CORS headers for local development
+CORS_HEADERS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+}
+
+def create_response(body, status_code=200):
+    """Helper function to create HTTP response with CORS headers"""
+    return func.HttpResponse(
+        body=json.dumps(body) if isinstance(body, dict) else body,
+        mimetype="application/json",
+        status_code=status_code,
+        headers=CORS_HEADERS
+    )
+
 # Initialize Azure AI client
 def get_ai_client():
     """Initialize and return Azure OpenAI client"""
@@ -51,11 +67,7 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
         conversation_id = req_body.get('conversation_id', 'default')
         
         if not user_message:
-            return func.HttpResponse(
-                json.dumps({"error": "Message is required"}),
-                mimetype="application/json",
-                status_code=400
-            )
+            return create_response({"error": "Message is required"}, 400)
         
         # Try to use Azure AI Foundry
         client = get_ai_client()
@@ -101,26 +113,14 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
                 "configured": False
             }
         
-        return func.HttpResponse(
-            json.dumps(response_data),
-            mimetype="application/json",
-            status_code=200
-        )
+        return create_response(response_data)
         
     except ValueError as e:
         logging.error(f"Invalid JSON in request: {e}")
-        return func.HttpResponse(
-            json.dumps({"error": "Invalid JSON in request body"}),
-            mimetype="application/json",
-            status_code=400
-        )
+        return create_response({"error": "Invalid JSON in request body"}, 400)
     except Exception as e:
         logging.error(f"Error processing chat request: {e}")
-        return func.HttpResponse(
-            json.dumps({"error": "Internal server error"}),
-            mimetype="application/json",
-            status_code=500
-        )
+        return create_response({"error": "Internal server error"}, 500)
 
 
 @app.route(route="posts", methods=["GET", "POST"])
@@ -157,11 +157,7 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
                 "total": 2
             }
             
-            return func.HttpResponse(
-                json.dumps(posts_data),
-                mimetype="application/json",
-                status_code=200
-            )
+            return create_response(posts_data)
         
         elif req.method == "POST":
             # Parse request body
@@ -171,11 +167,7 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
             author = req_body.get('author', 'Anonymous')
             
             if not title or not content:
-                return func.HttpResponse(
-                    json.dumps({"error": "Title and content are required"}),
-                    mimetype="application/json",
-                    status_code=400
-                )
+                return create_response({"error": "Title and content are required"}, 400)
             
             # TODO: Save to database
             # For now, return the created post
@@ -187,33 +179,17 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
                 "created_at": datetime.utcnow().isoformat()
             }
             
-            return func.HttpResponse(
-                json.dumps(new_post),
-                mimetype="application/json",
-                status_code=201
-            )
+            return create_response(new_post, 201)
             
     except ValueError as e:
         logging.error(f"Invalid JSON in request: {e}")
-        return func.HttpResponse(
-            json.dumps({"error": "Invalid JSON in request body"}),
-            mimetype="application/json",
-            status_code=400
-        )
+        return create_response({"error": "Invalid JSON in request body"}, 400)
     except Exception as e:
         logging.error(f"Error processing posts request: {e}")
-        return func.HttpResponse(
-            json.dumps({"error": "Internal server error"}),
-            mimetype="application/json",
-            status_code=500
-        )
+        return create_response({"error": "Internal server error"}, 500)
 
 
 @app.route(route="health", methods=["GET"])
 def health(req: func.HttpRequest) -> func.HttpResponse:
     """Health check endpoint"""
-    return func.HttpResponse(
-        json.dumps({"status": "healthy", "version": "1.0.0"}),
-        mimetype="application/json",
-        status_code=200
-    )
+    return create_response({"status": "healthy", "version": "1.0.0"})

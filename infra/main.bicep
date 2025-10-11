@@ -161,3 +161,5 @@ output AZURE_FUNCTION_APP_NAME string = functionApp.outputs.name
 output AZURE_FUNCTION_URI string = functionApp.outputs.uri
 output AZURE_AI_ENDPOINT string = aiFoundry.outputs.aiFoundryEndpoint
 output AZURE_AI_DEPLOYMENT_NAME string = aiFoundry.outputs.modelDeploymentName
+output AZURE_STATIC_WEB_APP_NAME string = web.outputs.name
+output AZURE_STATIC_WEB_APP_URI string = web.outputs.uri
