@@ -7,7 +7,7 @@ export default function Home() {
         {/* Header */}
         <header className="mb-12 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Vincent's Blog
+            Vincent&apos;s Blog
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg">
             Powered by Azure Functions & AI Foundry

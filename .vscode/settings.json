@@ -1,0 +1,59 @@
+{
+    // ESLint Configuration
+    "eslint.enable": true,
+    "eslint.workingDirectories": [
+        "src/web"
+    ],
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact"
+    ],
+    // Auto-fix ESLint errors on save
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+    // Format on save
+    "editor.formatOnSave": true,
+    // TypeScript settings
+    "typescript.tsdk": "src/web/node_modules/typescript/lib",
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    // Python settings for Azure Functions
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+    // File associations
+    "files.associations": {
+        "*.bicep": "bicep"
+    },
+    // Exclude files from search/watch
+    "files.exclude": {
+        "**/.git": true,
+        "**/.azure": true,
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/node_modules": true,
+        "**/.next": true,
+        "**/out": true
+    },
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.azure/**": true,
+        "**/node_modules/**": true,
+        "**/.next/**": true,
+        "**/out/**": true,
+        "**/__pycache__/**": true
+    },
+    "azureFunctions.deploySubpath": "src/api",
+    "azureFunctions.scmDoBuildDuringDeployment": true,
+    "azureFunctions.pythonVenv": ".venv",
+    "azureFunctions.projectLanguage": "Python",
+    "azureFunctions.projectRuntime": "~4",
+    "debug.internalConsoleOptions": "neverOpen",
+    "azureFunctions.projectLanguageModel": 2,
+    "azureFunctions.projectSubpath": "src/api"
+}

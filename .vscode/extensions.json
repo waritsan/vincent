@@ -1,0 +1,18 @@
+{
+  "recommendations": [
+    // Essential
+    "dbaeumer.vscode-eslint",
+    "ms-azuretools.vscode-bicep",
+    "ms-azuretools.vscode-azurefunctions",
+    
+    // Recommended
+    "esbenp.prettier-vscode",
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    
+    // Optional but useful
+    "bradlc.vscode-tailwindcss",
+    "GitHub.copilot",
+    "ms-vscode.vscode-typescript-next"
+  ]
+}
