@@ -101,13 +101,15 @@ module functionApp 'core/host/functions.bicep' = {
     applicationInsightsName: monitoring.outputs.applicationInsightsName
     appServicePlanId: appServicePlan.outputs.id
     runtimeName: 'python'
-    runtimeVersion: '3.11'
+    runtimeVersion: '3.12'
     storageAccountName: storage.outputs.name
     managedIdentity: true
     alwaysOn: false
     appSettings: {
       AZURE_AI_ENDPOINT: aiFoundry.outputs.aiFoundryEndpoint
       AZURE_AI_DEPLOYMENT_NAME: aiFoundry.outputs.modelDeploymentName
+      AZURE_COSMOS_ENDPOINT: cosmosDb.outputs.endpoint
+      AZURE_COSMOS_DATABASE_NAME: cosmosDb.outputs.databaseName
     }
   }
 }
@@ -147,6 +149,36 @@ module aiFoundryRoleAssignment 'core/security/role-rg.bicep' = {
   }
 }
 
+// Cosmos DB with Serverless (cheapest option - pay only for what you use)
+module cosmosDb 'core/database/cosmos/cosmos-serverless.bicep' = {
+  name: 'cosmosdb'
+  scope: rg
+  params: {
+    name: '${abbrs.documentDBDatabaseAccounts}${resourceToken}'
+    location: location
+    tags: tags
+    kind: 'GlobalDocumentDB'
+    databaseName: 'blogdb'
+    containers: [
+      {
+        name: 'posts'
+        partitionKeyPath: '/id'
+      }
+    ]
+  }
+}
+
+// Grant the Function App access to Cosmos DB
+module cosmosDbRoleAssignment 'core/database/cosmos/sql/cosmos-sql-role-assign.bicep' = {
+  name: 'cosmosdb-role-assignment'
+  scope: rg
+  params: {
+    accountName: cosmosDb.outputs.name
+    roleDefinitionId: '${cosmosDb.outputs.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002' // Cosmos DB Built-in Data Contributor
+    principalId: functionApp.outputs.identityPrincipalId
+  }
+}
+
 // Add outputs from the deployment here, if needed.
 //
 // This allows the outputs to be referenced by other bicep deployments in the deployment pipeline,
@@ -163,3 +195,5 @@ output AZURE_AI_ENDPOINT string = aiFoundry.outputs.aiFoundryEndpoint
 output AZURE_AI_DEPLOYMENT_NAME string = aiFoundry.outputs.modelDeploymentName
 output AZURE_STATIC_WEB_APP_NAME string = web.outputs.name
 output AZURE_STATIC_WEB_APP_URI string = web.outputs.uri
+output AZURE_COSMOS_ENDPOINT string = cosmosDb.outputs.endpoint
+output AZURE_COSMOS_DATABASE_NAME string = cosmosDb.outputs.databaseName
