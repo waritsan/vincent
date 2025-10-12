@@ -2,9 +2,11 @@ import azure.functions as func
 import logging
 import json
 import os
+import uuid
 from datetime import datetime
 from openai import AzureOpenAI
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from azure.cosmos import CosmosClient, exceptions
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -49,6 +51,28 @@ def get_ai_client():
         return client
     except Exception as e:
         logging.error(f"Failed to create Azure OpenAI client: {e}")
+        return None
+
+# Initialize Cosmos DB client
+def get_cosmos_container():
+    """Initialize and return Cosmos DB container client"""
+    endpoint = os.environ.get("AZURE_COSMOS_ENDPOINT")
+    database_name = os.environ.get("AZURE_COSMOS_DATABASE_NAME", "blogdb")
+    container_name = "posts"
+    
+    if not endpoint:
+        logging.warning("AZURE_COSMOS_ENDPOINT not configured")
+        return None
+    
+    try:
+        # Use Managed Identity for authentication
+        credential = DefaultAzureCredential()
+        client = CosmosClient(endpoint, credential=credential)
+        database = client.get_database_client(database_name)
+        container = database.get_container_client(container_name)
+        return container
+    except Exception as e:
+        logging.error(f"Failed to create Cosmos DB client: {e}")
         return None
 
 @app.route(route="chat", methods=["POST"])
@@ -126,7 +150,7 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
 @app.route(route="posts", methods=["GET", "POST"])
 def posts(req: func.HttpRequest) -> func.HttpResponse:
     """
-    Posts endpoint for managing blog posts or content
+    Posts endpoint for managing blog posts
     GET /api/posts - List all posts
     POST /api/posts - Create a new post
     Body: { "title": "Post title", "content": "Post content", "author": "Author name" }
@@ -134,30 +158,53 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
     logging.info(f'Processing {req.method} request for posts')
     
     try:
+        # Get Cosmos DB container
+        container = get_cosmos_container()
+        
         if req.method == "GET":
-            # TODO: Fetch posts from database
-            # For now, return mock data
-            posts_data = {
-                "posts": [
-                    {
-                        "id": "1",
-                        "title": "Sample Post 1",
-                        "content": "This is a sample post",
-                        "author": "System",
-                        "created_at": "2025-10-09T00:00:00Z"
-                    },
-                    {
-                        "id": "2",
-                        "title": "Sample Post 2",
-                        "content": "Another sample post",
-                        "author": "System",
-                        "created_at": "2025-10-09T01:00:00Z"
-                    }
-                ],
-                "total": 2
-            }
+            if not container:
+                # Fallback to mock data if Cosmos DB is not configured
+                logging.warning("Cosmos DB not configured, returning mock data")
+                posts_data = {
+                    "posts": [
+                        {
+                            "id": "1",
+                            "title": "Sample Post 1",
+                            "content": "This is a sample post",
+                            "author": "System",
+                            "created_at": "2025-10-09T00:00:00Z"
+                        },
+                        {
+                            "id": "2",
+                            "title": "Sample Post 2",
+                            "content": "Another sample post",
+                            "author": "System",
+                            "created_at": "2025-10-09T01:00:00Z"
+                        }
+                    ],
+                    "total": 2,
+                    "source": "mock"
+                }
+                return create_response(posts_data)
             
-            return create_response(posts_data)
+            # Fetch posts from Cosmos DB
+            try:
+                query = "SELECT * FROM c ORDER BY c.created_at DESC"
+                items = list(container.query_items(
+                    query=query,
+                    enable_cross_partition_query=True
+                ))
+                
+                posts_data = {
+                    "posts": items,
+                    "total": len(items),
+                    "source": "cosmos_db"
+                }
+                
+                return create_response(posts_data)
+            except exceptions.CosmosHttpResponseError as e:
+                logging.error(f"Cosmos DB query error: {e}")
+                return create_response({"error": f"Database error: {str(e)}"}, 500)
         
         elif req.method == "POST":
             # Parse request body
@@ -169,17 +216,30 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
             if not title or not content:
                 return create_response({"error": "Title and content are required"}, 400)
             
-            # TODO: Save to database
-            # For now, return the created post
+            # Create new post
             new_post = {
-                "id": "new-id",
+                "id": str(uuid.uuid4()),
                 "title": title,
                 "content": content,
                 "author": author,
-                "created_at": datetime.utcnow().isoformat()
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat()
             }
             
-            return create_response(new_post, 201)
+            if not container:
+                # If Cosmos DB not configured, return the post without saving
+                logging.warning("Cosmos DB not configured, post not saved")
+                new_post["saved"] = False
+                return create_response(new_post, 201)
+            
+            # Save to Cosmos DB
+            try:
+                created_item = container.create_item(body=new_post)
+                created_item["saved"] = True
+                return create_response(created_item, 201)
+            except exceptions.CosmosHttpResponseError as e:
+                logging.error(f"Cosmos DB create error: {e}")
+                return create_response({"error": f"Database error: {str(e)}"}, 500)
             
     except ValueError as e:
         logging.error(f"Invalid JSON in request: {e}")
