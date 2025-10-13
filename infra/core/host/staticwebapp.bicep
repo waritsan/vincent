@@ -2,6 +2,7 @@ metadata description = 'Creates an Azure Static Web Apps instance.'
 param name string
 param location string = resourceGroup().location
 param tags object = {}
+param appSettings object = {}
 
 param sku object = {
   name: 'Free'
@@ -16,6 +17,12 @@ resource web 'Microsoft.Web/staticSites@2022-03-01' = {
   properties: {
     provider: 'Custom'
   }
+}
+
+resource webConfig 'Microsoft.Web/staticSites/config@2022-03-01' = if (!empty(appSettings)) {
+  parent: web
+  name: 'appsettings'
+  properties: appSettings
 }
 
 output name string = web.name

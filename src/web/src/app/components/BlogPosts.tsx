@@ -29,8 +29,12 @@ export default function BlogPosts() {
       setLoading(true);
       setError(null);
       
-      // Get API URL from environment variable or use default
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://func-ja67jva7pfqfc.azurewebsites.net';
+      // Get API URL from environment variable
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      
+      if (!apiUrl) {
+        throw new Error('API URL not configured. Please set NEXT_PUBLIC_API_URL environment variable.');
+      }
       
       const response = await fetch(`${apiUrl}/api/posts`);
       

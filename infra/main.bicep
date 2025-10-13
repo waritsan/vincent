@@ -122,6 +122,9 @@ module web 'core/host/staticwebapp.bicep' = {
     name: '${abbrs.webStaticSites}${resourceToken}'
     location: location
     tags: union(tags, { 'azd-service-name': webServiceName })
+    appSettings: {
+      NEXT_PUBLIC_API_URL: functionApp.outputs.uri
+    }
   }
 }
 
