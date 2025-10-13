@@ -1,4 +1,5 @@
 import BlogPosts from './components/BlogPosts';
+import AIChat from './components/AIChat';
 
 export default function Home() {
   return (
@@ -17,6 +18,9 @@ export default function Home() {
         {/* Blog Posts */}
         <BlogPosts />
       </div>
+
+      {/* AI Chat Widget */}
+      <AIChat />
     </div>
   );
 }
