@@ -16,3 +16,7 @@ services:
     language: ts
     host: staticwebapp
     dist: out
+    config:
+      build:
+        env:
+          NEXT_PUBLIC_API_URL: ${AZURE_FUNCTION_URI}
