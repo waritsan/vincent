@@ -105,6 +105,9 @@ module functionApp 'core/host/functions.bicep' = {
     storageAccountName: storage.outputs.name
     managedIdentity: true
     alwaysOn: false
+    allowedOrigins: [
+      'https://*.azurestaticapps.net'
+    ]
     appSettings: {
       AZURE_AI_ENDPOINT: aiFoundry.outputs.aiFoundryEndpoint
       AZURE_AI_DEPLOYMENT_NAME: aiFoundry.outputs.modelDeploymentName
