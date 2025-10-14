@@ -16,7 +16,13 @@ services:
     language: ts
     host: staticwebapp
     dist: out
-    config:
-      build:
-        env:
-          NEXT_PUBLIC_API_URL: ${AZURE_FUNCTION_URI}
+
+hooks:
+  predeploy:
+    posix:
+      shell: sh
+      run: |
+        cd src/web
+        rm -f .env.local
+        echo "NEXT_PUBLIC_API_URL=$AZURE_FUNCTION_URI" > .env.production
+        cat .env.production
