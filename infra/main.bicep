@@ -42,7 +42,7 @@ var apiServiceName = 'api'
 var webServiceName = 'web'
 
 // Organize resources in a resource group
-resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   name: !empty(resourceGroupName) ? resourceGroupName : '${abbrs.resourcesResourceGroups}${environmentName}'
   location: location
   tags: tags
@@ -106,7 +106,7 @@ module functionApp 'core/host/functions.bicep' = {
     managedIdentity: true
     alwaysOn: false
     allowedOrigins: [
-      'https://*.azurestaticapps.net'
+      'https://calm-bay-09b1e430f.1.azurestaticapps.net'
     ]
     appSettings: {
       AZURE_AI_ENDPOINT: aiFoundry.outputs.aiFoundryEndpoint
@@ -137,6 +137,7 @@ module aiFoundry 'core/ai/ai-foundry-project.bicep' = {
   scope: rg
   params: {
     aiFoundryName: '${abbrs.cognitiveServicesAccounts}${resourceToken}'
+    aiProjectName: 'project-${resourceToken}'
     location: location
     tags: tags
     deployGPT4o: true

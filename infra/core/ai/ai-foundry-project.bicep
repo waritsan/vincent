@@ -1,6 +1,7 @@
 metadata description = 'Creates an Azure AI Foundry project with model deployment'
 
 param aiFoundryName string
+param aiProjectName string
 param location string = resourceGroup().location
 param tags object = {}
 
@@ -10,8 +11,8 @@ param modelCapacity int = 10
 
 /*
   An AI Foundry resource is a variant of a CognitiveServices/account resource type
-*/ 
-resource aiFoundry 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
+*/
+resource aiFoundry 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   name: aiFoundryName
   location: location
   identity: {
@@ -25,13 +26,24 @@ resource aiFoundry 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
   properties: {
     customSubDomainName: aiFoundryName
     publicNetworkAccess: 'Enabled'
+    allowProjectManagement: true
   }
 }
 
+// create project for AI Foundry
+resource aiProject 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
+  parent: aiFoundry
+  name: aiProjectName
+  location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {}
+}
 /*
   Model deployment for GPT-4o
 */
-resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = if (deployGPT4o) {
+resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-06-01' = if (deployGPT4o) {
   parent: aiFoundry
   name: modelDeploymentName
   sku: {
@@ -53,4 +65,3 @@ output aiFoundryName string = aiFoundry.name
 output aiFoundryEndpoint string = aiFoundry.properties.endpoint
 output aiFoundryPrincipalId string = aiFoundry.identity.principalId
 output modelDeploymentName string = deployGPT4o ? modelDeployment.name : ''
-

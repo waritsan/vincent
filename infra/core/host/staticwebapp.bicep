@@ -9,7 +9,7 @@ param sku object = {
   tier: 'Free'
 }
 
-resource web 'Microsoft.Web/staticSites@2022-03-01' = {
+resource web 'Microsoft.Web/staticSites@2023-12-01' = {
   name: name
   location: location
   tags: tags
@@ -19,7 +19,7 @@ resource web 'Microsoft.Web/staticSites@2022-03-01' = {
   }
 }
 
-resource webConfig 'Microsoft.Web/staticSites/config@2022-03-01' = if (!empty(appSettings)) {
+resource webConfig 'Microsoft.Web/staticSites/config@2023-12-01' = if (!empty(appSettings)) {
   parent: web
   name: 'appsettings'
   properties: appSettings

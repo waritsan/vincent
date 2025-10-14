@@ -38,7 +38,7 @@ param ftpsState string = 'FtpsOnly'
 param healthCheckPath string = ''
 param virtualNetworkSubnetId string = ''
 
-resource appService 'Microsoft.Web/sites@2022-03-01' = {
+resource appService 'Microsoft.Web/sites@2023-12-01' = {
   name: name
   location: location
   tags: tags

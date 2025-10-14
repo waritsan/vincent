@@ -22,7 +22,7 @@ param networkAcls object = {
   defaultAction: 'Allow'
 }
 
-resource storage 'Microsoft.Storage/storageAccounts@2022-05-01' = {
+resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: name
   location: location
   tags: tags
