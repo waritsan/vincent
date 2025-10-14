@@ -3,3 +3,4 @@ openai
 azure-identity
 python-dotenv
 azure-cosmos>=4.5.0
+azure-ai-projects

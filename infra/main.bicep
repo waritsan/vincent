@@ -111,6 +111,8 @@ module functionApp 'core/host/functions.bicep' = {
     appSettings: {
       AZURE_AI_ENDPOINT: aiFoundry.outputs.aiFoundryEndpoint
       AZURE_AI_DEPLOYMENT_NAME: aiFoundry.outputs.modelDeploymentName
+      AZURE_AI_PROJECT_NAME: 'project-${resourceToken}'
+      AZURE_AI_AGENT_ID: 'asst_VF1pUCg1iH9WkKtnhbd3Lq09'
       AZURE_COSMOS_ENDPOINT: cosmosDb.outputs.endpoint
       AZURE_COSMOS_DATABASE_NAME: cosmosDb.outputs.databaseName
     }
@@ -151,7 +153,7 @@ module aiFoundryRoleAssignment 'core/security/role-rg.bicep' = {
   scope: rg
   params: {
     principalId: functionApp.outputs.identityPrincipalId
-    roleDefinitionId: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd' // Cognitive Services OpenAI User
+    roleDefinitionId: '25fbc0a9-bd7c-42a3-aa1a-3b75d497ee68' // Cognitive Services Contributor
     principalType: 'ServicePrincipal'
   }
 }
@@ -200,6 +202,8 @@ output AZURE_FUNCTION_APP_NAME string = functionApp.outputs.name
 output AZURE_FUNCTION_URI string = functionApp.outputs.uri
 output AZURE_AI_ENDPOINT string = aiFoundry.outputs.aiFoundryEndpoint
 output AZURE_AI_DEPLOYMENT_NAME string = aiFoundry.outputs.modelDeploymentName
+output AZURE_AI_PROJECT_NAME string = 'project-${resourceToken}'
+output AZURE_AI_AGENT_ID string = 'asst_VF1pUCg1iH9WkKtnhbd3Lq09'
 output AZURE_STATIC_WEB_APP_NAME string = web.outputs.name
 output AZURE_STATIC_WEB_APP_URI string = web.outputs.uri
 output AZURE_COSMOS_ENDPOINT string = cosmosDb.outputs.endpoint

@@ -7,6 +7,7 @@ from datetime import datetime
 from openai import AzureOpenAI
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from azure.cosmos import CosmosClient, exceptions
+from azure.ai.projects import AIProjectClient
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -75,6 +76,48 @@ def get_cosmos_container():
         logging.error(f"Failed to create Cosmos DB client: {e}")
         return None
 
+# Initialize Azure AI Agent client
+def get_ai_agent():
+    """Initialize and return Azure AI Agent"""
+    ai_endpoint = os.environ.get("AZURE_AI_ENDPOINT")
+    project_name = os.environ.get("AZURE_AI_PROJECT_NAME", "project-ja67jva7pfqfc")
+    agent_id = os.environ.get("AZURE_AI_AGENT_ID", "asst_VF1pUCg1iH9WkKtnhbd3Lq09")
+    
+    logging.info(f"AI Endpoint: {ai_endpoint}")
+    logging.info(f"Project Name: {project_name}")
+    logging.info(f"Agent ID: {agent_id}")
+    
+    if not ai_endpoint:
+        logging.warning("AZURE_AI_ENDPOINT not configured")
+        return None, None
+    
+    try:
+        # Construct the project endpoint
+        # Format: https://{account}.services.ai.azure.com/api/projects/{project_name}
+        base_endpoint = ai_endpoint.replace(".cognitiveservices.azure.com", ".services.ai.azure.com")
+        project_endpoint = f"{base_endpoint}/api/projects/{project_name}"
+        
+        logging.info(f"Project Endpoint: {project_endpoint}")
+        
+        # Use Managed Identity for authentication
+        credential = DefaultAzureCredential()
+        project_client = AIProjectClient(
+            credential=credential,
+            endpoint=project_endpoint
+        )
+        
+        logging.info("AIProjectClient created successfully")
+        
+        # Get the agent
+        agent = project_client.agents.get_agent(agent_id)
+        
+        logging.info(f"Agent retrieved: {agent.id}")
+        
+        return project_client, agent
+    except Exception as e:
+        logging.error(f"Failed to create Azure AI Agent client: {e}", exc_info=True)
+        return None, None
+
 @app.route(route="chat", methods=["POST"])
 def chat(req: func.HttpRequest) -> func.HttpResponse:
     """
@@ -88,38 +131,67 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
         # Parse request body
         req_body = req.get_json()
         user_message = req_body.get('message')
-        conversation_id = req_body.get('conversation_id', 'default')
+        conversation_id = req_body.get('conversation_id', str(uuid.uuid4()))
         
         if not user_message:
             return create_response({"error": "Message is required"}, 400)
         
-        # Try to use Azure AI Foundry
-        client = get_ai_client()
-        if client:
+        # Try to use Azure AI Agent
+        project_client, agent = get_ai_agent()
+        if project_client and agent:
             try:
-                deployment_name = os.environ.get("AZURE_AI_DEPLOYMENT_NAME", "gpt-4o")
-                logging.info(f"Calling Azure OpenAI with deployment: {deployment_name}")
+                logging.info(f"Using Azure AI Agent: {agent.id}")
                 
-                completion = client.chat.completions.create(
-                    model=deployment_name,
-                    messages=[
-                        {"role": "user", "content": user_message}
-                    ],
-                    temperature=0.7,
-                    max_tokens=800
+                # Create a thread using the correct namespace
+                thread = project_client.agents.threads.create()
+                logging.info(f"Thread created: {thread.id}")
+                
+                # Add the user message to the thread
+                message = project_client.agents.messages.create(
+                    thread_id=thread.id,
+                    role="user",
+                    content=user_message
+                )
+                logging.info(f"Message added to thread")
+                
+                # Run the agent using the runs namespace
+                run = project_client.agents.runs.create_and_process(
+                    thread_id=thread.id,
+                    agent_id=agent.id
+                )
+                logging.info(f"Run completed: {run.id}, status: {run.status}")
+                
+                # Check for errors
+                if run.status == "failed":
+                    logging.error(f"Run failed: {run.last_error}")
+                    raise Exception(f"Agent run failed: {run.last_error}")
+                
+                # Get the agent's response
+                from azure.ai.agents.models import ListSortOrder
+                messages = project_client.agents.messages.list(
+                    thread_id=thread.id,
+                    order=ListSortOrder.ASCENDING
                 )
                 
-                ai_response = completion.choices[0].message.content
+                # Get the latest assistant message
+                ai_response = None
+                for msg in messages:
+                    if msg.role == "assistant" and msg.text_messages:
+                        ai_response = msg.text_messages[-1].text.value
+                
+                if not ai_response:
+                    ai_response = "No response from agent"
                 
                 response_data = {
                     "conversation_id": conversation_id,
+                    "thread_id": thread.id,
                     "message": user_message,
                     "response": ai_response,
                     "timestamp": datetime.utcnow().isoformat(),
-                    "model": deployment_name
+                    "agent_id": agent.id
                 }
             except Exception as ai_error:
-                logging.error(f"Azure AI error: {ai_error}")
+                logging.error(f"Azure AI Agent error: {ai_error}")
                 response_data = {
                     "conversation_id": conversation_id,
                     "message": user_message,
@@ -128,11 +200,12 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
                     "error": True
                 }
         else:
-            # Fallback if AI client not configured
+            # Fallback if AI agent not configured
+            logging.error("AI Agent not available - check environment variables and logs above")
             response_data = {
                 "conversation_id": conversation_id,
                 "message": user_message,
-                "response": "Azure AI Foundry is not configured. Set AZURE_AI_ENDPOINT environment variable.",
+                "response": "Azure AI Agent is not configured. Check AZURE_AI_ENDPOINT, AZURE_AI_PROJECT_NAME, and AZURE_AI_AGENT_ID environment variables. See function logs for details.",
                 "timestamp": datetime.utcnow().isoformat(),
                 "configured": False
             }
