@@ -81,7 +81,7 @@ def get_ai_agent():
     """Initialize and return Azure AI Agent"""
     ai_endpoint = os.environ.get("AZURE_AI_ENDPOINT")
     project_name = os.environ.get("AZURE_AI_PROJECT_NAME", "project-ja67jva7pfqfc")
-    agent_id = os.environ.get("AZURE_AI_AGENT_ID", "asst_VF1pUCg1iH9WkKtnhbd3Lq09")
+    agent_id = os.environ.get("AZURE_AI_AGENT_ID")
     
     logging.info(f"AI Endpoint: {ai_endpoint}")
     logging.info(f"Project Name: {project_name}")
@@ -89,6 +89,10 @@ def get_ai_agent():
     
     if not ai_endpoint:
         logging.warning("AZURE_AI_ENDPOINT not configured")
+        return None, None
+        
+    if not agent_id:
+        logging.warning("AZURE_AI_AGENT_ID not configured - agent must be created manually first")
         return None, None
     
     try:
@@ -205,7 +209,7 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
             response_data = {
                 "conversation_id": conversation_id,
                 "message": user_message,
-                "response": "Azure AI Agent is not configured. Check AZURE_AI_ENDPOINT, AZURE_AI_PROJECT_NAME, and AZURE_AI_AGENT_ID environment variables. See function logs for details.",
+                "response": "Azure AI Agent is not configured. Please set AZURE_AI_AGENT_ID environment variable after creating an agent manually in Azure AI Foundry.",
                 "timestamp": datetime.utcnow().isoformat(),
                 "configured": False
             }
@@ -217,6 +221,72 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
         return create_response({"error": "Invalid JSON in request body"}, 400)
     except Exception as e:
         logging.error(f"Error processing chat request: {e}")
+        return create_response({"error": "Internal server error"}, 500)
+
+
+@app.route(route="agent/create", methods=["POST"])
+def create_agent(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Create a new AI agent
+    POST /api/agent/create
+    Body: { "name": "agent name", "instructions": "system instructions", "model": "gpt-4o" }
+    """
+    logging.info('Processing agent creation request')
+    
+    try:
+        # Parse request body
+        req_body = req.get_json()
+        agent_name = req_body.get('name', 'Default Agent')
+        instructions = req_body.get('instructions', 'You are a helpful assistant.')
+        model = req_body.get('model', 'gpt-4o')
+        
+        # Get AI project client
+        ai_endpoint = os.environ.get("AZURE_AI_ENDPOINT")
+        project_name = os.environ.get("AZURE_AI_PROJECT_NAME")
+        
+        if not ai_endpoint or not project_name:
+            return create_response({"error": "AI Foundry not configured"}, 400)
+        
+        try:
+            # Construct the project endpoint
+            base_endpoint = ai_endpoint.replace(".cognitiveservices.azure.com", ".services.ai.azure.com")
+            project_endpoint = f"{base_endpoint}/api/projects/{project_name}"
+            
+            # Use Managed Identity for authentication
+            credential = DefaultAzureCredential()
+            project_client = AIProjectClient(
+                credential=credential,
+                endpoint=project_endpoint
+            )
+            
+            # Create the agent
+            from azure.ai.agents.models import Agent
+            agent = project_client.agents.create_agent(
+                model=model,
+                name=agent_name,
+                instructions=instructions
+            )
+            
+            logging.info(f"Agent created successfully: {agent.id}")
+            
+            # Optionally update the Function App setting with the new agent ID
+            return create_response({
+                "agent_id": agent.id,
+                "name": agent.name,
+                "instructions": agent.instructions,
+                "model": agent.model,
+                "message": f"Agent created successfully. Set AZURE_AI_AGENT_ID={agent.id} in Function App settings to use this agent."
+            })
+            
+        except Exception as e:
+            logging.error(f"Failed to create agent: {e}")
+            return create_response({"error": f"Agent creation failed: {str(e)}"}, 500)
+        
+    except ValueError as e:
+        logging.error(f"Invalid JSON in request: {e}")
+        return create_response({"error": "Invalid JSON in request body"}, 400)
+    except Exception as e:
+        logging.error(f"Error processing agent creation request: {e}")
         return create_response({"error": "Internal server error"}, 500)
 
 

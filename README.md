@@ -1,13 +1,34 @@
 # Project Vincent
-```bash
-curl -s -X POST https://func-ja67jva7pfqfc.azurewebsites.net/api/chat -H "Content-Type: application/json" -d '{"message": "Say hi in 3 words"}' | jq
-```
 
+## Setup
 ```bash
 azd down --force --purge  # Deletes everything
 azd up                    # Recreates everything automatically
 ```
 
+## Create agent
+```bash
+curl -X POST https://func-ja67jva7pfqfc.azurewebsites.net/api/agent/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Security Expert", 
+    "instructions": "You are a cybersecurity expert assistant that helps with security questions and best practices.",
+    "model": "gpt-4o"
+  }'
+```
+
+## Set agent
+```bash
+az functionapp config appsettings set \
+  --name func-ja67jva7pfqfc \
+  --resource-group rg-vincent-dev \
+  --settings AZURE_AI_AGENT_ID=asst_VF1pUCg1iH9WkKtnhbd3Lq09
+```
+
+## Test agent
+```bash
+curl -s -X POST https://func-ja67jva7pfqfc.azurewebsites.net/api/chat -H "Content-Type: application/json" -d '{"message": "Say hi in 3 words"}' | jq
+```
 
 # Azure Developer CLI (azd) Bicep Starter
 
