@@ -11,10 +11,12 @@ interface Message {
 
 interface ChatResponse {
   conversation_id: string;
+  thread_id: string;
   message: string;
   response: string;
   timestamp: string;
-  model?: string;
+  agent_id?: string;
+  is_new_conversation?: boolean;
   error?: boolean;
 }
 
@@ -24,6 +26,7 @@ export default function AIChat() {
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [conversationId] = useState(`conv-${Date.now()}`);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -63,6 +66,7 @@ export default function AIChat() {
         body: JSON.stringify({
           message: userMessage.content,
           conversation_id: conversationId,
+          thread_id: threadId, // Include thread_id for conversation continuity
         }),
       });
 
@@ -71,6 +75,11 @@ export default function AIChat() {
       }
 
       const data: ChatResponse = await response.json();
+
+      // Store thread_id for future messages in this conversation
+      if (data.thread_id) {
+        setThreadId(data.thread_id);
+      }
 
       const assistantMessage: Message = {
         id: `msg-${Date.now()}-assistant`,
@@ -103,6 +112,7 @@ export default function AIChat() {
 
   const clearChat = () => {
     setMessages([]);
+    setThreadId(null); // Reset thread to start new conversation
   };
 
   if (!isOpen) {
@@ -137,7 +147,9 @@ export default function AIChat() {
           <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
           <div>
             <h3 className="font-semibold">AI Assistant</h3>
-            <p className="text-xs opacity-90">Powered by Azure AI Foundry</p>
+            <p className="text-xs opacity-90">
+              {threadId ? `Conversation in progress` : 'Powered by Azure AI Foundry'}
+            </p>
           </div>
         </div>
         <div className="flex items-center space-x-2">

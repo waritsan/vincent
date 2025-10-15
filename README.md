@@ -27,7 +27,7 @@ az functionapp config appsettings set \
 
 ## Test agent
 ```bash
-curl -s -X POST https://func-ja67jva7pfqfc.azurewebsites.net/api/chat -H "Content-Type: application/json" -d '{"message": "Say hi in 3 words"}' | jq
+curl -s -X POST https://func-ja67jva7pfqfc.azurewebsites.net/api/chat -H "Content-Type: application/json" -d '{"message": "Who are you"}' | jq
 ```
 
 # Azure Developer CLI (azd) Bicep Starter

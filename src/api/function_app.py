@@ -125,9 +125,13 @@ def get_ai_agent():
 @app.route(route="chat", methods=["POST"])
 def chat(req: func.HttpRequest) -> func.HttpResponse:
     """
-    Chat endpoint for AI-powered conversations
+    Chat endpoint for AI-powered conversations with history support
     POST /api/chat
-    Body: { "message": "user message", "conversation_id": "optional" }
+    Body: { 
+        "message": "user message", 
+        "conversation_id": "optional",
+        "thread_id": "optional - to continue existing conversation"
+    }
     """
     logging.info('Processing chat request')
     
@@ -136,6 +140,7 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
         req_body = req.get_json()
         user_message = req_body.get('message')
         conversation_id = req_body.get('conversation_id', str(uuid.uuid4()))
+        thread_id = req_body.get('thread_id')  # For continuing existing conversations
         
         if not user_message:
             return create_response({"error": "Message is required"}, 400)
@@ -146,21 +151,48 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
             try:
                 logging.info(f"Using Azure AI Agent: {agent.id}")
                 
-                # Create a thread using the correct namespace
-                thread = project_client.agents.threads.create()
-                logging.info(f"Thread created: {thread.id}")
-                
-                # Add the user message to the thread
-                message = project_client.agents.messages.create(
-                    thread_id=thread.id,
-                    role="user",
-                    content=user_message
-                )
-                logging.info(f"Message added to thread")
+                # Use existing thread or create new one
+                if thread_id:
+                    logging.info(f"Continuing conversation with thread: {thread_id}")
+                    # Verify thread exists by trying to add message
+                    try:
+                        # Add the user message to existing thread
+                        message = project_client.agents.messages.create(
+                            thread_id=thread_id,
+                            role="user",
+                            content=user_message
+                        )
+                        logging.info(f"Message added to existing thread: {thread_id}")
+                    except Exception as thread_error:
+                        logging.warning(f"Failed to use existing thread {thread_id}: {thread_error}")
+                        # Create new thread if existing one fails
+                        thread = project_client.agents.threads.create()
+                        thread_id = thread.id
+                        logging.info(f"Created new thread: {thread_id}")
+                        
+                        # Add the user message to new thread
+                        message = project_client.agents.messages.create(
+                            thread_id=thread_id,
+                            role="user",
+                            content=user_message
+                        )
+                else:
+                    # Create a new thread for new conversation
+                    thread = project_client.agents.threads.create()
+                    thread_id = thread.id
+                    logging.info(f"Created new thread: {thread_id}")
+                    
+                    # Add the user message to the thread
+                    message = project_client.agents.messages.create(
+                        thread_id=thread_id,
+                        role="user",
+                        content=user_message
+                    )
+                    logging.info(f"Message added to new thread")
                 
                 # Run the agent using the runs namespace
                 run = project_client.agents.runs.create_and_process(
-                    thread_id=thread.id,
+                    thread_id=thread_id,
                     agent_id=agent.id
                 )
                 logging.info(f"Run completed: {run.id}, status: {run.status}")
@@ -173,7 +205,7 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
                 # Get the agent's response
                 from azure.ai.agents.models import ListSortOrder
                 messages = project_client.agents.messages.list(
-                    thread_id=thread.id,
+                    thread_id=thread_id,
                     order=ListSortOrder.ASCENDING
                 )
                 
@@ -188,11 +220,12 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
                 
                 response_data = {
                     "conversation_id": conversation_id,
-                    "thread_id": thread.id,
+                    "thread_id": thread_id,
                     "message": user_message,
                     "response": ai_response,
                     "timestamp": datetime.utcnow().isoformat(),
-                    "agent_id": agent.id
+                    "agent_id": agent.id,
+                    "is_new_conversation": thread_id == (thread.id if 'thread' in locals() else None)
                 }
             except Exception as ai_error:
                 logging.error(f"Azure AI Agent error: {ai_error}")
@@ -221,6 +254,72 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
         return create_response({"error": "Invalid JSON in request body"}, 400)
     except Exception as e:
         logging.error(f"Error processing chat request: {e}")
+        return create_response({"error": "Internal server error"}, 500)
+
+
+@app.route(route="chat/history", methods=["GET"])
+def get_chat_history(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Get chat history for a specific thread
+    GET /api/chat/history?thread_id=<thread_id>
+    """
+    logging.info('Processing chat history request')
+    
+    try:
+        # Get thread_id from query parameters
+        thread_id = req.params.get('thread_id')
+        
+        if not thread_id:
+            return create_response({"error": "thread_id parameter is required"}, 400)
+        
+        # Get AI project client
+        ai_endpoint = os.environ.get("AZURE_AI_ENDPOINT")
+        project_name = os.environ.get("AZURE_AI_PROJECT_NAME")
+        
+        if not ai_endpoint or not project_name:
+            return create_response({"error": "AI Foundry not configured"}, 400)
+        
+        try:
+            # Construct the project endpoint
+            base_endpoint = ai_endpoint.replace(".cognitiveservices.azure.com", ".services.ai.azure.com")
+            project_endpoint = f"{base_endpoint}/api/projects/{project_name}"
+            
+            # Use Managed Identity for authentication
+            credential = DefaultAzureCredential()
+            project_client = AIProjectClient(
+                credential=credential,
+                endpoint=project_endpoint
+            )
+            
+            # Get messages from the thread
+            from azure.ai.agents.models import ListSortOrder
+            messages = project_client.agents.messages.list(
+                thread_id=thread_id,
+                order=ListSortOrder.ASCENDING
+            )
+            
+            # Format messages for response
+            chat_history = []
+            for msg in messages:
+                if msg.text_messages:
+                    chat_history.append({
+                        "role": msg.role,
+                        "content": msg.text_messages[-1].text.value,
+                        "timestamp": msg.created_at.isoformat() if msg.created_at else None
+                    })
+            
+            return create_response({
+                "thread_id": thread_id,
+                "messages": chat_history,
+                "message_count": len(chat_history)
+            })
+            
+        except Exception as e:
+            logging.error(f"Failed to get chat history: {e}")
+            return create_response({"error": f"Failed to get chat history: {str(e)}"}, 500)
+        
+    except Exception as e:
+        logging.error(f"Error processing chat history request: {e}")
         return create_response({"error": "Internal server error"}, 500)
 
 
