@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   id: string;
@@ -196,18 +200,149 @@ export default function AIChat() {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex items-start space-x-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
+                {message.role === 'assistant' && (
+                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mt-1">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                )}
                 <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
+                  className={`${message.role === 'user' ? 'max-w-[80%]' : 'max-w-[85%]'} rounded-lg p-3 ${
                     message.role === 'user'
                       ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                      : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700'
+                      : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 shadow-sm'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                  {message.role === 'user' ? (
+                    <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                  ) : (
+                    <div className="text-sm max-w-none">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          code: ({ className, children, ...props }) => {
+                            const match = /language-(\w+)/.exec(className || '');
+                            const language = match ? match[1] : '';
+                            
+                            if (language) {
+                              return (
+                                <div className="my-3 rounded-lg overflow-hidden">
+                                  <div className="bg-gray-800 text-gray-200 px-3 py-1 text-xs font-mono flex items-center justify-between">
+                                    <span>{language}</span>
+                                    <button
+                                      onClick={() => navigator.clipboard.writeText(String(children))}
+                                      className="hover:bg-gray-700 px-2 py-1 rounded text-xs transition-colors"
+                                      title="Copy code"
+                                    >
+                                      Copy
+                                    </button>
+                                  </div>
+                                  <SyntaxHighlighter
+                                    style={vscDarkPlus}
+                                    language={language}
+                                    PreTag="div"
+                                    className="!bg-gray-900 !m-0 text-xs"
+                                    customStyle={{
+                                      margin: 0,
+                                      borderRadius: 0,
+                                      background: '#1a1a1a'
+                                    }}
+                                  >
+                                    {String(children).replace(/\n$/, '')}
+                                  </SyntaxHighlighter>
+                                </div>
+                              );
+                            }
+                            
+                            return (
+                              <code
+                                className="bg-gray-100 dark:bg-gray-700 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded text-xs font-mono border"
+                                {...props}
+                              >
+                                {children}
+                              </code>
+                            );
+                          },
+                          pre: ({ children }) => (
+                            <div className="my-3">
+                              {children}
+                            </div>
+                          ),
+                          p: ({ children }) => (
+                            <p className="mb-3 last:mb-0 leading-relaxed text-gray-800 dark:text-gray-200">{children}</p>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="mb-3 last:mb-0 pl-4 space-y-1 list-disc list-outside">{children}</ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="mb-3 last:mb-0 pl-4 space-y-1 list-decimal list-outside">{children}</ol>
+                          ),
+                          li: ({ children }) => (
+                            <li className="text-sm leading-relaxed text-gray-800 dark:text-gray-200 pl-1">{children}</li>
+                          ),
+                          h1: ({ children }) => (
+                            <h1 className="text-lg font-bold mb-3 mt-4 first:mt-0 text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">{children}</h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2 className="text-base font-bold mb-2 mt-4 first:mt-0 text-gray-900 dark:text-gray-100">{children}</h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className="text-sm font-bold mb-2 mt-3 first:mt-0 text-gray-900 dark:text-gray-100">{children}</h3>
+                          ),
+                          blockquote: ({ children }) => (
+                            <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-700 dark:text-gray-300 my-3 bg-blue-50 dark:bg-blue-900/20 py-2 rounded-r">
+                              {children}
+                            </blockquote>
+                          ),
+                          table: ({ children }) => (
+                            <div className="overflow-x-auto my-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                              <table className="min-w-full border-collapse text-xs">
+                                {children}
+                              </table>
+                            </div>
+                          ),
+                          thead: ({ children }) => (
+                            <thead className="bg-gray-50 dark:bg-gray-800">
+                              {children}
+                            </thead>
+                          ),
+                          th: ({ children }) => (
+                            <th className="border-b border-gray-200 dark:border-gray-600 px-3 py-2 text-left font-semibold text-gray-900 dark:text-gray-100">
+                              {children}
+                            </th>
+                          ),
+                          td: ({ children }) => (
+                            <td className="border-b border-gray-200 dark:border-gray-600 px-3 py-2 text-gray-800 dark:text-gray-200">
+                              {children}
+                            </td>
+                          ),
+                          strong: ({ children }) => (
+                            <strong className="font-semibold text-gray-900 dark:text-gray-100">{children}</strong>
+                          ),
+                          em: ({ children }) => (
+                            <em className="italic text-gray-800 dark:text-gray-200">{children}</em>
+                          ),
+                          a: ({ children, href }) => (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline transition-colors"
+                            >
+                              {children}
+                            </a>
+                          ),
+                        }}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                    </div>
+                  )}
                   <p
-                    className={`text-xs mt-1 ${
+                    className={`text-xs mt-2 ${
                       message.role === 'user'
                         ? 'text-white/70'
                         : 'text-gray-500 dark:text-gray-400'
@@ -216,15 +351,30 @@ export default function AIChat() {
                     {new Date(message.timestamp).toLocaleTimeString()}
                   </p>
                 </div>
+                {message.role === 'user' && (
+                  <div className="flex-shrink-0 w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center mt-1">
+                    <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                )}
               </div>
             ))}
             {loading && (
-              <div className="flex justify-start">
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="flex items-start space-x-2 justify-start">
+                <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mt-1">
+                  <svg className="w-4 h-4 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">AI is thinking...</span>
                   </div>
                 </div>
               </div>

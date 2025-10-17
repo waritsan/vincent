@@ -107,6 +107,7 @@ module functionApp 'core/host/functions.bicep' = {
     alwaysOn: false
     allowedOrigins: [
       'https://calm-bay-09b1e430f.1.azurestaticapps.net'
+      'http://localhost:3000'
     ]
     appSettings: {
       AZURE_AI_ENDPOINT: aiFoundry.outputs.aiFoundryEndpoint
