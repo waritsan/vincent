@@ -12,11 +12,11 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-8">
               <Link href="/" className="flex items-center">
-                <Image 
-                  src="/theglobe-logo.jpg" 
-                  alt="The Globe" 
-                  width={48} 
-                  height={48} 
+                <Image
+                  src="/theglobe-logo.jpg"
+                  alt="The Globe"
+                  width={48}
+                  height={48}
                   className="rounded-sm"
                 />
               </Link>
@@ -28,6 +28,9 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <Link href="/admin" className="text-sm hover:text-[#0066CC] transition-colors font-medium">
+                Admin
+              </Link>
               <button className="text-sm hover:text-[#0066CC] transition-colors">Search</button>
               <button className="bg-[#0066CC] hover:bg-[#0052A3] text-white px-6 py-2 rounded-sm text-sm font-semibold transition-colors">
                 My Account
@@ -42,7 +45,7 @@ export default function Home() {
         <div className="container mx-auto px-6 max-w-7xl">
           <div className="text-center max-w-4xl mx-auto">
             <h2 className="text-5xl md:text-6xl font-bold mb-6 text-gray-900 dark:text-white leading-tight">
-              Your Rights, Your Benefits
+              Our Rights, Our Benefits
             </h2>
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
               Discover what you&apos;re entitled to and how we can support you with essential services and information
