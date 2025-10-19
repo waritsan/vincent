@@ -491,6 +491,104 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
         return create_response({"error": "Internal server error"}, 500)
 
 
+@app.route(route="posts/{id}", methods=["PUT"])
+def update_post(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Update a post by ID
+    PUT /api/posts/{id}
+    Body: { "title": "Updated title", "content": "Updated content", "author": "Author name" }
+    """
+    post_id = req.route_params.get('id')
+    logging.info(f'Processing PUT request for post {post_id}')
+    
+    try:
+        # Parse request body
+        req_body = req.get_json()
+        title = req_body.get('title')
+        content = req_body.get('content')
+        author = req_body.get('author')
+        
+        if not title or not content:
+            return create_response({"error": "Title and content are required"}, 400)
+        
+        # Get Cosmos DB container
+        container = get_cosmos_container()
+        
+        if not container:
+            return create_response({"error": "Database not configured"}, 503)
+        
+        try:
+            # Read the existing post
+            existing_post = container.read_item(item=post_id, partition_key=post_id)
+            
+            # Update the post
+            existing_post['title'] = title
+            existing_post['content'] = content
+            existing_post['author'] = author
+            existing_post['updated_at'] = datetime.utcnow().isoformat()
+            
+            # Replace the item in Cosmos DB
+            updated_item = container.replace_item(
+                item=existing_post,
+                body=existing_post
+            )
+            
+            logging.info(f"Post {post_id} updated successfully")
+            return create_response(updated_item)
+            
+        except exceptions.CosmosResourceNotFoundError:
+            logging.error(f"Post {post_id} not found")
+            return create_response({"error": "Post not found"}, 404)
+        except exceptions.CosmosHttpResponseError as e:
+            logging.error(f"Cosmos DB update error: {e}")
+            return create_response({"error": f"Database error: {str(e)}"}, 500)
+            
+    except ValueError as e:
+        logging.error(f"Invalid JSON in request: {e}")
+        return create_response({"error": "Invalid JSON in request body"}, 400)
+    except Exception as e:
+        logging.error(f"Error processing update request: {e}")
+        return create_response({"error": "Internal server error"}, 500)
+
+
+@app.route(route="posts/{id}", methods=["DELETE"])
+def delete_post(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Delete a post by ID
+    DELETE /api/posts/{id}
+    """
+    post_id = req.route_params.get('id')
+    logging.info(f'Processing DELETE request for post {post_id}')
+    
+    try:
+        # Get Cosmos DB container
+        container = get_cosmos_container()
+        
+        if not container:
+            return create_response({"error": "Database not configured"}, 503)
+        
+        try:
+            # Delete the post
+            container.delete_item(item=post_id, partition_key=post_id)
+            
+            logging.info(f"Post {post_id} deleted successfully")
+            return create_response({
+                "message": "Post deleted successfully",
+                "id": post_id
+            })
+            
+        except exceptions.CosmosResourceNotFoundError:
+            logging.error(f"Post {post_id} not found")
+            return create_response({"error": "Post not found"}, 404)
+        except exceptions.CosmosHttpResponseError as e:
+            logging.error(f"Cosmos DB delete error: {e}")
+            return create_response({"error": f"Database error: {str(e)}"}, 500)
+            
+    except Exception as e:
+        logging.error(f"Error processing delete request: {e}")
+        return create_response({"error": "Internal server error"}, 500)
+
+
 @app.route(route="health", methods=["GET"])
 def health(req: func.HttpRequest) -> func.HttpResponse:
     """Health check endpoint"""

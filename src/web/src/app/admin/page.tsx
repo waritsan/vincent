@@ -79,8 +79,15 @@ export default function AdminPage() {
         throw new Error('API URL not configured');
       }
 
-      const response = await fetch(`${apiUrl}/api/posts`, {
-        method: 'POST',
+      // If editing, use PUT, otherwise POST
+      const url = editingPost 
+        ? `${apiUrl}/api/posts/${editingPost.id}`
+        : `${apiUrl}/api/posts`;
+      
+      const method = editingPost ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -89,17 +96,18 @@ export default function AdminPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create post');
+        throw new Error(errorData.error || `Failed to ${editingPost ? 'update' : 'create'} post`);
       }
 
-      setSuccessMessage('Post created successfully!');
+      setSuccessMessage(editingPost ? 'Post updated successfully!' : 'Post created successfully!');
       setFormData({ title: '', content: '', author: '' });
       setIsCreating(false);
+      setEditingPost(null);
       fetchPosts();
       
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create post');
+      setError(err instanceof Error ? err.message : `Failed to ${editingPost ? 'update' : 'create'} post`);
     }
   };
 
@@ -118,6 +126,37 @@ export default function AdminPage() {
     setFormData({ title: '', content: '', author: '' });
     setIsCreating(false);
     setError(null);
+  };
+
+  const handleDelete = async (postId: string) => {
+    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setError(null);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      
+      if (!apiUrl) {
+        throw new Error('API URL not configured');
+      }
+
+      const response = await fetch(`${apiUrl}/api/posts/${postId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete post');
+      }
+
+      setSuccessMessage('Post deleted successfully!');
+      fetchPosts();
+      
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete post');
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -328,12 +367,7 @@ export default function AdminPage() {
                             Edit
                           </button>
                           <button
-                            onClick={() => {
-                              if (confirm('Are you sure you want to delete this post?')) {
-                                // TODO: Implement delete functionality
-                                alert('Delete functionality coming soon!');
-                              }
-                            }}
+                            onClick={() => handleDelete(post.id)}
                             className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-sm transition-colors font-semibold"
                           >
                             Delete
