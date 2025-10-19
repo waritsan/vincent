@@ -123,7 +123,7 @@ export default function AIChat() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
+        className="fixed bottom-6 right-6 bg-[#0066CC] hover:bg-[#0052A3] text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
         aria-label="Open AI Chat"
       >
         <svg
@@ -146,13 +146,13 @@ export default function AIChat() {
   return (
     <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white dark:bg-gray-800 rounded-lg shadow-2xl flex flex-col z-50 border border-gray-200 dark:border-gray-700">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-lg flex items-center justify-between">
+      <div className="bg-black text-white p-4 rounded-t-lg flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+          <div className="w-3 h-3 bg-[#0066CC] rounded-full animate-pulse"></div>
           <div>
-            <h3 className="font-semibold">AI Assistant</h3>
+            <h3 className="font-semibold">Your Support Assistant</h3>
             <p className="text-xs opacity-90">
-              {threadId ? `Conversation in progress` : 'Powered by Azure AI Foundry'}
+              {threadId ? `We&apos;re here to help` : 'Ask us anything, anytime'}
             </p>
           </div>
         </div>
@@ -185,13 +185,13 @@ export default function AIChat() {
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center space-y-3">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mx-auto flex items-center justify-center">
+              <div className="w-16 h-16 bg-[#0066CC] rounded-full mx-auto flex items-center justify-center">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Ask me anything! I&apos;m powered by GPT-4o.
+                Hi there! I&apos;m here to help you understand your rights, explore benefits, and find the support you need.
               </p>
             </div>
           </div>
@@ -203,7 +203,7 @@ export default function AIChat() {
                 className={`flex items-start space-x-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {message.role === 'assistant' && (
-                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mt-1">
+                  <div className="flex-shrink-0 w-8 h-8 bg-[#0066CC] rounded-full flex items-center justify-center mt-1">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                     </svg>
@@ -212,7 +212,7 @@ export default function AIChat() {
                 <div
                   className={`${message.role === 'user' ? 'max-w-[80%]' : 'max-w-[85%]'} rounded-lg p-3 ${
                     message.role === 'user'
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                      ? 'bg-[#0066CC] text-white'
                       : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 shadow-sm'
                   }`}
                 >
@@ -362,7 +362,7 @@ export default function AIChat() {
             ))}
             {loading && (
               <div className="flex items-start space-x-2 justify-start">
-                <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mt-1">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#0066CC] rounded-full flex items-center justify-center mt-1">
                   <svg className="w-4 h-4 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
@@ -370,9 +370,9 @@ export default function AIChat() {
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 shadow-sm">
                   <div className="flex items-center space-x-2">
                     <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 bg-[#0066CC] rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-[#0066CC] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-[#0066CC] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                     <span className="text-xs text-gray-500 dark:text-gray-400">AI is thinking...</span>
                   </div>
@@ -399,7 +399,7 @@ export default function AIChat() {
           <button
             onClick={sendMessage}
             disabled={loading || !input.trim()}
-            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium"
+            className="px-4 py-2 bg-[#0066CC] text-white rounded-lg hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
