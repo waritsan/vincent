@@ -1,17 +1,25 @@
 import BlogPosts from './components/BlogPosts';
 import AIChat from './components/AIChat';
+import Image from 'next/image';
+import Link from 'next/link';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* TED-style Navigation */}
-      <nav className="bg-black text-white sticky top-0 z-40">
+      <nav className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white sticky top-0 z-40 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="container mx-auto px-6 py-4 max-w-7xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-8">
-              <h1 className="text-2xl font-bold tracking-tight">
-                <span className="text-[#0066CC]">THE GLOBE</span>
-              </h1>
+              <Link href="/" className="flex items-center">
+                <Image 
+                  src="/theglobe-logo.jpg" 
+                  alt="The Globe" 
+                  width={48} 
+                  height={48} 
+                  className="rounded-sm"
+                />
+              </Link>
               <div className="hidden md:flex space-x-6 text-sm font-medium">
                 <a href="#" className="hover:text-[#0066CC] transition-colors">Benefits</a>
                 <a href="#" className="hover:text-[#0066CC] transition-colors">Services</a>
@@ -21,7 +29,7 @@ export default function Home() {
             </div>
             <div className="flex items-center space-x-4">
               <button className="text-sm hover:text-[#0066CC] transition-colors">Search</button>
-              <button className="bg-[#0066CC] hover:bg-[#0052A3] px-6 py-2 rounded-sm text-sm font-semibold transition-colors">
+              <button className="bg-[#0066CC] hover:bg-[#0052A3] text-white px-6 py-2 rounded-sm text-sm font-semibold transition-colors">
                 My Account
               </button>
             </div>

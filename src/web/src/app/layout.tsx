@@ -12,6 +12,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Our Rights, Our Benefits | The Globe",
   description: "Discover your entitlements, benefits, and essential government services designed to support you",
+  icons: {
+    icon: '/theglobe-logo.jpg',
+  },
 };
 
 export default function RootLayout({
