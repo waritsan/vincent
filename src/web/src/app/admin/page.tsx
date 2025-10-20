@@ -25,6 +25,7 @@ export default function AdminPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -172,6 +173,18 @@ export default function AdminPage() {
       minute: '2-digit'
     });
   };
+
+  // Filter posts based on search query
+  const filteredPosts = posts.filter((post) => {
+    if (!searchQuery) return true;
+    
+    const query = searchQuery.toLowerCase();
+    return (
+      post.title.toLowerCase().includes(query) ||
+      post.content.toLowerCase().includes(query) ||
+      post.author.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -328,19 +341,47 @@ export default function AdminPage() {
           <div className="lg:col-span-2">
             <div className="bg-white dark:bg-gray-800 rounded-sm shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">Published Posts</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {loading ? 'Loading...' : `${posts.length} total posts`}
-                    </p>
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">Published Posts</h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {loading ? 'Loading...' : `${filteredPosts.length} of ${posts.length} posts`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={fetchPosts}
+                      className="px-4 py-2 text-sm text-[#0066CC] hover:bg-blue-50 dark:hover:bg-gray-700 rounded-sm transition-colors font-semibold"
+                    >
+                      Refresh
+                    </button>
                   </div>
-                  <button
-                    onClick={fetchPosts}
-                    className="px-4 py-2 text-sm text-[#0066CC] hover:bg-blue-50 dark:hover:bg-gray-700 rounded-sm transition-colors font-semibold"
-                  >
-                    Refresh
-                  </button>
+                  
+                  {/* Search Bar */}
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search posts..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white placeholder-gray-400 text-sm"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -349,12 +390,22 @@ export default function AdminPage() {
                   <div className="p-12 text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0066CC] mx-auto"></div>
                   </div>
-                ) : posts.length === 0 ? (
+                ) : filteredPosts.length === 0 && searchQuery ? (
+                  <div className="p-12 text-center">
+                    <p className="text-gray-500 dark:text-gray-400">No posts found matching &quot;{searchQuery}&quot;</p>
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="mt-4 px-4 py-2 text-sm text-[#0066CC] hover:bg-blue-50 dark:hover:bg-gray-700 rounded-sm transition-colors font-semibold"
+                    >
+                      Clear Search
+                    </button>
+                  </div>
+                ) : filteredPosts.length === 0 ? (
                   <div className="p-12 text-center">
                     <p className="text-gray-500 dark:text-gray-400">No posts yet. Create your first post!</p>
                   </div>
                 ) : (
-                  posts.map((post) => (
+                  filteredPosts.map((post) => (
                     <div key={post.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
