@@ -9,6 +9,7 @@ interface Post {
   title: string;
   content: string;
   author: string;
+  video_url?: string;
   created_at: string;
 }
 
@@ -29,7 +30,8 @@ export default function AdminPage() {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
-    author: ''
+    author: '',
+    video_url: ''
   });
 
   useEffect(() => {
@@ -100,7 +102,7 @@ export default function AdminPage() {
       }
 
       setSuccessMessage(editingPost ? 'Post updated successfully!' : 'Post created successfully!');
-      setFormData({ title: '', content: '', author: '' });
+      setFormData({ title: '', content: '', author: '', video_url: '' });
       setIsCreating(false);
       setEditingPost(null);
       fetchPosts();
@@ -116,14 +118,15 @@ export default function AdminPage() {
     setFormData({
       title: post.title,
       content: post.content,
-      author: post.author
+      author: post.author,
+      video_url: post.video_url || ''
     });
     setIsCreating(true);
   };
 
   const handleCancelEdit = () => {
     setEditingPost(null);
-    setFormData({ title: '', content: '', author: '' });
+    setFormData({ title: '', content: '', author: '', video_url: '' });
     setIsCreating(false);
     setError(null);
   };
@@ -280,6 +283,23 @@ export default function AdminPage() {
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {formData.content.length} characters
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="video_url" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Video URL (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    id="video_url"
+                    value={formData.video_url}
+                    onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                    placeholder="https://youtu.be/... or https://www.youtube.com/watch?v=..."
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Add a YouTube video link to embed in your post
                   </p>
                 </div>
 

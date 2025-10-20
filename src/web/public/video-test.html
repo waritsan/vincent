@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Embed Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .video-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            background: black;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎥 YouTube Embed Test Page</h1>
+    
+    <div class="info">
+        <strong>Purpose:</strong> Test if YouTube videos can be embedded and played in your browser.
+        <br><strong>If videos play here</strong> → The issue is in the React component
+        <br><strong>If videos don't play here</strong> → Browser/network issue
+    </div>
+
+    <div class="video-container">
+        <h2>Test Video 1: Rick Astley - Never Gonna Give You Up</h2>
+        <p><strong>URL:</strong> https://www.youtube.com/watch?v=dQw4w9WgXcQ</p>
+        <div class="video-wrapper">
+            <iframe
+                src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                title="Test Video 1"
+                frameborder="0"
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+            ></iframe>
+        </div>
+    </div>
+
+    <div class="video-container">
+        <h2>Test Video 2: Your Original Video</h2>
+        <p><strong>URL:</strong> https://youtu.be/Jds96VCuPvA?si=9lAmYJBTInfk7Ouh</p>
+        <div class="video-wrapper">
+            <iframe
+                src="https://www.youtube.com/embed/Jds96VCuPvA"
+                title="Test Video 2"
+                frameborder="0"
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+            ></iframe>
+        </div>
+    </div>
+
+    <div class="video-container">
+        <h2>Test Video 3: Baby Shark</h2>
+        <p><strong>URL:</strong> https://www.youtube.com/watch?v=XqZsoesa55w</p>
+        <div class="video-wrapper">
+            <iframe
+                src="https://www.youtube.com/embed/XqZsoesa55w"
+                title="Test Video 3"
+                frameborder="0"
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+            ></iframe>
+        </div>
+    </div>
+
+    <div class="info">
+        <h3>Video ID Extraction Test</h3>
+        <pre id="extraction-test"></pre>
+    </div>
+
+    <script>
+        // Test video ID extraction
+        const testUrls = [
+            'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            'https://youtu.be/Jds96VCuPvA?si=9lAmYJBTInfk7Ouh',
+            'https://www.youtube.com/embed/XqZsoesa55w',
+            'https://youtu.be/XqZsoesa55w',
+            'https://www.youtube.com/watch?v=kJQP7kiw5Fk&t=30s'
+        ];
+
+        function extractVideoId(url) {
+            if (!url) return null;
+            
+            // Handle youtu.be format
+            const youtuBeMatch = url.match(/youtu\.be\/([^?&]+)/);
+            if (youtuBeMatch) return youtuBeMatch[1];
+            
+            // Handle youtube.com/watch format
+            const youtubeMatch = url.match(/[?&]v=([^&]+)/);
+            if (youtubeMatch) return youtubeMatch[1];
+            
+            // Handle youtube.com/embed format
+            const embedMatch = url.match(/\/embed\/([^?&]+)/);
+            if (embedMatch) return embedMatch[1];
+            
+            return null;
+        }
+
+        let output = 'Testing Video ID Extraction:\n\n';
+        testUrls.forEach(url => {
+            const videoId = extractVideoId(url);
+            output += `URL: ${url}\n`;
+            output += `Video ID: ${videoId}\n`;
+            output += `Embed URL: https://www.youtube.com/embed/${videoId}\n\n`;
+        });
+
+        document.getElementById('extraction-test').textContent = output;
+    </script>
+</body>
+</html>
