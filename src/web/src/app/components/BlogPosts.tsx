@@ -16,12 +16,15 @@ interface PostsResponse {
   total: number;
 }
 
-export default function BlogPosts() {
+interface BlogPostsProps {
+  searchQuery?: string;
+}
+
+export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchPosts();
@@ -136,51 +139,23 @@ export default function BlogPosts() {
 
   return (
     <div className="space-y-12">
-      {/* Header with Search */}
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-              What&apos;s New For You
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              {filteredPosts.length} {filteredPosts.length === 1 ? 'update' : 'updates'} 
-              {searchQuery && ' matching your search'} about your benefits and rights
-            </p>
-          </div>
-          <button
-            onClick={fetchPosts}
-            className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-sm transition-colors text-sm font-semibold whitespace-nowrap"
-          >
-            Refresh
-          </button>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            What&apos;s New For You
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            {filteredPosts.length} {filteredPosts.length === 1 ? 'update' : 'updates'} 
+            {searchQuery && ' matching your search'} about your benefits and rights
+          </p>
         </div>
-
-        {/* Search Bar */}
-        <div className="relative max-w-2xl">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          <input
-            type="text"
-            placeholder="Search posts by title, content, or author..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-800 dark:text-white placeholder-gray-400"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
-        </div>
+        <button
+          onClick={fetchPosts}
+          className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-sm transition-colors text-sm font-semibold whitespace-nowrap"
+        >
+          Refresh
+        </button>
       </div>
 
       {/* No Results Message */}
@@ -193,12 +168,9 @@ export default function BlogPosts() {
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             We couldn&apos;t find any posts matching &quot;{searchQuery}&quot;
           </p>
-          <button
-            onClick={() => setSearchQuery('')}
-            className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-sm transition-colors font-semibold"
-          >
-            Clear Search
-          </button>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
+            Clear the search in the navigation bar to see all posts
+          </p>
         </div>
       )}
 
