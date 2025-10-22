@@ -11,6 +11,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  isStreaming?: boolean; // Add streaming indicator
 }
 
 interface ChatResponse {
@@ -56,10 +57,10 @@ export default function AIChat() {
     setLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_CHAT_API_URL || process.env.NEXT_PUBLIC_API_URL;
       
       if (!apiUrl) {
-        throw new Error('API URL not configured. Please set NEXT_PUBLIC_API_URL environment variable.');
+        throw new Error('API URL not configured. Please set NEXT_PUBLIC_CHAT_API_URL or NEXT_PUBLIC_API_URL environment variable.');
       }
       
       const response = await fetch(`${apiUrl}/api/chat`, {
@@ -70,7 +71,8 @@ export default function AIChat() {
         body: JSON.stringify({
           message: userMessage.content,
           conversation_id: conversationId,
-          thread_id: threadId, // Include thread_id for conversation continuity
+          thread_id: threadId,
+          stream: true, // Enable streaming
         }),
       });
 
@@ -78,21 +80,121 @@ export default function AIChat() {
         throw new Error(`Failed to send message: ${response.statusText}`);
       }
 
-      const data: ChatResponse = await response.json();
+      // Check if response is streaming (SSE)
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('text/event-stream')) {
+        // Handle streaming response
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        
+        if (!reader) {
+          throw new Error('Response body is not readable');
+        }
 
-      // Store thread_id for future messages in this conversation
-      if (data.thread_id) {
-        setThreadId(data.thread_id);
+        // Create placeholder message for streaming
+        const assistantMessageId = `msg-${Date.now()}-assistant`;
+        const assistantMessage: Message = {
+          id: assistantMessageId,
+          role: 'assistant',
+          content: '',
+          timestamp: new Date().toISOString(),
+          isStreaming: true,
+        };
+        
+        setMessages((prev) => [...prev, assistantMessage]);
+        
+        let accumulatedContent = '';
+        let buffer = '';
+        const chunkQueue: string[] = [];
+        let isProcessing = false;
+
+        // Function to process chunks with delay for smooth streaming effect
+        const processChunkQueue = async () => {
+          if (isProcessing) return;
+          isProcessing = true;
+          
+          while (chunkQueue.length > 0) {
+            const chunk = chunkQueue.shift();
+            if (chunk) {
+              accumulatedContent += chunk;
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantMessageId
+                    ? { ...msg, content: accumulatedContent, isStreaming: true }
+                    : msg
+                )
+              );
+              // Small delay between chunks for smooth streaming effect
+              await new Promise(resolve => setTimeout(resolve, 20));
+            }
+          }
+          
+          isProcessing = false;
+        };
+
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          
+          // Keep the last incomplete line in the buffer
+          buffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const dataStr = line.slice(6);
+              
+              try {
+                const data = JSON.parse(dataStr);
+                
+                if (data.type === 'metadata') {
+                  // Store thread_id from metadata
+                  if (data.thread_id) {
+                    setThreadId(data.thread_id);
+                  }
+                } else if (data.type === 'chunk') {
+                  // Add chunk to queue for smooth streaming
+                  chunkQueue.push(data.content);
+                  processChunkQueue();
+                } else if (data.type === 'done') {
+                  // Finalize message
+                  setMessages((prev) =>
+                    prev.map((msg) =>
+                      msg.id === assistantMessageId
+                        ? { ...msg, content: data.full_response, timestamp: data.timestamp, isStreaming: false }
+                        : msg
+                    )
+                  );
+                } else if (data.type === 'error') {
+                  throw new Error(data.error);
+                }
+              } catch (parseError) {
+                console.error('Error parsing SSE data:', parseError, 'Line:', dataStr);
+              }
+            }
+          }
+        }
+      } else {
+        // Handle non-streaming JSON response (fallback)
+        const data: ChatResponse = await response.json();
+
+        // Store thread_id for future messages in this conversation
+        if (data.thread_id) {
+          setThreadId(data.thread_id);
+        }
+
+        const assistantMessage: Message = {
+          id: `msg-${Date.now()}-assistant`,
+          role: 'assistant',
+          content: data.response,
+          timestamp: data.timestamp,
+        };
+
+        setMessages((prev) => [...prev, assistantMessage]);
       }
-
-      const assistantMessage: Message = {
-        id: `msg-${Date.now()}-assistant`,
-        role: 'assistant',
-        content: data.response,
-        timestamp: data.timestamp,
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
       const errorMessage: Message = {
         id: `msg-${Date.now()}-error`,
@@ -339,6 +441,9 @@ export default function AIChat() {
                       >
                         {message.content}
                       </ReactMarkdown>
+                      {message.isStreaming && (
+                        <span className="inline-block w-1.5 h-4 bg-[#0066CC] ml-0.5 animate-pulse"></span>
+                      )}
                     </div>
                   )}
                   <p

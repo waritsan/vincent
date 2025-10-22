@@ -11,6 +11,10 @@ services:
     language: python
     project: ./src/api
     host: function
+  chat-api:
+    language: python
+    project: ./src/chat-api
+    host: containerapp
   web:
     project: ./src/web
     language: ts
@@ -25,4 +29,5 @@ hooks:
         cd src/web
         rm -f .env.local
         echo "NEXT_PUBLIC_API_URL=$AZURE_FUNCTION_URI" > .env.production
+        echo "NEXT_PUBLIC_CHAT_API_URL=$AZURE_CHAT_API_URI" >> .env.production
         cat .env.production

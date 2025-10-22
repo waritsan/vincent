@@ -125,12 +125,13 @@ def get_ai_agent():
 @app.route(route="chat", methods=["POST"])
 def chat(req: func.HttpRequest) -> func.HttpResponse:
     """
-    Chat endpoint for AI-powered conversations with history support
+    Chat endpoint for AI-powered conversations with streaming support
     POST /api/chat
     Body: { 
         "message": "user message", 
         "conversation_id": "optional",
-        "thread_id": "optional - to continue existing conversation"
+        "thread_id": "optional - to continue existing conversation",
+        "stream": true/false - whether to stream the response (default: true)
     }
     """
     logging.info('Processing chat request')
@@ -141,6 +142,7 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
         user_message = req_body.get('message')
         conversation_id = req_body.get('conversation_id', str(uuid.uuid4()))
         thread_id = req_body.get('thread_id')  # For continuing existing conversations
+        stream = req_body.get('stream', True)  # Default to streaming
         
         if not user_message:
             return create_response({"error": "Message is required"}, 400)
@@ -190,45 +192,118 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
                     )
                     logging.info(f"Message added to new thread")
                 
-                # Run the agent using the runs namespace
-                run = project_client.agents.runs.create_and_process(
-                    thread_id=thread_id,
-                    agent_id=agent.id
-                )
-                logging.info(f"Run completed: {run.id}, status: {run.status}")
-                
-                # Check for errors
-                if run.status == "failed":
-                    logging.error(f"Run failed: {run.last_error}")
-                    raise Exception(f"Agent run failed: {run.last_error}")
-                
-                # Get the agent's response
-                from azure.ai.agents.models import ListSortOrder
-                messages = project_client.agents.messages.list(
-                    thread_id=thread_id,
-                    order=ListSortOrder.ASCENDING
-                )
-                
-                # Get the latest assistant message
-                ai_response = None
-                for msg in messages:
-                    if msg.role == "assistant" and msg.text_messages:
-                        ai_response = msg.text_messages[-1].text.value
-                
-                if not ai_response:
-                    ai_response = "No response from agent"
-                
-                response_data = {
-                    "conversation_id": conversation_id,
-                    "thread_id": thread_id,
-                    "message": user_message,
-                    "response": ai_response,
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "agent_id": agent.id,
-                    "is_new_conversation": thread_id == (thread.id if 'thread' in locals() else None)
-                }
+                # NOTE: Azure Functions (Consumption Plan) doesn't support true HTTP streaming
+                # We use non-streaming API but format the response as SSE for client-side simulated streaming
+                if stream:
+                    try:
+                        # Use non-streaming API (faster than collecting streaming chunks)
+                        run = project_client.agents.runs.create_and_process(
+                            thread_id=thread_id,
+                            agent_id=agent.id
+                        )
+                        logging.info(f"Run completed: {run.id}, status: {run.status}")
+                        
+                        # Check for errors
+                        if run.status == "failed":
+                            logging.error(f"Run failed: {run.last_error}")
+                            raise Exception(f"Agent run failed: {run.last_error}")
+                        
+                        # Get the agent's response
+                        from azure.ai.agents.models import ListSortOrder
+                        messages = project_client.agents.messages.list(
+                            thread_id=thread_id,
+                            order=ListSortOrder.ASCENDING
+                        )
+                        
+                        # Get the latest assistant message
+                        ai_response = None
+                        for msg in messages:
+                            if msg.role == "assistant" and msg.text_messages:
+                                ai_response = msg.text_messages[-1].text.value
+                        
+                        if not ai_response:
+                            ai_response = "No response from agent"
+                        
+                        # Build SSE-formatted response with simulated chunks for client-side streaming
+                        stream_chunks = []
+                        
+                        # Send initial metadata
+                        stream_chunks.append(f"data: {json.dumps({'type': 'metadata', 'conversation_id': conversation_id, 'thread_id': thread_id})}\n\n")
+                        
+                        # Split response into words for client-side simulated streaming
+                        words = ai_response.split(' ')
+                        for i, word in enumerate(words):
+                            chunk = word + (' ' if i < len(words) - 1 else '')
+                            stream_chunks.append(f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n")
+                        
+                        # Send completion signal
+                        stream_chunks.append(f"data: {json.dumps({'type': 'done', 'full_response': ai_response, 'timestamp': datetime.utcnow().isoformat()})}\n\n")
+                        
+                        # Return streaming response as concatenated string
+                        return func.HttpResponse(
+                            ''.join(stream_chunks),
+                            mimetype="text/event-stream",
+                            headers={
+                                **CORS_HEADERS,
+                                'Cache-Control': 'no-cache',
+                                'X-Accel-Buffering': 'no'
+                            }
+                        )
+                        
+                    except Exception as stream_error:
+                        logging.error(f"Streaming error: {stream_error}", exc_info=True)
+                        error_response = f"data: {json.dumps({'type': 'error', 'error': str(stream_error)})}\n\n"
+                        return func.HttpResponse(
+                            error_response,
+                            mimetype="text/event-stream",
+                            headers={
+                                **CORS_HEADERS,
+                                'Cache-Control': 'no-cache',
+                                'X-Accel-Buffering': 'no'
+                            }
+                        )
+                else:
+                    # Non-streaming response (original behavior)
+                    run = project_client.agents.runs.create_and_process(
+                        thread_id=thread_id,
+                        agent_id=agent.id
+                    )
+                    logging.info(f"Run completed: {run.id}, status: {run.status}")
+                    
+                    # Check for errors
+                    if run.status == "failed":
+                        logging.error(f"Run failed: {run.last_error}")
+                        raise Exception(f"Agent run failed: {run.last_error}")
+                    
+                    # Get the agent's response
+                    from azure.ai.agents.models import ListSortOrder
+                    messages = project_client.agents.messages.list(
+                        thread_id=thread_id,
+                        order=ListSortOrder.ASCENDING
+                    )
+                    
+                    # Get the latest assistant message
+                    ai_response = None
+                    for msg in messages:
+                        if msg.role == "assistant" and msg.text_messages:
+                            ai_response = msg.text_messages[-1].text.value
+                    
+                    if not ai_response:
+                        ai_response = "No response from agent"
+                    
+                    response_data = {
+                        "conversation_id": conversation_id,
+                        "thread_id": thread_id,
+                        "message": user_message,
+                        "response": ai_response,
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "agent_id": agent.id,
+                        "is_new_conversation": thread_id == (thread.id if 'thread' in locals() else None)
+                    }
+                    return create_response(response_data)
+                    
             except Exception as ai_error:
-                logging.error(f"Azure AI Agent error: {ai_error}")
+                logging.error(f"Azure AI Agent error: {ai_error}", exc_info=True)
                 response_data = {
                     "conversation_id": conversation_id,
                     "message": user_message,

@@ -40,6 +40,7 @@ var resourceToken = toLower(uniqueString(subscription().id, environmentName, loc
 //   tags: union(tags, { 'azd-service-name': apiServiceName })
 var apiServiceName = 'api'
 var webServiceName = 'web'
+var chatApiServiceName = 'chat-api'
 
 // Organize resources in a resource group
 resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
@@ -159,6 +160,92 @@ module aiFoundryRoleAssignment 'core/security/role-rg.bicep' = {
   }
 }
 
+// Container Apps Environment for chat API
+module containerAppsEnvironment 'core/host/container-apps-environment.bicep' = {
+  name: 'container-apps-environment'
+  scope: rg
+  params: {
+    name: '${abbrs.appManagedEnvironments}${resourceToken}'
+    location: location
+    tags: tags
+    logAnalyticsWorkspaceName: monitoring.outputs.logAnalyticsWorkspaceName
+  }
+}
+
+// Container Registry for chat API
+module containerRegistry 'core/host/container-registry.bicep' = {
+  name: 'container-registry'
+  scope: rg
+  params: {
+    name: '${abbrs.containerRegistryRegistries}${resourceToken}'
+    location: location
+    tags: tags
+  }
+}
+
+// Managed Identity for Container Apps
+module chatApiIdentity 'core/security/managed-identity.bicep' = {
+  name: 'chat-api-identity'
+  scope: rg
+  params: {
+    name: '${abbrs.managedIdentityUserAssignedIdentities}chatapi-${resourceToken}'
+    location: location
+    tags: tags
+  }
+}
+
+// Grant Container Registry pull access to the identity
+module containerRegistryAccess 'core/security/registry-access.bicep' = {
+  name: 'registry-access'
+  scope: rg
+  params: {
+    containerRegistryName: containerRegistry.outputs.name
+    principalId: chatApiIdentity.outputs.principalId
+  }
+}
+
+// Grant AI Foundry access to chat API identity at the resource level
+module chatApiAiFoundryAccess 'core/security/role-resource.bicep' = {
+  name: 'chatapi-ai-foundry-role-assignment'
+  scope: rg
+  params: {
+    principalId: chatApiIdentity.outputs.principalId
+    roleDefinitionId: '64702f94-c441-49e6-a78b-ef80e0188fee' // Azure AI Developer
+    principalType: 'ServicePrincipal'
+    cognitiveServicesName: aiFoundry.outputs.cognitiveServicesName
+  }
+}
+
+// Grant Cognitive Services User role to chat API identity
+module chatApiCognitiveServicesUser 'core/security/role-resource.bicep' = {
+  name: 'chatapi-cognitive-services-user'
+  scope: rg
+  params: {
+    principalId: chatApiIdentity.outputs.principalId
+    roleDefinitionId: 'a97b65f3-24c7-4388-baec-2e87135dc908' // Cognitive Services User
+    principalType: 'ServicePrincipal'
+    cognitiveServicesName: aiFoundry.outputs.cognitiveServicesName
+  }
+}
+
+// Chat API Container App with TRUE streaming support
+module chatApi 'core/host/chat-api.bicep' = {
+  name: 'chat-api'
+  scope: rg
+  params: {
+    name: '${abbrs.appContainerApps}chatapi-${resourceToken}'
+    location: location
+    tags: union(tags, { 'azd-service-name': chatApiServiceName })
+    containerAppsEnvironmentName: containerAppsEnvironment.outputs.name
+    containerRegistryName: containerRegistry.outputs.name
+    identityName: chatApiIdentity.outputs.name
+    azureAiEndpoint: aiFoundry.outputs.aiFoundryEndpoint
+    azureAiProjectName: 'project-${resourceToken}'
+    azureAiAgentId: 'asst_VF1pUCg1iH9WkKtnhbd3Lq09' // Set to your agent ID
+    serviceName: chatApiServiceName
+  }
+}
+
 // Cosmos DB with Serverless (cheapest option - pay only for what you use)
 module cosmosDb 'core/database/cosmos/cosmos-serverless.bicep' = {
   name: 'cosmosdb'
@@ -201,6 +288,10 @@ output AZURE_LOCATION string = location
 output AZURE_TENANT_ID string = tenant().tenantId
 output AZURE_FUNCTION_APP_NAME string = functionApp.outputs.name
 output AZURE_FUNCTION_URI string = functionApp.outputs.uri
+output AZURE_CHAT_API_URI string = chatApi.outputs.uri
+output AZURE_CHAT_API_NAME string = chatApi.outputs.name
+output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.outputs.name
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.outputs.loginServer
 output AZURE_AI_ENDPOINT string = aiFoundry.outputs.aiFoundryEndpoint
 output AZURE_AI_DEPLOYMENT_NAME string = aiFoundry.outputs.modelDeploymentName
 output AZURE_AI_PROJECT_NAME string = 'project-${resourceToken}'

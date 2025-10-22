@@ -65,3 +65,4 @@ output aiFoundryName string = aiFoundry.name
 output aiFoundryEndpoint string = aiFoundry.properties.endpoint
 output aiFoundryPrincipalId string = aiFoundry.identity.principalId
 output modelDeploymentName string = deployGPT4o ? modelDeployment.name : ''
+output cognitiveServicesName string = aiFoundry.name
