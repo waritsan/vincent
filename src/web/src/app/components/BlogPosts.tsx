@@ -10,6 +10,7 @@ interface Post {
   author: string;
   video_url?: string;
   created_at: string;
+  tags?: string[];
 }
 
 interface PostsResponse {
@@ -26,6 +27,8 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const [selectedTag, setSelectedTag] = useState('');
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -79,6 +82,15 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
       
       const data: PostsResponse = await response.json();
       setPosts(data.posts);
+      
+      // Extract all unique tags from posts
+      const tagsSet = new Set<string>();
+      data.posts.forEach(post => {
+        if (post.tags && Array.isArray(post.tags)) {
+          post.tags.forEach(tag => tagsSet.add(tag));
+        }
+      });
+      setAllTags(Array.from(tagsSet).sort());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load posts');
       console.error('Error fetching posts:', err);
@@ -96,16 +108,27 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
     });
   };
 
-  // Filter posts based on search query
+  // Filter posts based on search query and selected tag
   const filteredPosts = posts.filter((post) => {
-    if (!searchQuery) return true;
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = (
+        post.title.toLowerCase().includes(query) ||
+        post.content.toLowerCase().includes(query) ||
+        post.author.toLowerCase().includes(query)
+      );
+      if (!matchesSearch) return false;
+    }
     
-    const query = searchQuery.toLowerCase();
-    return (
-      post.title.toLowerCase().includes(query) ||
-      post.content.toLowerCase().includes(query) ||
-      post.author.toLowerCase().includes(query)
-    );
+    // Filter by selected tag
+    if (selectedTag) {
+      if (!post.tags || !post.tags.includes(selectedTag)) {
+        return false;
+      }
+    }
+    
+    return true;
   });
 
   if (loading) {
@@ -159,6 +182,38 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
           {t('blog.refresh')}
         </button>
       </div>
+
+      {/* Tag Filter */}
+      {allTags.length > 0 && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {t('blog.filterByTag')}:
+          </span>
+          <button
+            onClick={() => setSelectedTag('')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
+              selectedTag === ''
+                ? 'bg-[#0066CC] text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            {t('blog.allTags')}
+          </button>
+          {allTags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => setSelectedTag(tag === selectedTag ? '' : tag)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
+                selectedTag === tag
+                  ? 'bg-[#0066CC] text-white'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+              }`}
+            >
+              #{tag}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* No Results Message */}
       {filteredPosts.length === 0 && searchQuery && (
@@ -237,6 +292,20 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
               <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-3">
                 {post.content}
               </p>
+              
+              {/* Tags */}
+              {post.tags && post.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {post.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
               
               <div className="flex items-center justify-between pt-2">
                 <div className="flex items-center space-x-2">

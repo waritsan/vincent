@@ -11,6 +11,7 @@ interface Post {
   author: string;
   video_url?: string;
   created_at: string;
+  tags?: string[];
 }
 
 interface PostsResponse {
@@ -32,7 +33,8 @@ export default function AdminPage() {
     title: '',
     content: '',
     author: '',
-    video_url: ''
+    video_url: '',
+    tags: '' // Comma-separated tags
   });
 
   useEffect(() => {
@@ -89,12 +91,22 @@ export default function AdminPage() {
       
       const method = editingPost ? 'PUT' : 'POST';
 
+      // Convert tags string to array
+      const tagsArray = formData.tags
+        ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+        : [];
+
+      const postData = {
+        ...formData,
+        tags: tagsArray
+      };
+
       const response = await fetch(url, {
         method: method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(postData),
       });
 
       if (!response.ok) {
@@ -103,7 +115,7 @@ export default function AdminPage() {
       }
 
       setSuccessMessage(editingPost ? 'Post updated successfully!' : 'Post created successfully!');
-      setFormData({ title: '', content: '', author: '', video_url: '' });
+      setFormData({ title: '', content: '', author: '', video_url: '', tags: '' });
       setIsCreating(false);
       setEditingPost(null);
       fetchPosts();
@@ -120,14 +132,15 @@ export default function AdminPage() {
       title: post.title,
       content: post.content,
       author: post.author,
-      video_url: post.video_url || ''
+      video_url: post.video_url || '',
+      tags: post.tags ? post.tags.join(', ') : ''
     });
     setIsCreating(true);
   };
 
   const handleCancelEdit = () => {
     setEditingPost(null);
-    setFormData({ title: '', content: '', author: '', video_url: '' });
+    setFormData({ title: '', content: '', author: '', video_url: '', tags: '' });
     setIsCreating(false);
     setError(null);
   };
@@ -313,6 +326,23 @@ export default function AdminPage() {
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Add a YouTube video link to embed in your post
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="tags" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Tags (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    id="tags"
+                    value={formData.tags}
+                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                    placeholder="healthcare, education, housing"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Separate tags with commas (e.g., healthcare, benefits, support)
                   </p>
                 </div>
 

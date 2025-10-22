@@ -56,6 +56,8 @@ const translations: Record<Language, Record<string, string>> = {
         'blog.noResultsDesc': 'เราไม่พบโพสต์ที่ตรงกับ',
         'blog.clearSearch': 'ล้างการค้นหาในแถบนำทางเพื่อดูโพสต์ทั้งหมด',
         'blog.emptyState': 'ยังไม่มีข้อมูลในขณะนี้ กรุณาตรวจสอบอีกครั้งในภายหลัง!',
+        'blog.filterByTag': 'กรองตามแท็ก',
+        'blog.allTags': 'ทั้งหมด',
     },
     en: {
         // Navigation
@@ -102,6 +104,8 @@ const translations: Record<Language, Record<string, string>> = {
         'blog.noResultsDesc': 'We couldn\'t find any posts matching',
         'blog.clearSearch': 'Clear your search in the navigation bar to see all posts.',
         'blog.emptyState': 'No updates available right now. Please check back later!',
+        'blog.filterByTag': 'Filter by tag',
+        'blog.allTags': 'All',
     }
 };
 
