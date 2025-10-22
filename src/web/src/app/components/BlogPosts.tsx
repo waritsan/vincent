@@ -117,13 +117,13 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
   if (error) {
     return (
       <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-sm p-8 text-center max-w-2xl mx-auto">
-        <p className="text-gray-900 dark:text-white font-bold text-xl mb-2">We couldn&apos;t load the updates</p>
+        <p className="text-gray-900 dark:text-white font-bold text-xl mb-2">ไม่สามารถโหลดข้อมูลได้</p>
         <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
         <button
           onClick={fetchPosts}
           className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-sm transition-colors font-semibold"
         >
-          Try Again
+          ลองอีกครั้ง
         </button>
       </div>
     );
@@ -132,7 +132,7 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
   if (posts.length === 0) {
     return (
       <div className="text-center py-20">
-        <p className="text-gray-600 dark:text-gray-400 text-xl">No updates available right now. Check back soon!</p>
+        <p className="text-gray-600 dark:text-gray-400 text-xl">ยังไม่มีข้อมูลในขณะนี้ กรุณาตรวจสอบอีกครั้งในภายหลัง!</p>
       </div>
     );
   }
@@ -143,18 +143,18 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            What&apos;s New For You
+            ข่าวสารใหม่สำหรับคุณ
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            {filteredPosts.length} {filteredPosts.length === 1 ? 'update' : 'updates'} 
-            {searchQuery && ' matching your search'} about your benefits and rights
+            {filteredPosts.length} {filteredPosts.length === 1 ? 'โพสต์' : 'โพสต์'} 
+            {searchQuery && ' ที่ตรงกับการค้นหา'}เกี่ยวกับสิทธิประโยชน์และสวัสดิการของคุณ
           </p>
         </div>
         <button
           onClick={fetchPosts}
           className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-sm transition-colors text-sm font-semibold whitespace-nowrap"
         >
-          Refresh
+          รีเฟรช
         </button>
       </div>
 
@@ -164,12 +164,12 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
           <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p className="text-gray-900 dark:text-white font-bold text-xl mb-2">No posts found</p>
+          <p className="text-gray-900 dark:text-white font-bold text-xl mb-2">ไม่พบโพสต์</p>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            We couldn&apos;t find any posts matching &quot;{searchQuery}&quot;
+            เราไม่พบโพสต์ที่ตรงกับ &quot;{searchQuery}&quot;
           </p>
           <p className="text-gray-500 dark:text-gray-400 text-sm">
-            Clear the search in the navigation bar to see all posts
+            ล้างการค้นหาในแถบนำทางเพื่อดูโพสต์ทั้งหมด
           </p>
         </div>
       )}

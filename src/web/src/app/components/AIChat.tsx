@@ -252,9 +252,9 @@ export default function AIChat() {
         <div className="flex items-center space-x-3">
           <div className="w-3 h-3 bg-[#0066CC] rounded-full animate-pulse"></div>
           <div>
-            <h3 className="font-semibold">Your Support Assistant</h3>
+            <h3 className="font-semibold">ผู้ช่วยของคุณ</h3>
             <p className="text-xs opacity-90">
-              {threadId ? `We&apos;re here to help` : 'Ask us anything, anytime'}
+              {threadId ? `เราพร้อมช่วยเหลือคุณ` : 'ถามเราได้ทุกเรื่อง ทุกเวลา'}
             </p>
           </div>
         </div>
@@ -293,7 +293,7 @@ export default function AIChat() {
                 </svg>
               </div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Hi there! I&apos;m here to help you understand your rights, explore benefits, and find the support you need.
+                สวัสดีค่ะ! ฉันพร้อมช่วยคุณทำความเข้าใจสิทธิของคุณ สำรวจสวัสดิการ และหาการสนับสนุนที่คุณต้องการ
               </p>
             </div>
           </div>
@@ -497,7 +497,7 @@ export default function AIChat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type your message..."
+            placeholder="พิมพ์ข้อความของคุณ..."
             disabled={loading}
             className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50"
           />
