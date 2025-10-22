@@ -10,6 +10,7 @@ import Link from 'next/link';
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t } = useLanguage();
 
   return (
@@ -18,7 +19,7 @@ export default function Home() {
       <nav className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white sticky top-0 z-40 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 max-w-7xl">
           <div className="flex items-center justify-between gap-2 sm:gap-6">
-            <div className="flex items-center space-x-4 sm:space-x-8">
+            <div className="flex items-center space-x-4 sm:space-x-8 flex-1 min-w-0">
               <Link href="/" className="flex items-center flex-shrink-0">
                 <Image
                   src="/theglobe-logo.jpg"
@@ -35,7 +36,7 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Search Bar in Navbar */}
+            {/* Search Bar in Navbar - Desktop Only */}
             <div className="hidden lg:flex flex-1 max-w-md">
               <div className="relative w-full">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -63,7 +64,22 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 sm:space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Toggle menu"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {mobileMenuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  )}
+                </svg>
+              </button>
+              
               <LanguageToggle />
               <Link href="/admin" className="text-xs sm:text-sm hover:text-[#0066CC] transition-colors font-medium hidden sm:block">
                 {t('nav.admin')}
@@ -73,6 +89,26 @@ export default function Home() {
               </button>
             </div>
           </div>
+          
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-4 pb-3 border-t border-gray-200 dark:border-gray-700 pt-4">
+              <div className="flex flex-col space-y-3">
+                <a href="#" className="text-sm font-medium hover:text-[#0066CC] transition-colors py-1">
+                  {t('nav.benefits')}
+                </a>
+                <a href="#" className="text-sm font-medium hover:text-[#0066CC] transition-colors py-1">
+                  {t('nav.services')}
+                </a>
+                <a href="#" className="text-sm font-medium hover:text-[#0066CC] transition-colors py-1">
+                  {t('nav.getHelp')}
+                </a>
+                <Link href="/admin" className="text-sm font-medium hover:text-[#0066CC] transition-colors py-1 sm:hidden">
+                  {t('nav.admin')}
+                </Link>
+              </div>
+            </div>
+          )}
           
           {/* Mobile Search Bar */}
           <div className="lg:hidden mt-3 sm:mt-4">
