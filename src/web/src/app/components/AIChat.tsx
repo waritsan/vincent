@@ -265,26 +265,26 @@ export default function AIChat() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white dark:bg-gray-800 rounded-lg shadow-2xl flex flex-col z-50 border border-gray-200 dark:border-gray-700">
+    <div className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-[calc(100vh-2rem)] sm:h-[600px] bg-white dark:bg-gray-800 rounded-lg shadow-2xl flex flex-col z-50 border border-gray-200 dark:border-gray-700">
       {/* Header */}
-      <div className="bg-black text-white p-4 rounded-t-lg flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-3 h-3 bg-[#0066CC] rounded-full animate-pulse"></div>
-          <div>
-            <h3 className="font-semibold">{t('chat.title')}</h3>
-            <p className="text-xs opacity-90">
+      <div className="bg-black text-white p-3 sm:p-4 rounded-t-lg flex items-center justify-between">
+        <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#0066CC] rounded-full animate-pulse flex-shrink-0"></div>
+          <div className="min-w-0">
+            <h3 className="font-semibold text-sm sm:text-base truncate">{t('chat.title')}</h3>
+            <p className="text-xs opacity-90 truncate">
               {threadId ? t('chat.statusReady') : t('chat.statusAvailable')}
             </p>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
           {messages.length > 0 && (
             <button
               onClick={clearChat}
               className="hover:bg-white/20 p-1 rounded transition-colors"
               aria-label="Clear chat"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
@@ -302,16 +302,16 @@ export default function AIChat() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50 dark:bg-gray-900">
         {messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center">
+          <div className="h-full flex items-center justify-center px-4">
             <div className="text-center space-y-3">
-              <div className="w-16 h-16 bg-[#0066CC] rounded-full mx-auto flex items-center justify-center">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#0066CC] rounded-full mx-auto flex items-center justify-center">
+                <svg className="w-7 h-7 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
                 {t('chat.welcome')}
               </p>
             </div>
@@ -324,14 +324,14 @@ export default function AIChat() {
                 className={`flex items-start space-x-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {message.role === 'assistant' && (
-                  <div className="flex-shrink-0 w-8 h-8 bg-[#0066CC] rounded-full flex items-center justify-center mt-1">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-[#0066CC] rounded-full flex items-center justify-center mt-1">
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                     </svg>
                   </div>
                 )}
                 <div
-                  className={`${message.role === 'user' ? 'max-w-[80%]' : 'max-w-[85%]'} rounded-lg p-3 ${
+                  className={`${message.role === 'user' ? 'max-w-[85%] sm:max-w-[80%]' : 'max-w-[90%] sm:max-w-[85%]'} rounded-lg p-2.5 sm:p-3 ${
                     message.role === 'user'
                       ? 'bg-[#0066CC] text-white'
                       : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 shadow-sm'
@@ -509,7 +509,7 @@ export default function AIChat() {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="flex space-x-2">
           <input
             type="text"
@@ -518,14 +518,14 @@ export default function AIChat() {
             onKeyPress={handleKeyPress}
             placeholder={t('chat.inputPlaceholder')}
             disabled={loading}
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50"
+            className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50"
           />
           <button
             onClick={sendMessage}
             disabled={loading || !input.trim()}
-            className="px-4 py-2 bg-[#0066CC] text-white rounded-lg hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium"
+            className="px-3 sm:px-4 py-2 bg-[#0066CC] text-white rounded-lg hover:bg-[#0052A3] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium flex-shrink-0"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
           </button>

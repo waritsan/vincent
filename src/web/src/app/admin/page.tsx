@@ -203,31 +203,31 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Admin Navigation */}
       <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 shadow-sm">
-        <div className="container mx-auto px-6 py-4 max-w-7xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="flex items-center">
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 max-w-7xl">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
+              <Link href="/" className="flex items-center flex-shrink-0">
                 <Image
                   src="/theglobe-logo.jpg"
                   alt="The Globe"
-                  width={40}
-                  height={40}
-                  className="rounded-sm"
+                  width={36}
+                  height={36}
+                  className="rounded-sm sm:w-10 sm:h-10"
                 />
               </Link>
-              <div className="border-l border-gray-300 dark:border-gray-600 pl-4">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
-                <p className="text-xs text-gray-500">Content Management</p>
+              <div className="border-l border-gray-300 dark:border-gray-600 pl-2 sm:pl-4 min-w-0">
+                <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">Admin Dashboard</h1>
+                <p className="text-xs text-gray-500 hidden sm:block">Content Management</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
               <Link 
                 href="/"
-                className="text-sm text-gray-600 dark:text-gray-400 hover:text-[#0066CC] transition-colors"
+                className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-[#0066CC] transition-colors whitespace-nowrap"
               >
                 View Site
               </Link>
-              <button className="text-sm text-gray-600 dark:text-gray-400 hover:text-[#0066CC] transition-colors">
+              <button className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-[#0066CC] transition-colors hidden sm:block">
                 Logout
               </button>
             </div>
@@ -235,37 +235,37 @@ export default function AdminPage() {
         </div>
       </nav>
 
-      <div className="container mx-auto px-6 py-8 max-w-7xl">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
         {/* Success Message */}
         {successMessage && (
-          <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-sm p-4">
-            <p className="text-green-800 dark:text-green-200 font-semibold">{successMessage}</p>
+          <div className="mb-4 sm:mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-sm p-3 sm:p-4">
+            <p className="text-sm sm:text-base text-green-800 dark:text-green-200 font-semibold">{successMessage}</p>
           </div>
         )}
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-sm p-4">
-            <p className="text-red-800 dark:text-red-200 font-semibold">{error}</p>
+          <div className="mb-4 sm:mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-sm p-3 sm:p-4">
+            <p className="text-sm sm:text-base text-red-800 dark:text-red-200 font-semibold">{error}</p>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Create/Edit Post Form */}
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-sm shadow-sm border border-gray-200 dark:border-gray-700 sticky top-24">
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            <div className="bg-white dark:bg-gray-800 rounded-sm shadow-sm border border-gray-200 dark:border-gray-700 lg:sticky lg:top-24">
+              <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
                   {editingPost ? 'Edit Post' : 'Create New Post'}
                 </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
                   {editingPost ? 'Update post information' : 'Add a new update for citizens'}
                 </p>
               </div>
               
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div>
-                  <label htmlFor="author" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="author" className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Author *
                   </label>
                   <input
@@ -274,13 +274,13 @@ export default function AdminPage() {
                     value={formData.author}
                     onChange={(e) => setFormData({ ...formData, author: e.target.value })}
                     placeholder="Your name"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white"
                     required
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="title" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="title" className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Title *
                   </label>
                   <input
@@ -289,13 +289,13 @@ export default function AdminPage() {
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="Post title"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white"
                     required
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="content" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="content" className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Content *
                   </label>
                   <textarea
@@ -303,8 +303,8 @@ export default function AdminPage() {
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     placeholder="Post content"
-                    rows={8}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white resize-none"
+                    rows={6}
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white resize-none"
                     required
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -313,7 +313,7 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="video_url" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="video_url" className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Video URL (Optional)
                   </label>
                   <input
@@ -321,16 +321,16 @@ export default function AdminPage() {
                     id="video_url"
                     value={formData.video_url}
                     onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                    placeholder="https://youtu.be/... or https://www.youtube.com/watch?v=..."
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white"
+                    placeholder="https://youtu.be/..."
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Add a YouTube video link to embed in your post
+                    Add a YouTube video link
                   </p>
                 </div>
 
                 <div>
-                  <label htmlFor="tags" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="tags" className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Tags (Optional)
                   </label>
                   <input
@@ -339,17 +339,17 @@ export default function AdminPage() {
                     value={formData.tags}
                     onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                     placeholder="healthcare, education, housing"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Separate tags with commas (e.g., healthcare, benefits, support)
+                    Separate tags with commas
                   </p>
                 </div>
 
-                <div className="flex space-x-3 pt-4">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-3 sm:pt-4">
                   <button
                     type="submit"
-                    className="flex-1 bg-[#0066CC] hover:bg-[#0052A3] text-white px-6 py-3 rounded-sm font-semibold transition-colors"
+                    className="flex-1 bg-[#0066CC] hover:bg-[#0052A3] text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-sm text-sm sm:text-base font-semibold transition-colors"
                   >
                     {editingPost ? 'Update Post' : 'Create Post'}
                   </button>
@@ -357,7 +357,7 @@ export default function AdminPage() {
                     <button
                       type="button"
                       onClick={handleCancelEdit}
-                      className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-sm font-semibold transition-colors"
+                      className="px-4 sm:px-6 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-sm text-sm sm:text-base font-semibold transition-colors"
                     >
                       Cancel
                     </button>

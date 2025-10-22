@@ -16,16 +16,16 @@ export default function Home() {
     <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* TED-style Navigation */}
       <nav className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white sticky top-0 z-40 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="container mx-auto px-6 py-4 max-w-7xl">
-          <div className="flex items-center justify-between gap-6">
-            <div className="flex items-center space-x-8">
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 max-w-7xl">
+          <div className="flex items-center justify-between gap-2 sm:gap-6">
+            <div className="flex items-center space-x-4 sm:space-x-8">
               <Link href="/" className="flex items-center flex-shrink-0">
                 <Image
                   src="/theglobe-logo.jpg"
                   alt="The Globe"
-                  width={48}
-                  height={48}
-                  className="rounded-sm"
+                  width={40}
+                  height={40}
+                  className="rounded-sm sm:w-12 sm:h-12"
                 />
               </Link>
               <div className="hidden md:flex space-x-6 text-sm font-medium">
@@ -63,19 +63,19 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <LanguageToggle />
-              <Link href="/admin" className="text-sm hover:text-[#0066CC] transition-colors font-medium hidden sm:block">
+              <Link href="/admin" className="text-xs sm:text-sm hover:text-[#0066CC] transition-colors font-medium hidden sm:block">
                 {t('nav.admin')}
               </Link>
-              <button className="bg-[#0066CC] hover:bg-[#0052A3] text-white px-4 sm:px-6 py-2 rounded-sm text-sm font-semibold transition-colors">
+              <button className="bg-[#0066CC] hover:bg-[#0052A3] text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-sm text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap">
                 {t('nav.myAccount')}
               </button>
             </div>
           </div>
           
           {/* Mobile Search Bar */}
-          <div className="lg:hidden mt-4">
+          <div className="lg:hidden mt-3 sm:mt-4">
             <div className="relative w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,13 +105,13 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 py-20">
-        <div className="container mx-auto px-6 max-w-7xl">
+      <section className="bg-gradient-to-b from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 py-12 sm:py-16 md:py-20">
+        <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
           <div className="text-center max-w-4xl mx-auto">
-            <h2 className="text-5xl md:text-6xl font-bold mb-6 text-gray-900 dark:text-white leading-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-gray-900 dark:text-white leading-tight">
               {t('hero.title')}
             </h2>
-            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-6 sm:mb-8 leading-relaxed px-4">
               {t('hero.description')}
             </p>
           </div>
@@ -119,16 +119,16 @@ export default function Home() {
       </section>
 
       {/* Main Content */}
-      <section className="py-16 bg-white dark:bg-gray-900">
-        <div className="container mx-auto px-6 max-w-7xl">
+      <section className="py-8 sm:py-12 md:py-16 bg-white dark:bg-gray-900">
+        <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
           <BlogPosts searchQuery={searchQuery} />
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-black text-white py-12">
-        <div className="container mx-auto px-6 max-w-7xl">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <footer className="bg-black text-white py-8 sm:py-12">
+        <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
             <div>
               <h3 className="font-bold text-lg mb-4">{t('footer.aboutUs')}</h3>
               <ul className="space-y-2 text-sm text-gray-400">

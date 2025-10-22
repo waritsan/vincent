@@ -163,21 +163,21 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
   }
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8 sm:space-y-12">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
             {t('blog.title')}
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
             {filteredPosts.length} {filteredPosts.length === 1 ? 'โพสต์' : 'โพสต์'} 
             {searchQuery && ' ที่ตรงกับการค้นหา'}เกี่ยวกับสิทธิประโยชน์และสวัสดิการของคุณ
           </p>
         </div>
         <button
           onClick={fetchPosts}
-          className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-sm transition-colors text-sm font-semibold whitespace-nowrap"
+          className="px-4 sm:px-6 py-2 sm:py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-sm transition-colors text-sm font-semibold whitespace-nowrap self-start md:self-auto"
         >
           {t('blog.refresh')}
         </button>
@@ -186,12 +186,12 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
       {/* Tag Filter */}
       {allTags.length > 0 && (
         <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
             {t('blog.filterByTag')}:
           </span>
           <button
             onClick={() => setSelectedTag('')}
-            className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
+            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-full transition-colors ${
               selectedTag === ''
                 ? 'bg-[#0066CC] text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
@@ -203,7 +203,7 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
             <button
               key={tag}
               onClick={() => setSelectedTag(tag === selectedTag ? '' : tag)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-full transition-colors ${
                 selectedTag === tag
                   ? 'bg-[#0066CC] text-white'
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
@@ -233,7 +233,7 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
 
       {/* Posts Grid */}
       {filteredPosts.length > 0 && (
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {filteredPosts.map((post) => {
             const videoId = post.video_url ? getYouTubeVideoId(post.video_url) : null;
           
@@ -284,8 +284,8 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
             )}
 
             {/* Content */}
-            <div className="space-y-3">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-[#0066CC] transition-colors line-clamp-2">
+            <div className="space-y-2 sm:space-y-3">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-[#0066CC] transition-colors line-clamp-2">
                 {post.title}
               </h3>
               
@@ -295,11 +295,11 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
               
               {/* Tags */}
               {post.tags && post.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {post.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full"
+                      className="px-2 py-0.5 sm:py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full"
                     >
                       #{tag}
                     </span>
@@ -309,12 +309,12 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
               
               <div className="flex items-center justify-between pt-2">
                 <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
                     <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
                       {post.author.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                     {post.author}
                   </span>
                 </div>
@@ -331,8 +331,8 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
 
       {/* Load More Button */}
       {filteredPosts.length > 0 && (
-        <div className="text-center pt-8">
-          <button className="px-8 py-3 border-2 border-gray-300 dark:border-gray-600 hover:border-[#0066CC] text-gray-700 dark:text-gray-300 hover:text-[#0066CC] font-semibold rounded-sm transition-colors">
+        <div className="text-center pt-6 sm:pt-8">
+          <button className="px-6 sm:px-8 py-2.5 sm:py-3 border-2 border-gray-300 dark:border-gray-600 hover:border-[#0066CC] text-gray-700 dark:text-gray-300 hover:text-[#0066CC] font-semibold rounded-sm transition-colors text-sm sm:text-base">
             See more updates
           </button>
         </div>
@@ -341,19 +341,19 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
       {/* Post Modal */}
       {selectedPost && (
         <div 
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto"
+          className="fixed inset-0 bg-black/90 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm overflow-y-auto"
           onClick={() => setSelectedPost(null)}
         >
           <div 
-            className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full my-8 shadow-2xl relative"
+            className="bg-white dark:bg-gray-800 sm:rounded-lg max-w-4xl w-full my-0 sm:my-8 shadow-2xl relative min-h-screen sm:min-h-0"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
             <button
               onClick={() => setSelectedPost(null)}
-              className="sticky top-4 float-right mr-4 mt-4 w-10 h-10 rounded-full bg-gray-900/80 hover:bg-gray-900 text-white flex items-center justify-center transition-colors z-20 shadow-lg"
+              className="sticky top-4 float-right mr-3 sm:mr-4 mt-3 sm:mt-4 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-900/80 hover:bg-gray-900 text-white flex items-center justify-center transition-colors z-20 shadow-lg"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -371,8 +371,8 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
               </div>
             ) : (
               <div className="aspect-video w-full bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
-                <div className="w-24 h-24 rounded-full bg-[#0066CC] flex items-center justify-center">
-                  <svg className="w-12 h-12 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#0066CC] flex items-center justify-center">
+                  <svg className="w-10 h-10 sm:w-12 sm:h-12 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z"/>
                   </svg>
                 </div>
@@ -380,26 +380,26 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
             )}
 
             {/* Content */}
-            <div className="p-8">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            <div className="p-4 sm:p-6 md:p-8">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
                 {selectedPost.title}
               </h2>
               
-              <div className="flex items-center space-x-4 mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
-                <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                  <span className="text-lg font-semibold text-gray-600 dark:text-gray-300">
+              <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                  <span className="text-base sm:text-lg font-semibold text-gray-600 dark:text-gray-300">
                     {selectedPost.author.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">{selectedPost.author}</p>
-                  <time className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">{selectedPost.author}</p>
+                  <time className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                     {formatDate(selectedPost.created_at)}
                   </time>
                 </div>
               </div>
 
-              <div className="prose prose-lg dark:prose-invert max-w-none">
+              <div className="prose prose-sm sm:prose-base md:prose-lg dark:prose-invert max-w-none">
                 <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                   {selectedPost.content}
                 </p>
