@@ -490,7 +490,8 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
                             "content": "This is a sample post",
                             "author": "System",
                             "created_at": "2025-10-09T00:00:00Z",
-                            "video_url": ""
+                            "video_url": "",
+                            "tags": ["healthcare", "benefits"]
                         },
                         {
                             "id": "2",
@@ -498,7 +499,8 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
                             "content": "Another sample post",
                             "author": "System",
                             "created_at": "2025-10-09T01:00:00Z",
-                            "video_url": ""
+                            "video_url": "",
+                            "tags": ["education", "support"]
                         },
                         {
                             "id": "3",
@@ -506,7 +508,8 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
                             "content": "This post has a video! Click to watch.",
                             "author": "System",
                             "created_at": "2025-10-20T10:00:00Z",
-                            "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                            "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                            "tags": ["housing", "healthcare"]
                         }
                     ],
                     "total": 3,
@@ -540,6 +543,7 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
             content = req_body.get('content')
             author = req_body.get('author', 'Anonymous')
             video_url = req_body.get('video_url', '')
+            tags = req_body.get('tags', [])
             
             if not title or not content:
                 return create_response({"error": "Title and content are required"}, 400)
@@ -551,6 +555,7 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
                 "content": content,
                 "author": author,
                 "video_url": video_url,
+                "tags": tags if isinstance(tags, list) else [],
                 "created_at": datetime.utcnow().isoformat(),
                 "updated_at": datetime.utcnow().isoformat()
             }
@@ -595,6 +600,7 @@ def update_post(req: func.HttpRequest) -> func.HttpResponse:
         content = req_body.get('content')
         author = req_body.get('author')
         video_url = req_body.get('video_url', '')
+        tags = req_body.get('tags', [])
         
         if not title or not content:
             return create_response({"error": "Title and content are required"}, 400)
@@ -614,6 +620,7 @@ def update_post(req: func.HttpRequest) -> func.HttpResponse:
             existing_post['content'] = content
             existing_post['author'] = author
             existing_post['video_url'] = video_url
+            existing_post['tags'] = tags if isinstance(tags, list) else []
             existing_post['updated_at'] = datetime.utcnow().isoformat()
             
             # Replace the item in Cosmos DB
