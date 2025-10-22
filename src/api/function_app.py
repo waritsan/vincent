@@ -543,6 +543,7 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
             content = req_body.get('content')
             author = req_body.get('author', 'Anonymous')
             video_url = req_body.get('video_url', '')
+            thumbnail_url = req_body.get('thumbnail_url', '')
             tags = req_body.get('tags', [])
             
             if not title or not content:
@@ -555,6 +556,7 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
                 "content": content,
                 "author": author,
                 "video_url": video_url,
+                "thumbnail_url": thumbnail_url,
                 "tags": tags if isinstance(tags, list) else [],
                 "created_at": datetime.utcnow().isoformat(),
                 "updated_at": datetime.utcnow().isoformat()
@@ -600,6 +602,7 @@ def update_post(req: func.HttpRequest) -> func.HttpResponse:
         content = req_body.get('content')
         author = req_body.get('author')
         video_url = req_body.get('video_url', '')
+        thumbnail_url = req_body.get('thumbnail_url', '')
         tags = req_body.get('tags', [])
         
         if not title or not content:
@@ -620,6 +623,7 @@ def update_post(req: func.HttpRequest) -> func.HttpResponse:
             existing_post['content'] = content
             existing_post['author'] = author
             existing_post['video_url'] = video_url
+            existing_post['thumbnail_url'] = thumbnail_url
             existing_post['tags'] = tags if isinstance(tags, list) else []
             existing_post['updated_at'] = datetime.utcnow().isoformat()
             

@@ -10,6 +10,7 @@ interface Post {
   content: string;
   author: string;
   video_url?: string;
+  thumbnail_url?: string;
   created_at: string;
   tags?: string[];
 }
@@ -34,6 +35,7 @@ export default function AdminPage() {
     content: '',
     author: '',
     video_url: '',
+    thumbnail_url: '',
     tags: '' // Comma-separated tags
   });
 
@@ -115,7 +117,7 @@ export default function AdminPage() {
       }
 
       setSuccessMessage(editingPost ? 'Post updated successfully!' : 'Post created successfully!');
-      setFormData({ title: '', content: '', author: '', video_url: '', tags: '' });
+      setFormData({ title: '', content: '', author: '', video_url: '', thumbnail_url: '', tags: '' });
       setIsCreating(false);
       setEditingPost(null);
       fetchPosts();
@@ -133,6 +135,7 @@ export default function AdminPage() {
       content: post.content,
       author: post.author,
       video_url: post.video_url || '',
+      thumbnail_url: post.thumbnail_url || '',
       tags: post.tags ? post.tags.join(', ') : ''
     });
     setIsCreating(true);
@@ -140,7 +143,7 @@ export default function AdminPage() {
 
   const handleCancelEdit = () => {
     setEditingPost(null);
-    setFormData({ title: '', content: '', author: '', video_url: '', tags: '' });
+    setFormData({ title: '', content: '', author: '', video_url: '', thumbnail_url: '', tags: '' });
     setIsCreating(false);
     setError(null);
   };
@@ -326,6 +329,23 @@ export default function AdminPage() {
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Add a YouTube video link
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="thumbnail_url" className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Thumbnail Image URL (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    id="thumbnail_url"
+                    value={formData.thumbnail_url}
+                    onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
+                    placeholder="https://example.com/image.jpg"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Add a thumbnail image URL (used if no video)
                   </p>
                 </div>
 

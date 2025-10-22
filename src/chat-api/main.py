@@ -15,6 +15,11 @@ from azure.ai.projects import AIProjectClient
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Log startup time
+import time
+startup_time = time.time()
+logger.info(f'🏁 Application starting at {startup_time}')
+
 app = FastAPI(title="Chat API", version="1.0.0")
 
 # CORS configuration
@@ -45,6 +50,9 @@ class ChatResponse(BaseModel):
 # Initialize Azure AI Agent client
 def get_ai_agent():
     """Initialize and return Azure AI Agent"""
+    init_start = time.time()
+    logger.info(f'⚙️  Initializing AI Agent client at {init_start - startup_time:.2f}s after startup')
+    
     ai_endpoint = os.environ.get("AZURE_AI_ENDPOINT")
     project_name = os.environ.get("AZURE_AI_PROJECT_NAME", "project-ja67jva7pfqfc")
     agent_id = os.environ.get("AZURE_AI_AGENT_ID")
@@ -63,7 +71,9 @@ def get_ai_agent():
     
     try:
         # Use Managed Identity for authentication (same as Azure Functions)
+        auth_start = time.time()
         credential = DefaultAzureCredential()
+        logger.info(f'🔑 Credential initialized in {time.time() - auth_start:.2f}s')
         
         # Build the correct project endpoint URL
         # Convert from https://cog-xxx.cognitiveservices.azure.com/
@@ -78,17 +88,20 @@ def get_ai_agent():
         logger.info(f"Project Endpoint: {project_endpoint}")
         
         # Create AI Project Client using ONLY endpoint parameter (like Azure Functions)
+        client_start = time.time()
         project_client = AIProjectClient(
             credential=credential,
             endpoint=project_endpoint
         )
         
-        logger.info("AIProjectClient created successfully")
+        logger.info(f"✅ AIProjectClient created in {time.time() - client_start:.2f}s")
         
         # Get the agent
+        agent_get_start = time.time()
         agent = project_client.agents.get_agent(agent_id)
         
-        logger.info(f"Agent retrieved: {agent.id}")
+        logger.info(f"✅ Agent retrieved in {time.time() - agent_get_start:.2f}s: {agent.id}")
+        logger.info(f'🎯 Total AI Agent init time: {time.time() - init_start:.2f}s')
         
         return project_client, agent
     except Exception as e:
@@ -124,7 +137,9 @@ async def chat(request: ChatRequest):
     """
     Chat endpoint with TRUE HTTP streaming support
     """
-    logger.info('Processing chat request')
+    import time
+    start_time = time.time()
+    logger.info(f'🚀 Chat request received at {start_time}')
     
     # Generate IDs
     conversation_id = request.conversation_id or str(uuid.uuid4())
@@ -134,7 +149,9 @@ async def chat(request: ChatRequest):
         raise HTTPException(status_code=400, detail="Message is required")
     
     # Get AI Agent
+    agent_start = time.time()
     project_client, agent = get_ai_agent()
+    logger.info(f'⚙️  AI Agent retrieved in {time.time() - agent_start:.2f}s')
     
     if not project_client or not agent:
         raise HTTPException(
@@ -188,12 +205,19 @@ async def chat(request: ChatRequest):
             async def generate_stream():
                 """Generator function for streaming response"""
                 try:
+                    stream_start = time.time()
+                    logger.info(f'🌊 Starting stream generation at {stream_start - start_time:.2f}s')
+                    
                     # Send initial metadata
                     yield f"data: {json.dumps({'type': 'metadata', 'conversation_id': conversation_id, 'thread_id': thread_id})}\n\n"
                     
                     accumulated_text = ""
+                    first_chunk_sent = False
                     
                     # Create and stream the run - THIS IS TRUE STREAMING!
+                    ai_stream_start = time.time()
+                    logger.info(f'🤖 Initiating Azure AI Agent stream at {ai_stream_start - start_time:.2f}s')
+                    
                     with project_client.agents.runs.stream(
                         thread_id=thread_id,
                         agent_id=agent.id
@@ -201,6 +225,11 @@ async def chat(request: ChatRequest):
                         for event_type, event_data, _ in agent_stream:
                             # Handle text delta events (streaming chunks)
                             if event_type == "thread.message.delta":
+                                if not first_chunk_sent:
+                                    first_chunk_time = time.time()
+                                    logger.info(f'✨ First chunk received at {first_chunk_time - start_time:.2f}s (AI processing: {first_chunk_time - ai_stream_start:.2f}s)')
+                                    first_chunk_sent = True
+                                    
                                 if event_data and 'delta' in event_data:
                                     delta = event_data['delta']
                                     if 'content' in delta:
@@ -210,6 +239,9 @@ async def chat(request: ChatRequest):
                                                 accumulated_text += chunk
                                                 # Send chunk immediately - TRUE STREAMING!
                                                 yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
+                    
+                    completion_time = time.time()
+                    logger.info(f'✅ Stream complete at {completion_time - start_time:.2f}s total')
                     
                     # Send completion signal
                     yield f"data: {json.dumps({'type': 'done', 'full_response': accumulated_text, 'timestamp': datetime.utcnow().isoformat()})}\n\n"

@@ -59,6 +59,10 @@ export default function AIChat() {
     setInput('');
     setLoading(true);
 
+    // Performance monitoring
+    const performanceStart = Date.now();
+    console.log('🚀 Chat request started');
+
     try {
       const apiUrl = process.env.NEXT_PUBLIC_CHAT_API_URL || process.env.NEXT_PUBLIC_API_URL;
       
@@ -82,6 +86,9 @@ export default function AIChat() {
       if (!response.ok) {
         throw new Error(`Failed to send message: ${response.statusText}`);
       }
+
+      const responseReceived = Date.now();
+      console.log(`⏱️  Response received: ${responseReceived - performanceStart}ms`);
 
       // Check if response is streaming (SSE)
       const contentType = response.headers.get('content-type');
@@ -110,6 +117,7 @@ export default function AIChat() {
         let buffer = '';
         const chunkQueue: string[] = [];
         let isProcessing = false;
+        let firstChunkTime: number | null = null;
 
         // Function to process chunks with delay for smooth streaming effect
         const processChunkQueue = async () => {
@@ -173,12 +181,23 @@ export default function AIChat() {
                     setThreadId(data.thread_id);
                   }
                 } else if (data.type === 'chunk') {
+                  // Log first chunk timing
+                  if (!firstChunkTime) {
+                    firstChunkTime = Date.now();
+                    console.log(`✨ First chunk received: ${firstChunkTime - performanceStart}ms`);
+                  }
                   // Add chunk to queue for smooth streaming
                   chunkQueue.push(data.content);
                   processChunkQueue();
                 } else if (data.type === 'done') {
                   // Wait for any pending chunks to be processed
                   await processChunkQueue();
+                  
+                  const completionTime = Date.now();
+                  console.log(`✅ Response complete: ${completionTime - performanceStart}ms total`);
+                  console.log(`   - Network: ${responseReceived - performanceStart}ms`);
+                  console.log(`   - First chunk: ${firstChunkTime ? firstChunkTime - performanceStart : 'N/A'}ms`);
+                  console.log(`   - AI processing: ${completionTime - responseReceived}ms`);
                   
                   // Finalize message and remove streaming cursor
                   setMessages((prev) =>

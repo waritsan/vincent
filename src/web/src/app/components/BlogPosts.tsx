@@ -9,6 +9,7 @@ interface Post {
   content: string;
   author: string;
   video_url?: string;
+  thumbnail_url?: string;
   created_at: string;
   tags?: string[];
 }
@@ -265,6 +266,16 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
                   alt={post.title}
                   className="w-full h-full object-cover"
                 />
+              </div>
+            ) : post.thumbnail_url ? (
+              <div className="aspect-video mb-4 relative overflow-hidden rounded-sm bg-gray-200 dark:bg-gray-800">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={post.thumbnail_url}
+                  alt={post.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
               </div>
             ) : (
               <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-800 mb-4 relative overflow-hidden">
