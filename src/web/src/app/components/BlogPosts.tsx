@@ -380,8 +380,17 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
                   className="w-full h-full border-0"
                 ></iframe>
               </div>
+            ) : selectedPost.thumbnail_url ? (
+              <div className="aspect-video w-full bg-gray-200 dark:bg-gray-900 relative clear-both overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={selectedPost.thumbnail_url}
+                  alt={selectedPost.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
             ) : (
-              <div className="aspect-video w-full bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
+              <div className="aspect-video w-full bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center clear-both">
                 <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#0066CC] flex items-center justify-center">
                   <svg className="w-10 h-10 sm:w-12 sm:h-12 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z"/>
