@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 const inter = Inter({
   weight: ['300', '400', '500', '600', '700', '800'],
@@ -17,7 +18,7 @@ const notoSansThai = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  title: "สิทธิของเรา ผลประโยชน์ของเรา | เดอะโกลบ",
+  title: "สิทธิของเรา ผลประโยชน์ของเรา | The GLOBE",
   description: "ค้นพบสิทธิประโยชน์ สวัสดิการ และบริการภาครัฐที่จำเป็นซึ่งออกแบบมาเพื่อสนับสนุนคุณ",
   icons: {
     icon: '/theglobe-logo.jpg',
@@ -35,7 +36,9 @@ export default function RootLayout({
         className={`${inter.variable} ${notoSansThai.variable} font-sans antialiased`}
         style={{ fontFamily: 'var(--font-noto-sans-thai), var(--font-inter), sans-serif' }}
       >
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

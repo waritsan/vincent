@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface Message {
   id: string;
@@ -33,6 +34,7 @@ export default function AIChat() {
   const [conversationId] = useState(`conv-${Date.now()}`);
   const [threadId, setThreadId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -135,7 +137,21 @@ export default function AIChat() {
         while (true) {
           const { done, value } = await reader.read();
           
-          if (done) break;
+          if (done) {
+            // Wait for any remaining chunks in queue to be processed
+            while (chunkQueue.length > 0 || isProcessing) {
+              await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            // Ensure streaming flag is removed
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantMessageId && msg.isStreaming
+                  ? { ...msg, isStreaming: false }
+                  : msg
+              )
+            );
+            break;
+          }
           
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
@@ -160,7 +176,10 @@ export default function AIChat() {
                   chunkQueue.push(data.content);
                   processChunkQueue();
                 } else if (data.type === 'done') {
-                  // Finalize message
+                  // Wait for any pending chunks to be processed
+                  await processChunkQueue();
+                  
+                  // Finalize message and remove streaming cursor
                   setMessages((prev) =>
                     prev.map((msg) =>
                       msg.id === assistantMessageId
@@ -252,9 +271,9 @@ export default function AIChat() {
         <div className="flex items-center space-x-3">
           <div className="w-3 h-3 bg-[#0066CC] rounded-full animate-pulse"></div>
           <div>
-            <h3 className="font-semibold">ผู้ช่วยของคุณ</h3>
+            <h3 className="font-semibold">{t('chat.title')}</h3>
             <p className="text-xs opacity-90">
-              {threadId ? `เราพร้อมช่วยเหลือคุณ` : 'ถามเราได้ทุกเรื่อง ทุกเวลา'}
+              {threadId ? t('chat.statusReady') : t('chat.statusAvailable')}
             </p>
           </div>
         </div>
@@ -293,7 +312,7 @@ export default function AIChat() {
                 </svg>
               </div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                สวัสดีค่ะ! ฉันพร้อมช่วยคุณทำความเข้าใจสิทธิของคุณ สำรวจสวัสดิการ และหาการสนับสนุนที่คุณต้องการ
+                {t('chat.welcome')}
               </p>
             </div>
           </div>
@@ -465,7 +484,7 @@ export default function AIChat() {
                 )}
               </div>
             ))}
-            {loading && (
+            {loading && !messages.some(msg => msg.isStreaming) && (
               <div className="flex items-start space-x-2 justify-start">
                 <div className="flex-shrink-0 w-8 h-8 bg-[#0066CC] rounded-full flex items-center justify-center mt-1">
                   <svg className="w-4 h-4 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -497,7 +516,7 @@ export default function AIChat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="พิมพ์ข้อความของคุณ..."
+            placeholder={t('chat.inputPlaceholder')}
             disabled={loading}
             className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50"
           />

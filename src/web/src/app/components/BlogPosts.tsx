@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface Post {
   id: string;
@@ -25,6 +26,7 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchPosts();
@@ -117,13 +119,13 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
   if (error) {
     return (
       <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-sm p-8 text-center max-w-2xl mx-auto">
-        <p className="text-gray-900 dark:text-white font-bold text-xl mb-2">ไม่สามารถโหลดข้อมูลได้</p>
+        <p className="text-gray-900 dark:text-white font-bold text-xl mb-2">{t('blog.error')}</p>
         <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
         <button
           onClick={fetchPosts}
           className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-sm transition-colors font-semibold"
         >
-          ลองอีกครั้ง
+          {t('blog.tryAgain')}
         </button>
       </div>
     );
@@ -132,7 +134,7 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
   if (posts.length === 0) {
     return (
       <div className="text-center py-20">
-        <p className="text-gray-600 dark:text-gray-400 text-xl">ยังไม่มีข้อมูลในขณะนี้ กรุณาตรวจสอบอีกครั้งในภายหลัง!</p>
+        <p className="text-gray-600 dark:text-gray-400 text-xl">{t('blog.emptyState')}</p>
       </div>
     );
   }
@@ -143,7 +145,7 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            ข่าวสารใหม่สำหรับคุณ
+            {t('blog.title')}
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
             {filteredPosts.length} {filteredPosts.length === 1 ? 'โพสต์' : 'โพสต์'} 
@@ -154,7 +156,7 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
           onClick={fetchPosts}
           className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-sm transition-colors text-sm font-semibold whitespace-nowrap"
         >
-          รีเฟรช
+          {t('blog.refresh')}
         </button>
       </div>
 
@@ -164,12 +166,12 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
           <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p className="text-gray-900 dark:text-white font-bold text-xl mb-2">ไม่พบโพสต์</p>
+          <p className="text-gray-900 dark:text-white font-bold text-xl mb-2">{t('blog.noResults')}</p>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            เราไม่พบโพสต์ที่ตรงกับ &quot;{searchQuery}&quot;
+            {t('blog.noResultsDesc')} &quot;{searchQuery}&quot;
           </p>
           <p className="text-gray-500 dark:text-gray-400 text-sm">
-            ล้างการค้นหาในแถบนำทางเพื่อดูโพสต์ทั้งหมด
+            {t('blog.clearSearch')}
           </p>
         </div>
       )}
