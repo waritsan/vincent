@@ -31,7 +31,6 @@ export default function Home() {
               <div className="hidden md:flex space-x-6 text-sm font-medium">
                 <a href="#" className="hover:text-[#0066CC] transition-colors">{t('nav.benefits')}</a>
                 <a href="#" className="hover:text-[#0066CC] transition-colors">{t('nav.services')}</a>
-                <a href="#" className="hover:text-[#0066CC] transition-colors">{t('nav.yourRights')}</a>
                 <a href="#" className="hover:text-[#0066CC] transition-colors">{t('nav.getHelp')}</a>
               </div>
             </div>
