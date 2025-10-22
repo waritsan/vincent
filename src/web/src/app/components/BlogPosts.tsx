@@ -8,6 +8,7 @@ interface Post {
   title: string;
   content: string;
   author: string;
+  author_avatar?: string;
   video_url?: string;
   thumbnail_url?: string;
   created_at: string;
@@ -320,11 +321,22 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
               
               <div className="flex items-center justify-between pt-2">
                 <div className="flex items-center space-x-2">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
-                      {post.author.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                  {post.author_avatar ? (
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={post.author_avatar}
+                        alt={post.author}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                      <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                        {post.author.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
                   <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                     {post.author}
                   </span>
@@ -371,7 +383,7 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
 
             {/* Video or Image */}
             {selectedPost.video_url && getYouTubeVideoId(selectedPost.video_url) ? (
-              <div className="aspect-video w-full bg-black relative clear-both">
+              <div className="w-full bg-black relative clear-both" style={{ aspectRatio: '16/9' }}>
                 <iframe
                   src={`https://www.youtube.com/embed/${getYouTubeVideoId(selectedPost.video_url)}`}
                   title={selectedPost.title}
@@ -381,12 +393,12 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
                 ></iframe>
               </div>
             ) : selectedPost.thumbnail_url ? (
-              <div className="aspect-video w-full bg-gray-200 dark:bg-gray-900 relative clear-both overflow-hidden">
+              <div className="w-full bg-gray-100 dark:bg-gray-900 relative clear-both flex items-center justify-center" style={{ minHeight: '300px', maxHeight: '70vh' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={selectedPost.thumbnail_url}
                   alt={selectedPost.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-auto max-h-[70vh] object-contain"
                 />
               </div>
             ) : (
@@ -406,11 +418,22 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
               </h2>
               
               <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-gray-200 dark:border-gray-700">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                  <span className="text-base sm:text-lg font-semibold text-gray-600 dark:text-gray-300">
-                    {selectedPost.author.charAt(0).toUpperCase()}
-                  </span>
-                </div>
+                {selectedPost.author_avatar ? (
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                      src={selectedPost.author_avatar}
+                      alt={selectedPost.author}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                    <span className="text-base sm:text-lg font-semibold text-gray-600 dark:text-gray-300">
+                      {selectedPost.author.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
                 <div>
                   <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">{selectedPost.author}</p>
                   <time className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">

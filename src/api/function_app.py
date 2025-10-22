@@ -542,6 +542,7 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
             title = req_body.get('title')
             content = req_body.get('content')
             author = req_body.get('author', 'Anonymous')
+            author_avatar = req_body.get('author_avatar', '')
             video_url = req_body.get('video_url', '')
             thumbnail_url = req_body.get('thumbnail_url', '')
             tags = req_body.get('tags', [])
@@ -555,6 +556,7 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
                 "title": title,
                 "content": content,
                 "author": author,
+                "author_avatar": author_avatar,
                 "video_url": video_url,
                 "thumbnail_url": thumbnail_url,
                 "tags": tags if isinstance(tags, list) else [],
@@ -601,6 +603,7 @@ def update_post(req: func.HttpRequest) -> func.HttpResponse:
         title = req_body.get('title')
         content = req_body.get('content')
         author = req_body.get('author')
+        author_avatar = req_body.get('author_avatar', '')
         video_url = req_body.get('video_url', '')
         thumbnail_url = req_body.get('thumbnail_url', '')
         tags = req_body.get('tags', [])
@@ -622,6 +625,7 @@ def update_post(req: func.HttpRequest) -> func.HttpResponse:
             existing_post['title'] = title
             existing_post['content'] = content
             existing_post['author'] = author
+            existing_post['author_avatar'] = author_avatar
             existing_post['video_url'] = video_url
             existing_post['thumbnail_url'] = thumbnail_url
             existing_post['tags'] = tags if isinstance(tags, list) else []
