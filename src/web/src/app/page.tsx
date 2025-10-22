@@ -48,7 +48,6 @@ export default function Home() {
 
             {/* Right: Language Toggle & Account Button */}
             <div className="flex items-center space-x-2">
-              <LanguageToggle />
               <button className="bg-[#0066CC] hover:bg-[#0052A3] text-white px-3 py-1.5 rounded-sm text-xs font-semibold transition-colors whitespace-nowrap">
                 {t('nav.myAccount')}
               </button>
@@ -103,7 +102,6 @@ export default function Home() {
             </div>
 
             <div className="flex items-center space-x-4 flex-shrink-0">
-              <LanguageToggle />
               <Link href="/admin" className="text-sm hover:text-[#0066CC] transition-colors font-medium">
                 {t('nav.admin')}
               </Link>
@@ -218,8 +216,11 @@ export default function Home() {
               <p className="text-sm text-gray-400">{t('hero.description')}</p>
             </div>
           </div>
-          <div className="border-t border-gray-800 pt-8 text-sm text-gray-400 text-center">
-            <p>{t('footer.copyright')}</p>
+          <div className="border-t border-gray-800 pt-8 text-sm text-gray-400">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-center sm:text-left">{t('footer.copyright')}</p>
+              <LanguageToggle />
+            </div>
           </div>
         </div>
       </footer>
