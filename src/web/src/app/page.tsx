@@ -102,9 +102,6 @@ export default function Home() {
             </div>
 
             <div className="flex items-center space-x-4 flex-shrink-0">
-              <Link href="/admin" className="text-sm hover:text-[#0066CC] transition-colors font-medium">
-                {t('nav.admin')}
-              </Link>
               <button className="bg-[#0066CC] hover:bg-[#0052A3] text-white px-6 py-2 rounded-sm text-sm font-semibold transition-colors whitespace-nowrap">
                 {t('nav.myAccount')}
               </button>
@@ -153,9 +150,6 @@ export default function Home() {
                 <a href="#" className="text-sm font-medium hover:text-[#0066CC] transition-colors py-1">
                   {t('nav.getHelp')}
                 </a>
-                <Link href="/admin" className="text-sm font-medium hover:text-[#0066CC] transition-colors py-1">
-                  {t('nav.admin')}
-                </Link>
               </div>
             </div>
           )}
@@ -219,7 +213,12 @@ export default function Home() {
           <div className="border-t border-gray-800 pt-8 text-sm text-gray-400">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <p className="text-center sm:text-left">{t('footer.copyright')}</p>
-              <LanguageToggle />
+              <div className="flex items-center gap-4">
+                <Link href="/admin" className="hover:text-white transition-colors">
+                  {t('nav.admin')}
+                </Link>
+                <LanguageToggle />
+              </div>
             </div>
           </div>
         </div>
