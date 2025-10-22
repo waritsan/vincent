@@ -31,6 +31,7 @@ export default function AIChat() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [conversationId] = useState(`conv-${Date.now()}`);
   const [threadId, setThreadId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -265,7 +266,13 @@ export default function AIChat() {
   }
 
   return (
-    <div className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-[calc(100vh-2rem)] sm:h-[600px] bg-white dark:bg-gray-800 rounded-lg shadow-2xl flex flex-col z-50 border border-gray-200 dark:border-gray-700">
+    <div 
+      className={`fixed bg-white dark:bg-gray-800 rounded-lg shadow-2xl flex flex-col z-50 border border-gray-200 dark:border-gray-700 transition-all duration-300 ${
+        isMaximized 
+          ? 'inset-4 sm:inset-8 md:inset-12' // Maximized: larger padding from edges on desktop/tablet
+          : 'bottom-4 sm:bottom-6 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-[calc(100vh-2rem)] sm:h-[600px]' // Normal size
+      }`}
+    >
       {/* Header */}
       <div className="bg-black text-white p-3 sm:p-4 rounded-t-lg flex items-center justify-between">
         <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
@@ -289,6 +296,20 @@ export default function AIChat() {
               </svg>
             </button>
           )}
+          {/* Maximize/Minimize Button - Hidden on mobile */}
+          <button
+            onClick={() => setIsMaximized(!isMaximized)}
+            className="hidden sm:block hover:bg-white/20 p-1 rounded transition-colors"
+            aria-label={isMaximized ? "Minimize chat" : "Maximize chat"}
+          >
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {isMaximized ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              )}
+            </svg>
+          </button>
           <button
             onClick={() => setIsOpen(false)}
             className="hover:bg-white/20 p-1 rounded transition-colors"
