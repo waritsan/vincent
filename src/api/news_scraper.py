@@ -34,8 +34,14 @@ def scrape_dbd_news(limit: int = 10) -> List[Dict]:
         logger.info(f'Fetching news from DBD API: {url}')
         
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'th',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Referer': 'https://www.dbd.go.th/news/1656067670544/list',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Dest': 'empty',
         }
         
         response = requests.get(url, headers=headers, timeout=10)
