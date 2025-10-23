@@ -419,12 +419,38 @@ export default function AdminPage() {
                         {loading ? 'Loading...' : `${filteredPosts.length} of ${posts.length} posts`}
                       </p>
                     </div>
-                    <button
-                      onClick={fetchPosts}
-                      className="px-4 py-2 text-sm text-[#0066CC] hover:bg-blue-50 dark:hover:bg-gray-700 rounded-sm transition-colors font-semibold"
-                    >
-                      Refresh
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+                            if (!apiUrl) throw new Error('API URL not configured');
+                            
+                            setLoading(true);
+                            const response = await fetch(`${apiUrl}/api/news/fetch?limit=5&save=true`);
+                            if (!response.ok) throw new Error('Failed to fetch news');
+                            
+                            const data = await response.json();
+                            setSuccessMessage(`Fetched ${data.total} news articles from DBD`);
+                            fetchPosts();
+                            setTimeout(() => setSuccessMessage(null), 3000);
+                          } catch (err) {
+                            setError(err instanceof Error ? err.message : 'Failed to fetch news');
+                          } finally {
+                            setLoading(false);
+                          }
+                        }}
+                        className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-sm transition-colors font-semibold"
+                      >
+                        📰 Fetch DBD News
+                      </button>
+                      <button
+                        onClick={fetchPosts}
+                        className="px-4 py-2 text-sm text-[#0066CC] hover:bg-blue-50 dark:hover:bg-gray-700 rounded-sm transition-colors font-semibold"
+                      >
+                        Refresh
+                      </button>
+                    </div>
                   </div>
                   
                   {/* Search Bar */}

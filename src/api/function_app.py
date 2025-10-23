@@ -693,6 +693,67 @@ def delete_post(req: func.HttpRequest) -> func.HttpResponse:
         return create_response({"error": "Internal server error"}, 500)
 
 
+@app.route(route="news/fetch", methods=["GET"])
+def fetch_news(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Fetch news from DBD website and return as posts
+    GET /api/news/fetch?limit=10&save=false
+    """
+    logging.info('Processing news fetch request')
+    
+    try:
+        from news_scraper import fetch_news_as_posts
+        
+        # Get query parameters
+        limit = int(req.params.get('limit', '10'))
+        save_to_db = req.params.get('save', 'false').lower() == 'true'
+        
+        # Fetch news
+        news_posts = fetch_news_as_posts(limit)
+        
+        if not news_posts:
+            return create_response({"error": "Failed to fetch news", "posts": []}, 500)
+        
+        # Optionally save to database
+        saved_posts = []
+        if save_to_db:
+            container = get_cosmos_container()
+            if container:
+                for post in news_posts:
+                    try:
+                        # Add required fields
+                        post['id'] = str(uuid.uuid4())
+                        post['created_at'] = datetime.utcnow().isoformat()
+                        post['updated_at'] = datetime.utcnow().isoformat()
+                        
+                        # Save to Cosmos DB
+                        created_item = container.create_item(body=post)
+                        saved_posts.append(created_item)
+                    except Exception as e:
+                        logging.error(f"Error saving post: {e}")
+                        continue
+                
+                return create_response({
+                    "message": f"Fetched and saved {len(saved_posts)} news articles",
+                    "posts": saved_posts,
+                    "total": len(saved_posts)
+                })
+        
+        # Return without saving
+        return create_response({
+            "message": f"Fetched {len(news_posts)} news articles",
+            "posts": news_posts,
+            "total": len(news_posts)
+        })
+        
+    except ImportError as e:
+        logging.error(f"Failed to import news_scraper: {e}")
+        return create_response({"error": "News scraper not available"}, 503)
+    except Exception as e:
+        logging.error(f"Error fetching news: {e}")
+        return create_response({"error": str(e)}, 500)
+
+
 @app.route(route="health", methods=["GET"])
 def health(req: func.HttpRequest) -> func.HttpResponse:
     """Health check endpoint"""
