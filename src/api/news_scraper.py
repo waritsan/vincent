@@ -23,6 +23,66 @@ def clean_html_text(html_text: str) -> str:
     return text.strip()
 
 
+def parse_thai_date(thai_date: str) -> str:
+    """
+    Convert Thai date format to ISO format
+    Input: "22 ตุลาคม 2568" or "October 22, 2025"
+    Output: "2025-10-22T00:00:00Z"
+    """
+    if not thai_date:
+        return datetime.utcnow().isoformat()
+    
+    try:
+        # Thai month names mapping
+        thai_months = {
+            'มกราคม': 1, 'กุมภาพันธ์': 2, 'มีนาคม': 3, 'เมษายน': 4,
+            'พฤษภาคม': 5, 'มิถุนายน': 6, 'กรกฎาคม': 7, 'สิงหาคม': 8,
+            'กันยายน': 9, 'ตุลาคม': 10, 'พฤศจิกายน': 11, 'ธันวาคม': 12
+        }
+        
+        # English month names (some DBD articles use English dates)
+        english_months = {
+            'January': 1, 'February': 2, 'March': 3, 'April': 4,
+            'May': 5, 'June': 6, 'July': 7, 'August': 8,
+            'September': 9, 'October': 10, 'November': 11, 'December': 12
+        }
+        
+        # Try to parse Thai format: "22 ตุลาคม 2568"
+        parts = thai_date.strip().split()
+        if len(parts) == 3:
+            day = int(parts[0])
+            month_name = parts[1]
+            year = int(parts[2])
+            
+            # Check if it's Thai month
+            if month_name in thai_months:
+                month = thai_months[month_name]
+                # Convert Buddhist year to Gregorian (subtract 543)
+                if year > 2500:
+                    year -= 543
+            # Check if it's English month
+            elif month_name in english_months:
+                month = english_months[month_name]
+            else:
+                raise ValueError(f"Unknown month: {month_name}")
+            
+            # Create datetime object
+            date_obj = datetime(year, month, day)
+            return date_obj.isoformat() + 'Z'
+        
+        # Try to parse English format: "October 22, 2025"
+        if ',' in thai_date:
+            date_obj = datetime.strptime(thai_date, '%B %d, %Y')
+            return date_obj.isoformat() + 'Z'
+        
+        # Fallback
+        return datetime.utcnow().isoformat()
+        
+    except Exception as e:
+        logger.warning(f"Failed to parse date '{thai_date}': {e}")
+        return datetime.utcnow().isoformat()
+
+
 def scrape_dbd_news(limit: int = 10) -> List[Dict]:
     """
     Fetch news from DBD API
@@ -77,11 +137,15 @@ def scrape_dbd_news(limit: int = 10) -> List[Dict]:
                 # Build article URL
                 article_url = f'https://www.dbd.go.th/news/{slug}' if slug else 'https://www.dbd.go.th'
                 
+                # Parse the date to ISO format
+                iso_date = parse_thai_date(date)
+                
                 article = {
                     'title': title,
                     'content': content_text,
                     'link': article_url,
-                    'date': date,
+                    'date': date,  # Original date string for display
+                    'created_at': iso_date,  # Parsed ISO date for database
                     'image_url': thumbnail if thumbnail else '',
                     'source': 'กรมพัฒนาธุรกิจการค้า (DBD)'
                 }
@@ -122,7 +186,8 @@ def fetch_news_as_posts(limit: int = 10) -> List[Dict]:
             'thumbnail_url': article.get('image_url', ''),
             'tags': ['ข่าวประชาสัมพันธ์', 'DBD', 'กรมพัฒนาธุรกิจการค้า'],
             'source_url': article['link'],
-            'is_external': True  # Mark as external content
+            'is_external': True,  # Mark as external content
+            'created_at': article.get('created_at')  # Use article's original date
         }
         posts.append(post)
     

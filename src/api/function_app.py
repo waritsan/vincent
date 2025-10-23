@@ -723,7 +723,9 @@ def fetch_news(req: func.HttpRequest) -> func.HttpResponse:
                     try:
                         # Add required fields
                         post['id'] = str(uuid.uuid4())
-                        post['created_at'] = datetime.utcnow().isoformat()
+                        # Use article's original date if available, otherwise use current time
+                        if 'created_at' not in post:
+                            post['created_at'] = datetime.utcnow().isoformat()
                         post['updated_at'] = datetime.utcnow().isoformat()
                         
                         # Save to Cosmos DB
