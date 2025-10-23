@@ -1,12 +1,13 @@
 """
 News scraper for DBD (Department of Business Development) website
-Fetches news articles from DBD API: https://www.dbd.go.th/api/frontend/content/category/1656067670544
+Fetches news articles from DBD API: https://www.dbd.go.th/api/frontend/content/category/
+Supports multiple categories: Press Release, Activities, etc.
 """
 
 import logging
 import re
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional
 import requests
 
 logger = logging.getLogger(__name__)
@@ -83,15 +84,26 @@ def parse_thai_date(thai_date: str) -> str:
         return datetime.utcnow().isoformat()
 
 
-def scrape_dbd_news(limit: int = 10) -> List[Dict]:
+def scrape_dbd_news(limit: int = 10, keyword: str = '') -> List[Dict]:
     """
     Fetch news from DBD API
-    Returns a list of news articles with title, content, link, date, image_url, and source
+    
+    Args:
+        limit: Number of articles to fetch (default: 10)
+        keyword: Optional keyword to filter articles (e.g., 'นอมินี', 'SME', 'แฟรนไชส์')
+    
+    Returns:
+        List of news articles with title, content, link, date, image_url, and source
     """
+    # Build URL with optional keyword parameter
     url = f'https://www.dbd.go.th/api/frontend/content/category/1656067670544?page=1&limit={limit}&slug=1656067670544'
+    if keyword:
+        import urllib.parse
+        encoded_keyword = urllib.parse.quote(keyword)
+        url += f'&keyword={encoded_keyword}'
     
     try:
-        logger.info(f'Fetching news from DBD API: {url}')
+        logger.info(f'Fetching news from DBD API with keyword: "{keyword if keyword else "none"}"')
         
         headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15',
@@ -115,8 +127,9 @@ def scrape_dbd_news(limit: int = 10) -> List[Dict]:
         
         articles = []
         results = data.get('data', {}).get('result', [])
+        total = data.get('data', {}).get('total', 0)
         
-        logger.info(f'Found {len(results)} articles from API')
+        logger.info(f'Found {total} total articles, fetching {len(results)} results')
         
         for item in results[:limit]:
             try:
@@ -130,9 +143,6 @@ def scrape_dbd_news(limit: int = 10) -> List[Dict]:
                 
                 # Clean HTML from text content
                 content_text = clean_html_text(text) if text else intro
-                # Truncate to reasonable length for post content
-                if len(content_text) > 500:
-                    content_text = content_text[:500] + '...'
                 
                 # Build article URL
                 article_url = f'https://www.dbd.go.th/news/{slug}' if slug else 'https://www.dbd.go.th'
@@ -168,15 +178,28 @@ def scrape_dbd_news(limit: int = 10) -> List[Dict]:
         return []
 
 
-def fetch_news_as_posts(limit: int = 10) -> List[Dict]:
+def fetch_news_as_posts(limit: int = 10, keyword: str = '') -> List[Dict]:
     """
     Fetch news and format as post objects for the database
-    Returns a list of post objects with all required fields
+    
+    Args:
+        limit: Number of articles to fetch
+        keyword: Optional keyword to filter articles
+    
+    Returns:
+        List of post objects with all required fields
     """
-    news_articles = scrape_dbd_news(limit)
+    news_articles = scrape_dbd_news(limit, keyword)
     
     posts = []
     for article in news_articles:
+        # Base tags
+        tags = ['ข่าวประชาสัมพันธ์', 'DBD', 'กรมพัฒนาธุรกิจการค้า']
+        
+        # Add keyword as a tag if provided
+        if keyword and keyword not in tags:
+            tags.append(keyword)
+        
         # Format as post object
         post = {
             'title': article['title'],
@@ -184,7 +207,7 @@ def fetch_news_as_posts(limit: int = 10) -> List[Dict]:
             'author': 'กรมพัฒนาธุรกิจการค้า (DBD)',
             'author_avatar': 'https://www.dbd.go.th/images/Logo100.png',
             'thumbnail_url': article.get('image_url', ''),
-            'tags': ['ข่าวประชาสัมพันธ์', 'DBD', 'กรมพัฒนาธุรกิจการค้า'],
+            'tags': tags,
             'source_url': article['link'],
             'is_external': True,  # Mark as external content
             'created_at': article.get('created_at')  # Use article's original date

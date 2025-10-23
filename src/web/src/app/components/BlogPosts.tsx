@@ -31,11 +31,17 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [selectedTag, setSelectedTag] = useState('');
+  const [visibleCount, setVisibleCount] = useState(6);
   const { t } = useLanguage();
 
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(6);
+  }, [searchQuery, selectedTag]);
 
   // Helper function to extract YouTube video ID from various URL formats
   const getYouTubeVideoId = (url: string): string | null => {
@@ -236,7 +242,7 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
       {/* Posts Grid */}
       {filteredPosts.length > 0 && (
         <div className="grid gap-4 sm:gap-6 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredPosts.map((post) => {
+          {filteredPosts.slice(0, visibleCount).map((post) => {
             const videoId = post.video_url ? getYouTubeVideoId(post.video_url) : null;
           
           return (
@@ -269,14 +275,14 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
                 />
               </div>
             ) : post.thumbnail_url ? (
-              <div className="aspect-video mb-4 relative overflow-hidden rounded-sm bg-gray-200 dark:bg-gray-800">
+              <div className="mb-4 relative overflow-hidden rounded-sm bg-gray-200 dark:bg-gray-800">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={post.thumbnail_url}
                   alt={post.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
               </div>
             ) : (
               <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-800 mb-4 relative overflow-hidden">
@@ -353,10 +359,13 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
       )}
 
       {/* Load More Button */}
-      {filteredPosts.length > 0 && (
+      {filteredPosts.length > visibleCount && (
         <div className="text-center pt-6 sm:pt-8">
-          <button className="px-6 sm:px-8 py-2.5 sm:py-3 border-2 border-gray-300 dark:border-gray-600 hover:border-[#0066CC] text-gray-700 dark:text-gray-300 hover:text-[#0066CC] font-semibold rounded-sm transition-colors text-sm sm:text-base">
-            See more updates
+          <button 
+            onClick={() => setVisibleCount(prev => prev + 6)}
+            className="px-6 sm:px-8 py-2.5 sm:py-3 border-2 border-gray-300 dark:border-gray-600 hover:border-[#0066CC] text-gray-700 dark:text-gray-300 hover:text-[#0066CC] font-semibold rounded-sm transition-colors text-sm sm:text-base"
+          >
+            See more updates ({filteredPosts.length - visibleCount} remaining)
           </button>
         </div>
       )}
@@ -364,17 +373,17 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
       {/* Post Modal */}
       {selectedPost && (
         <div 
-          className="fixed inset-0 bg-black/90 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm overflow-y-auto"
+          className="fixed inset-0 bg-black/90 z-50 flex items-start justify-center p-0 sm:p-4 backdrop-blur-sm overflow-y-auto"
           onClick={() => setSelectedPost(null)}
         >
           <div 
-            className="bg-white dark:bg-gray-800 sm:rounded-lg max-w-4xl w-full my-0 sm:my-8 shadow-2xl relative min-h-screen sm:min-h-0"
+            className="bg-white dark:bg-gray-800 sm:rounded-lg max-w-4xl w-full my-0 sm:my-8 shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
             <button
               onClick={() => setSelectedPost(null)}
-              className="sticky top-4 float-right mr-3 sm:mr-4 mt-3 sm:mt-4 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-900/80 hover:bg-gray-900 text-white flex items-center justify-center transition-colors z-20 shadow-lg"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-900/80 hover:bg-gray-900 text-white flex items-center justify-center transition-colors z-20 shadow-lg"
             >
               <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -383,7 +392,7 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
 
             {/* Video or Image */}
             {selectedPost.video_url && getYouTubeVideoId(selectedPost.video_url) ? (
-              <div className="w-full bg-black relative clear-both" style={{ aspectRatio: '16/9' }}>
+              <div className="w-full bg-black relative" style={{ aspectRatio: '16/9' }}>
                 <iframe
                   src={`https://www.youtube.com/embed/${getYouTubeVideoId(selectedPost.video_url)}`}
                   title={selectedPost.title}
@@ -393,16 +402,16 @@ export default function BlogPosts({ searchQuery = '' }: BlogPostsProps = {}) {
                 ></iframe>
               </div>
             ) : selectedPost.thumbnail_url ? (
-              <div className="w-full bg-gray-100 dark:bg-gray-900 relative clear-both flex items-center justify-center" style={{ minHeight: '300px', maxHeight: '70vh' }}>
+              <div className="w-full bg-gray-100 dark:bg-gray-900 relative sm:rounded-t-lg overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={selectedPost.thumbnail_url}
                   alt={selectedPost.title}
-                  className="w-full h-auto max-h-[70vh] object-contain"
+                  className="w-full h-auto object-contain"
                 />
               </div>
             ) : (
-              <div className="aspect-video w-full bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center clear-both">
+              <div className="aspect-video w-full bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
                 <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#0066CC] flex items-center justify-center">
                   <svg className="w-10 h-10 sm:w-12 sm:h-12 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z"/>

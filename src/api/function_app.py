@@ -57,23 +57,36 @@ def get_ai_client():
 # Initialize Cosmos DB client
 def get_cosmos_container():
     """Initialize and return Cosmos DB container client"""
+    connection_string = os.environ.get("AZURE_COSMOS_CONNECTION_STRING")
     endpoint = os.environ.get("AZURE_COSMOS_ENDPOINT")
     database_name = os.environ.get("AZURE_COSMOS_DATABASE_NAME", "blogdb")
     container_name = "posts"
     
-    if not endpoint:
-        logging.warning("AZURE_COSMOS_ENDPOINT not configured")
-        return None
-    
-    try:
-        # Use Managed Identity for authentication
-        credential = DefaultAzureCredential()
-        client = CosmosClient(endpoint, credential=credential)
-        database = client.get_database_client(database_name)
-        container = database.get_container_client(container_name)
-        return container
-    except Exception as e:
-        logging.error(f"Failed to create Cosmos DB client: {e}")
+    # Prefer connection string for local development, endpoint for production
+    if connection_string:
+        logging.info("Using Cosmos DB connection string")
+        try:
+            client = CosmosClient.from_connection_string(connection_string)
+            database = client.get_database_client(database_name)
+            container = database.get_container_client(container_name)
+            return container
+        except Exception as e:
+            logging.error(f"Failed to create Cosmos DB client from connection string: {e}")
+            return None
+    elif endpoint:
+        logging.info("Using Cosmos DB endpoint with Managed Identity")
+        try:
+            # Use Managed Identity for authentication
+            credential = DefaultAzureCredential()
+            client = CosmosClient(endpoint, credential=credential)
+            database = client.get_database_client(database_name)
+            container = database.get_container_client(container_name)
+            return container
+        except Exception as e:
+            logging.error(f"Failed to create Cosmos DB client with Managed Identity: {e}")
+            return None
+    else:
+        logging.warning("Neither AZURE_COSMOS_CONNECTION_STRING nor AZURE_COSMOS_ENDPOINT configured")
         return None
 
 # Initialize Azure AI Agent client
@@ -697,7 +710,12 @@ def delete_post(req: func.HttpRequest) -> func.HttpResponse:
 def fetch_news(req: func.HttpRequest) -> func.HttpResponse:
     """
     Fetch news from DBD website and return as posts
-    GET /api/news/fetch?limit=10&save=false
+    GET /api/news/fetch?limit=10&save=false&keyword=SME
+    
+    Query parameters:
+        - limit: Number of articles to fetch (default: 10)
+        - save: Save to database? (default: false)
+        - keyword: Optional keyword filter (e.g., 'นอมินี', 'SME', 'แฟรนไชส์')
     """
     logging.info('Processing news fetch request')
     
@@ -707,9 +725,10 @@ def fetch_news(req: func.HttpRequest) -> func.HttpResponse:
         # Get query parameters
         limit = int(req.params.get('limit', '10'))
         save_to_db = req.params.get('save', 'false').lower() == 'true'
+        keyword = req.params.get('keyword', '')
         
-        # Fetch news
-        news_posts = fetch_news_as_posts(limit)
+        # Fetch news (with optional keyword filter)
+        news_posts = fetch_news_as_posts(limit, keyword)
         
         if not news_posts:
             return create_response({"error": "Failed to fetch news", "posts": []}, 500)
