@@ -157,7 +157,8 @@ def scrape_dbd_news(limit: int = 10, keyword: str = '') -> List[Dict]:
                     'date': date,  # Original date string for display
                     'created_at': iso_date,  # Parsed ISO date for database
                     'image_url': thumbnail if thumbnail else '',
-                    'source': 'กรมพัฒนาธุรกิจการค้า (DBD)'
+                    'source': 'กรมพัฒนาธุรกิจการค้า (DBD)',
+                    'slug': slug
                 }
                 
                 articles.append(article)
@@ -176,6 +177,72 @@ def scrape_dbd_news(limit: int = 10, keyword: str = '') -> List[Dict]:
     except Exception as e:
         logger.error(f'Unexpected error in scrape_dbd_news: {e}')
         return []
+
+
+def fetch_dbd_article_by_slug(slug: str) -> Optional[Dict]:
+    """
+    Fetch a single DBD article by its slug/ID
+    
+    Args:
+        slug: Article slug or ID (e.g., '1924102568')
+    
+    Returns:
+        Article dictionary or None if not found
+    """
+    try:
+        logger.info(f'Fetching DBD article with slug: {slug}')
+        
+        # Fetch recent articles and search for matching slug
+        articles = scrape_dbd_news(limit=50)  # Fetch more to increase chance of finding it
+        
+        for article in articles:
+            if article.get('slug') == slug or slug in article.get('link', ''):
+                logger.info(f'Found matching article: {article["title"]}')
+                return article
+        
+        # If not found in recent articles, try the article detail API
+        detail_url = f'https://www.dbd.go.th/api/frontend/content/{slug}'
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
+            'Accept': 'application/json',
+        }
+        
+        response = requests.get(detail_url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if data.get('statusCode') == 200 and data.get('data'):
+            item = data['data']
+            
+            title = item.get('title', '').strip()
+            intro = item.get('intro', '').strip()
+            text = item.get('text', '')
+            date = item.get('date', '')
+            thumbnail = item.get('thumbnail', '')
+            
+            content_text = clean_html_text(text) if text else intro
+            article_url = f'https://www.dbd.go.th/news/{slug}'
+            iso_date = parse_thai_date(date)
+            
+            return {
+                'title': title,
+                'content': content_text,
+                'link': article_url,
+                'date': date,
+                'created_at': iso_date,
+                'image_url': thumbnail if thumbnail else '',
+                'source': 'กรมพัฒนาธุรกิจการค้า (DBD)',
+                'slug': slug
+            }
+        
+        logger.warning(f'Article with slug {slug} not found in DBD API')
+        return None
+        
+    except Exception as e:
+        logger.error(f'Error fetching DBD article by slug: {e}')
+        return None
 
 
 def fetch_news_as_posts(limit: int = 10, keyword: str = '') -> List[Dict]:

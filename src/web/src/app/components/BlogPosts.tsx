@@ -11,6 +11,11 @@ interface Post {
   author_avatar?: string;
   video_url?: string;
   thumbnail_url?: string;
+  source_url?: string;
+  embed_type?: 'preview' | 'iframe' | 'screenshot';
+  iframe_allowed?: boolean;
+  post_type?: 'original' | 'shared';
+  reading_time_minutes?: number;
   created_at: string;
   tags?: string[];
 }
@@ -258,7 +263,14 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                 return (
                   <article
                     key={post.id}
-                    onClick={() => setSelectedPost(post)}
+                    onClick={() => {
+                      // If it's a shared post with a source URL, open in new tab
+                      if (post.post_type === 'shared' && post.source_url) {
+                        window.open(post.source_url, '_blank', 'noopener,noreferrer');
+                      } else {
+                        setSelectedPost(post);
+                      }
+                    }}
                     className="flex-none w-[280px] sm:w-[320px] lg:w-[380px] cursor-pointer snap-start group/card"
                   >
                     {/* Video or Image */}
@@ -302,8 +314,19 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                     
                     {/* Content */}
                     <div className="space-y-2">
-                      <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight group-hover/card:text-[#0066CC] transition-colors line-clamp-2">
-                        {post.title}
+                      <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight group-hover/card:text-[#0066CC] transition-colors line-clamp-2 flex items-start gap-2">
+                        <span className="flex-1">{post.title}</span>
+                        {post.post_type === 'shared' && (
+                          <svg 
+                            className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 mt-1" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                            aria-label="External Article"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        )}
                       </h3>
                       
                       <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-2">
@@ -345,6 +368,14 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                           <span className="text-xs text-gray-500 dark:text-gray-500 truncate">
                             {post.author}
                           </span>
+                          {post.reading_time_minutes && (
+                            <>
+                              <span className="text-xs text-gray-400">•</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-500">
+                                {post.reading_time_minutes} min read
+                              </span>
+                            </>
+                          )}
                         </div>
                         <time className="text-xs text-gray-500 dark:text-gray-500 flex-shrink-0">
                           {formatDate(post.created_at)}
@@ -379,8 +410,32 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
               </svg>
             </button>
 
-            {/* Video or Image */}
-            {selectedPost.video_url && getYouTubeVideoId(selectedPost.video_url) ? (
+            {/* Video, Image, or iFrame Embed */}
+            {/* For shared posts, prioritize iframe if source_url exists, regardless of embed_type */}
+            {(selectedPost.embed_type === 'iframe' || selectedPost.post_type === 'shared') && selectedPost.source_url ? (
+              <div className="w-full bg-gray-100 dark:bg-gray-900 relative overflow-hidden sm:rounded-t-lg" style={{ height: '75vh', minHeight: '600px', maxHeight: '900px' }}>
+                {/* Loading indicator */}
+                <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0066CC] mx-auto mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-400">Loading article...</p>
+                  </div>
+                </div>
+                {/* Iframe */}
+                <iframe
+                  src={selectedPost.source_url}
+                  title={selectedPost.title}
+                  className="w-full h-full border-0 relative z-10 bg-white"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation-by-user-activation"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  onLoad={(e) => {
+                    // Hide loading indicator when iframe loads
+                    const loader = e.currentTarget.previousElementSibling;
+                    if (loader) loader.remove();
+                  }}
+                ></iframe>
+              </div>
+            ) : selectedPost.video_url && getYouTubeVideoId(selectedPost.video_url) ? (
               <div className="w-full bg-black relative" style={{ aspectRatio: '16/9' }}>
                 <iframe
                   src={`https://www.youtube.com/embed/${getYouTubeVideoId(selectedPost.video_url)}`}
@@ -409,43 +464,72 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
               </div>
             )}
 
-            {/* Content */}
-            <div className="p-4 sm:p-6 md:p-8">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
-                {selectedPost.title}
-              </h2>
-              
-              <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-gray-200 dark:border-gray-700">
-                {selectedPost.author_avatar ? (
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={selectedPost.author_avatar}
-                      alt={selectedPost.author}
-                      className="w-full h-full object-cover"
-                    />
+            {/* Content - Only show for non-shared posts or shared posts without iframe */}
+            {!((selectedPost.embed_type === 'iframe' || selectedPost.post_type === 'shared') && selectedPost.source_url) && (
+              <div className="p-4 sm:p-6 md:p-8">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
+                  {selectedPost.title}
+                </h2>
+                
+                <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-gray-200 dark:border-gray-700">
+                  {selectedPost.author_avatar ? (
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={selectedPost.author_avatar}
+                        alt={selectedPost.author}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                      <span className="text-base sm:text-lg font-semibold text-gray-600 dark:text-gray-300">
+                        {selectedPost.author.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">{selectedPost.author}</p>
+                    <time className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                      {formatDate(selectedPost.created_at)}
+                    </time>
                   </div>
-                ) : (
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                    <span className="text-base sm:text-lg font-semibold text-gray-600 dark:text-gray-300">
-                      {selectedPost.author.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">{selectedPost.author}</p>
-                  <time className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                    {formatDate(selectedPost.created_at)}
-                  </time>
+                </div>
+
+                <div className="prose prose-sm sm:prose-base md:prose-lg dark:prose-invert max-w-none">
+                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    {selectedPost.content}
+                  </p>
                 </div>
               </div>
+            )}
 
-              <div className="prose prose-sm sm:prose-base md:prose-lg dark:prose-invert max-w-none">
-                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                  {selectedPost.content}
-                </p>
+            {/* Source Link for Shared Posts - Show below iframe */}
+            {selectedPost.post_type === 'shared' && selectedPost.source_url && (
+              <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                      Article loaded above. If it doesn&apos;t display properly, the website may block embedding.
+                    </p>
+                    <a 
+                      href={selectedPost.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-[#0066CC] hover:text-[#0052A3] transition-colors font-medium text-sm"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      Open in New Tab
+                    </a>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}

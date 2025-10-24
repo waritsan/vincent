@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import AddPostFromUrl from '../components/AddPostFromUrl';
 
 interface Post {
   id: string;
@@ -255,6 +256,11 @@ export default function AdminPage() {
             <p className="text-sm sm:text-base text-red-800 dark:text-red-200 font-semibold">{error}</p>
           </div>
         )}
+
+        {/* Add Post from URL Section */}
+        <div className="mb-6 sm:mb-8">
+          <AddPostFromUrl onSuccess={fetchPosts} />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Create/Edit Post Form */}

@@ -532,11 +532,30 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
             
             # Fetch posts from Cosmos DB
             try:
-                query = "SELECT * FROM c ORDER BY c.created_at DESC"
+                # First try to get all posts and sort in Python
+                # (Cosmos DB requires composite index for multi-field ORDER BY)
+                query = "SELECT * FROM c"
                 items = list(container.query_items(
                     query=query,
                     enable_cross_partition_query=True
                 ))
+                
+                # Sort in Python: posts with fetch_order first (DESC by fetch_order), 
+                # then manual posts (DESC by created_at)
+                def sort_key(post):
+                    # Return tuple for sorting:
+                    # - Posts with fetch_order: (1, -fetch_order, created_at) 
+                    # - Manual posts: (0, 0, created_at)
+                    # We negate fetch_order because reverse=True will make higher values come first
+                    has_fetch_order = 'fetch_order' in post and post['fetch_order'] is not None
+                    if has_fetch_order:
+                        # Auto-fetched posts: sort by fetch_order DESC (higher = newer)
+                        return (1, -post['fetch_order'], post.get('created_at', '1970-01-01T00:00:00Z'))
+                    else:
+                        # Manual posts: sort by created_at DESC
+                        return (0, 0, post.get('created_at', '1970-01-01T00:00:00Z'))
+                
+                items.sort(key=sort_key, reverse=True)
                 
                 posts_data = {
                     "posts": items,
@@ -706,72 +725,346 @@ def delete_post(req: func.HttpRequest) -> func.HttpResponse:
         return create_response({"error": "Internal server error"}, 500)
 
 
-@app.route(route="news/fetch", methods=["GET"])
-def fetch_news(req: func.HttpRequest) -> func.HttpResponse:
+@app.route(route="posts/from-url", methods=["POST", "OPTIONS"])
+def create_post_from_url(req: func.HttpRequest) -> func.HttpResponse:
     """
-    Fetch news from DBD website and return as posts
-    GET /api/news/fetch?limit=10&save=false&keyword=SME
+    Create a post from a URL by fetching metadata and content
+    Supports Open Graph, Twitter Cards, and meta tags extraction
+    """
+    logging.info('Processing request to create post from URL')
     
-    Query parameters:
-        - limit: Number of articles to fetch (default: 10)
-        - save: Save to database? (default: false)
-        - keyword: Optional keyword filter (e.g., 'นอมินี', 'SME', 'แฟรนไชส์')
-    """
-    logging.info('Processing news fetch request')
+    # Handle CORS preflight
+    if req.method == "OPTIONS":
+        return func.HttpResponse(status_code=200, headers=CORS_HEADERS)
     
     try:
-        from news_scraper import fetch_news_as_posts
+        import requests
+        from bs4 import BeautifulSoup
+        from urllib.parse import urljoin, urlparse
         
-        # Get query parameters
-        limit = int(req.params.get('limit', '10'))
-        save_to_db = req.params.get('save', 'false').lower() == 'true'
-        keyword = req.params.get('keyword', '')
+        req_body = req.get_json()
+        url = req_body.get('url')
+        tags = req_body.get('tags', [])
+        author_override = req_body.get('author')
+        embed_type = req_body.get('embed_type', 'preview')  # preview, iframe, or screenshot
         
-        # Fetch news (with optional keyword filter)
-        news_posts = fetch_news_as_posts(limit, keyword)
+        if not url:
+            return create_response({"error": "URL is required"}, 400)
         
-        if not news_posts:
-            return create_response({"error": "Failed to fetch news", "posts": []}, 500)
+        # Validate URL
+        try:
+            parsed = urlparse(url)
+            if not parsed.scheme or not parsed.netloc:
+                return create_response({"error": "Invalid URL format"}, 400)
+        except Exception:
+            return create_response({"error": "Invalid URL"}, 400)
         
-        # Optionally save to database
-        saved_posts = []
-        if save_to_db:
-            container = get_cosmos_container()
-            if container:
-                for post in news_posts:
-                    try:
-                        # Add required fields
-                        post['id'] = str(uuid.uuid4())
-                        # Use article's original date if available, otherwise use current time
-                        if 'created_at' not in post:
-                            post['created_at'] = datetime.utcnow().isoformat()
-                        post['updated_at'] = datetime.utcnow().isoformat()
-                        
-                        # Save to Cosmos DB
-                        created_item = container.create_item(body=post)
-                        saved_posts.append(created_item)
-                    except Exception as e:
-                        logging.error(f"Error saving post: {e}")
-                        continue
+        # Special handling for DBD website (uses JavaScript rendering, but has API)
+        if 'dbd.go.th' in parsed.netloc and '/news/' in parsed.path:
+            try:
+                from news_scraper import fetch_dbd_article_by_slug
                 
-                return create_response({
-                    "message": f"Fetched and saved {len(saved_posts)} news articles",
-                    "posts": saved_posts,
-                    "total": len(saved_posts)
-                })
+                # Extract slug from URL (e.g., /news/1924102568 -> 1924102568)
+                slug = parsed.path.split('/news/')[-1].strip('/')
+                
+                if slug:
+                    logging.info(f"Detected DBD article URL, using API scraper for slug: {slug}")
+                    article = fetch_dbd_article_by_slug(slug)
+                    
+                    if article:
+                        # Use article data from API
+                        title = article['title']
+                        content = article['content'][:300] + ('...' if len(article['content']) > 300 else '')
+                        image_url = article.get('image_url')
+                        site_name = article['source']
+                        publish_date = article.get('created_at')
+                        author_avatar = 'https://www.dbd.go.th/images/Logo100.png'
+                        
+                        # Estimate reading time
+                        word_count = len(article['content'].split())
+                        reading_time_minutes = max(1, word_count // 200)
+                        
+                        # Create post with DBD tags
+                        container = get_cosmos_container()
+                        if not container:
+                            return create_response({"error": "Database not available"}, 503)
+                        
+                        post_id = str(uuid.uuid4())
+                        post_data = {
+                            'id': post_id,
+                            'title': title[:500],
+                            'content': content,
+                            'author': site_name,
+                            'author_avatar': author_avatar,
+                            'thumbnail_url': image_url,
+                            'video_url': None,
+                            'source_url': url,
+                            'source': parsed.netloc,
+                            'embed_type': 'preview',
+                            'iframe_allowed': False,
+                            'post_type': 'shared',
+                            'tags': list(set((tags if isinstance(tags, list) else []) + ['DBD', 'กรมพัฒนาธุรกิจการค้า', 'ข่าวประชาสัมพันธ์'])),
+                            'reading_time_minutes': reading_time_minutes,
+                            'created_at': publish_date or datetime.utcnow().isoformat(),
+                            'updated_at': datetime.utcnow().isoformat(),
+                        }
+                        
+                        created_item = container.create_item(body=post_data)
+                        logging.info(f"Created DBD post from API: {post_id}")
+                        
+                        return create_response({
+                            "message": "Post created successfully from DBD API",
+                            "post": created_item,
+                            "iframe_allowed": False,
+                            "embed_type": "preview",
+                            "extraction_notes": None
+                        }, 201)
+                    else:
+                        logging.warning(f"DBD article not found in API, falling back to HTML scraping")
+            except Exception as e:
+                logging.error(f"Error using DBD API scraper: {e}, falling back to HTML scraping")
         
-        # Return without saving
-        return create_response({
-            "message": f"Fetched {len(news_posts)} news articles",
-            "posts": news_posts,
-            "total": len(news_posts)
-        })
+        # Standard HTML scraping for other sites
+        # Fetch the webpage
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (compatible; VincentBot/1.0)',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        }
+        
+        try:
+            response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
+            response.raise_for_status()
+            response.encoding = response.apparent_encoding or 'utf-8'
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error fetching URL: {e}")
+            return create_response({"error": f"Failed to fetch URL: {str(e)}"}, 400)
+        
+        # Parse HTML
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Extract metadata with fallbacks
+        def get_meta_content(names):
+            """Try multiple meta tag names and return first found"""
+            for name in names:
+                # Try property attribute (Open Graph)
+                tag = soup.find('meta', property=name)
+                if tag and tag.get('content'):
+                    return tag.get('content').strip()
+                # Try name attribute (Twitter, standard)
+                tag = soup.find('meta', attrs={'name': name})
+                if tag and tag.get('content'):
+                    return tag.get('content').strip()
+            return None
+        
+        # Extract title
+        title = (
+            get_meta_content(['og:title', 'twitter:title']) or
+            (soup.find('title').get_text().strip() if soup.find('title') else None) or
+            (soup.find('h1').get_text().strip() if soup.find('h1') else None) or
+            (soup.find('h2').get_text().strip() if soup.find('h2') else None)
+        )
+        
+        # Clean up title if it's generic or includes site name repetitively
+        if title:
+            # Remove common patterns like "Site Name | Page Title" or "Page Title - Site Name"
+            for sep in [' | ', ' - ', ' – ', ' : ']:
+                if sep in title:
+                    parts = title.split(sep)
+                    # Take the longest part (usually the actual title)
+                    title = max(parts, key=len).strip()
+                    break
+        
+        # If still no good title, use domain + ID or last path segment
+        if not title or len(title) < 3:
+            # Use the site name + article ID for reference
+            article_id = parsed.path.split('/')[-1] if parsed.path.split('/')[-1] else 'article'
+            title = f'{parsed.netloc.replace("www.", "").replace(".go.th", "").replace(".com", "").upper()} Article #{article_id}'
+        
+        # Extract description
+        description = (
+            get_meta_content(['og:description', 'twitter:description', 'description']) or
+            ''
+        )
+        
+        # Extract image
+        image_url = get_meta_content(['og:image', 'twitter:image', 'twitter:image:src'])
+        if image_url and not image_url.startswith('http'):
+            image_url = urljoin(url, image_url)
+        
+        # Fallback: Find first large image if no OG image
+        if not image_url:
+            for img in soup.find_all('img'):
+                src = img.get('src') or img.get('data-src') or img.get('data-lazy-src')
+                if src:
+                    # Skip small images (icons, logos, avatars)
+                    width = img.get('width', '')
+                    height = img.get('height', '')
+                    
+                    # Skip if dimensions indicate small image
+                    if width and str(width).isdigit() and int(width) < 200:
+                        continue
+                    if height and str(height).isdigit() and int(height) < 200:
+                        continue
+                    
+                    # Skip common icon/logo patterns
+                    if any(pattern in src.lower() for pattern in ['logo', 'icon', 'avatar', 'profile']):
+                        continue
+                    
+                    # Convert relative URL to absolute
+                    full_url = urljoin(url, src)
+                    
+                    # Verify it's a valid image URL
+                    if full_url.startswith('http') and any(ext in full_url.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
+                        image_url = full_url
+                        break
+        
+        # If still no image, use a placeholder based on site domain
+        if not image_url:
+            # You can optionally generate a placeholder or use site favicon as fallback
+            logging.info(f"No image found for {url}, will use site icon")
+        
+        # Extract favicon for author avatar
+        author_avatar = None
+        favicon = soup.find('link', rel=['icon', 'shortcut icon', 'apple-touch-icon'])
+        if favicon and favicon.get('href'):
+            author_avatar = urljoin(url, favicon.get('href'))
+        else:
+            # Fallback to /favicon.ico
+            author_avatar = urljoin(url, '/favicon.ico')
+        
+        # Extract site name/author
+        site_name = (
+            get_meta_content(['og:site_name', 'twitter:site']) or
+            author_override or
+            parsed.netloc
+        )
+        
+        # Extract article publish date
+        publish_date = get_meta_content(['article:published_time', 'datePublished'])
+        
+        # Try to extract main content
+        content = description
+        if not content:
+            # Try to find article body in various common patterns
+            selectors = [
+                ('article', None),
+                ('main', None),
+                ('div', ['content', 'post-content', 'article-content', 'entry-content', 'post-body', 'article-body', 'news-content']),
+                ('section', ['content', 'article']),
+            ]
+            
+            article = None
+            for tag, classes in selectors:
+                if classes:
+                    article = soup.find(tag, class_=classes)
+                else:
+                    article = soup.find(tag)
+                if article:
+                    break
+            
+            if article:
+                # Get first paragraph or first 300 characters for preview
+                paragraphs = article.find_all('p')
+                if paragraphs:
+                    # Get first meaningful paragraph (skip empty ones)
+                    for p in paragraphs:
+                        text = p.get_text(strip=True)
+                        if len(text) > 50:  # Skip short paragraphs
+                            content = text[:300] + ('...' if len(text) > 300 else '')
+                            break
+                else:
+                    # Fallback to plain text
+                    content = article.get_text(separator=' ', strip=True)[:300] + '...'
+        
+        # If still no content, create a generic description
+        if not content:
+            content = f'Article from {site_name}. Click to read the full article on their website.'
+        
+        # Estimate reading time (Google News shows this)
+        word_count = len(content.split()) if content else 0
+        reading_time_minutes = max(1, word_count // 200)  # Average 200 words per minute
+        
+        # Extract keywords for auto-tagging (optional - can be enhanced with NLP)
+        keywords = get_meta_content(['keywords', 'news_keywords'])
+        auto_tags = []
+        if keywords:
+            auto_tags = [k.strip() for k in keywords.split(',')[:5]]  # First 5 keywords
+        
+        # Merge provided tags with auto-tags
+        all_tags = list(set((tags if isinstance(tags, list) else []) + auto_tags))
+        
+        # Check if iframe embedding is allowed
+        iframe_allowed = True
+        x_frame_options = response.headers.get('X-Frame-Options', '').upper()
+        csp = response.headers.get('Content-Security-Policy', '').lower()
+        
+        if x_frame_options in ['DENY', 'SAMEORIGIN'] or 'frame-ancestors' in csp:
+            iframe_allowed = False
+        
+        # Determine final embed type
+        final_embed_type = embed_type
+        if embed_type == 'iframe' and not iframe_allowed:
+            final_embed_type = 'preview'
+            logging.info(f"iFrame embedding not allowed for {url}, falling back to preview")
+        
+        # Create post object
+        container = get_cosmos_container()
+        if not container:
+            return create_response({"error": "Database not available"}, 503)
+        
+        post_id = str(uuid.uuid4())
+        post_data = {
+            'id': post_id,
+            'title': title[:500],  # Limit title length
+            'content': content[:5000] if content else description[:5000],  # Limit content length
+            'author': site_name,
+            'author_avatar': author_avatar,
+            'thumbnail_url': image_url,
+            'video_url': None,
+            'source_url': response.url,  # Use final URL after redirects
+            'source': parsed.netloc,
+            'embed_type': final_embed_type,
+            'iframe_allowed': iframe_allowed,
+            'post_type': 'shared',
+            'tags': all_tags,
+            'reading_time_minutes': reading_time_minutes,
+            'created_at': publish_date or datetime.utcnow().isoformat(),
+            'updated_at': datetime.utcnow().isoformat(),
+        }
+        
+        # Save to Cosmos DB
+        try:
+            created_item = container.create_item(body=post_data)
+            logging.info(f"Created post from URL: {post_id}")
+            
+            # Determine if extraction quality was good
+            extraction_notes = []
+            if not image_url:
+                extraction_notes.append("No image found - site may use JavaScript rendering")
+            if not content or content == f'Article from {site_name}. Click to read the full article on their website.':
+                extraction_notes.append("Limited content extracted - site may use JavaScript rendering")
+            
+            return create_response({
+                "message": "Post created successfully",
+                "post": created_item,
+                "iframe_allowed": iframe_allowed,
+                "embed_type": final_embed_type,
+                "extraction_notes": extraction_notes if extraction_notes else None
+            }, 201)
+            
+        except exceptions.CosmosResourceExistsError:
+            return create_response({"error": "Post with this ID already exists"}, 409)
+        except Exception as e:
+            logging.error(f"Error saving post: {e}")
+            return create_response({"error": f"Failed to save post: {str(e)}"}, 500)
         
     except ImportError as e:
-        logging.error(f"Failed to import news_scraper: {e}")
-        return create_response({"error": "News scraper not available"}, 503)
+        logging.error(f"Missing required library: {e}")
+        return create_response({"error": "Server configuration error"}, 500)
     except Exception as e:
-        logging.error(f"Error fetching news: {e}")
+        logging.error(f"Error creating post from URL: {e}")
+        import traceback
+        traceback.print_exc()
         return create_response({"error": str(e)}, 500)
 
 
@@ -779,3 +1072,98 @@ def fetch_news(req: func.HttpRequest) -> func.HttpResponse:
 def health(req: func.HttpRequest) -> func.HttpResponse:
     """Health check endpoint"""
     return create_response({"status": "healthy", "version": "1.0.0"})
+
+
+# Scheduled timer function to auto-fetch DBD news
+@app.timer_trigger(schedule="0 0 */6 * * *", arg_name="myTimer", run_on_startup=False,
+              use_monitor=False) 
+def scheduled_dbd_news_fetch(myTimer: func.TimerRequest) -> None:
+    """
+    Scheduled function to automatically fetch latest DBD news
+    Runs every 6 hours (0 0 */6 * * *)
+    
+    Schedule format (CRON): second minute hour day month dayOfWeek
+    Examples:
+    - "0 0 */6 * * *"   - Every 6 hours
+    - "0 0 */12 * * *"  - Every 12 hours
+    - "0 0 8 * * *"     - Every day at 8:00 AM
+    - "0 0 8,20 * * *"  - Every day at 8:00 AM and 8:00 PM
+    """
+    from scheduled_news_fetcher import fetch_and_save_dbd_news
+    
+    logging.info('🤖 Scheduled DBD news fetch triggered')
+    
+    if myTimer.past_due:
+        logging.info('⏰ Timer is past due, running now')
+    
+    try:
+        # Fetch latest 10 articles
+        result = fetch_and_save_dbd_news(limit=10, keyword='')
+        
+        if result['success']:
+            logging.info(f"✅ Automated fetch successful: {result['stats']['saved']} new articles saved")
+        else:
+            logging.error(f"❌ Automated fetch failed: {result['message']}")
+            
+    except Exception as e:
+        logging.error(f"❌ Error in scheduled news fetch: {e}")
+
+
+# Manual trigger endpoint for news fetching
+@app.route(route="news/fetch", methods=["GET", "OPTIONS"])
+def manual_news_fetch(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Manually trigger DBD news fetch
+    Query parameters:
+    - limit: Number of articles to fetch (default: 10, max: 50)
+    - keyword: Optional keyword filter (e.g., 'SME', 'นอมินี')
+    - save: Whether to save to database (default: true)
+    """
+    logging.info('Manual DBD news fetch requested')
+    
+    # Handle CORS preflight
+    if req.method == "OPTIONS":
+        return func.HttpResponse(status_code=200, headers=CORS_HEADERS)
+    
+    try:
+        from scheduled_news_fetcher import fetch_and_save_dbd_news, scrape_dbd_news
+        
+        # Get parameters
+        limit = int(req.params.get('limit', '10'))
+        keyword = req.params.get('keyword', '')
+        save = req.params.get('save', 'true').lower() == 'true'
+        
+        # Validate limit
+        limit = min(max(1, limit), 50)  # Between 1 and 50
+        
+        logging.info(f"Fetching {limit} articles with keyword: '{keyword}', save: {save}")
+        
+        if save:
+            # Fetch and save to database
+            result = fetch_and_save_dbd_news(limit=limit, keyword=keyword)
+            
+            return create_response({
+                "success": result['success'],
+                "message": result['message'],
+                "saved": result['stats']['saved'],
+                "skipped": result['stats']['skipped'],
+                "errors": result['stats']['errors'],
+                "total": result['stats']['saved'] + result['stats']['skipped'],
+                "timestamp": result.get('timestamp')
+            })
+        else:
+            # Just fetch and return (preview mode)
+            articles = scrape_dbd_news(limit=limit, keyword=keyword)
+            
+            return create_response({
+                "success": True,
+                "message": f"Fetched {len(articles)} articles (preview mode, not saved)",
+                "total": len(articles),
+                "articles": articles[:5]  # Return first 5 as preview
+            })
+            
+    except ValueError as e:
+        return create_response({"error": "Invalid parameters", "details": str(e)}, 400)
+    except Exception as e:
+        logging.error(f"Error in manual news fetch: {e}")
+        return create_response({"error": str(e)}, 500)
