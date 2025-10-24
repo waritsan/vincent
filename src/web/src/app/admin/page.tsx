@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
+
 import Link from 'next/link';
 import Image from 'next/image';
 import AddPostFromUrl from '../components/AddPostFromUrl';
@@ -23,6 +25,10 @@ interface PostsResponse {
 }
 
 export default function AdminPage() {
+  // Tag suggestion state (must be inside component)
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const tagInputRef = useRef<HTMLInputElement>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,12 +45,19 @@ export default function AdminPage() {
     author_avatar: '',
     video_url: '',
     thumbnail_url: '',
-    tags: '' // Comma-separated tags
+    tags: '', // Comma-separated tags
+    created_at: '' // Optional override
   });
 
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  // Collect all unique tags from posts for suggestions
+  useEffect(() => {
+    const allTags = posts.flatMap((p) => p.tags || []);
+    setTagSuggestions(Array.from(new Set(allTags)).sort());
+  }, [posts]);
 
   const fetchPosts = async () => {
     try {
@@ -76,34 +89,32 @@ export default function AdminPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.content || !formData.author) {
-      setError('All fields are required');
+    if (!formData.title || !formData.author) {
+      setError('Title and author are required');
       return;
     }
 
     try {
-      setError(null);
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      
-      if (!apiUrl) {
-        throw new Error('API URL not configured');
-      }
-
-      // If editing, use PUT, otherwise POST
-      const url = editingPost 
-        ? `${apiUrl}/api/posts/${editingPost.id}`
-        : `${apiUrl}/api/posts`;
-      
-      const method = editingPost ? 'PUT' : 'POST';
-
       // Convert tags string to array
       const tagsArray = formData.tags
         ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
         : [];
 
+      // If editing, use PUT, otherwise POST
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiUrl) {
+        throw new Error('API URL not configured');
+      }
+      const url = editingPost 
+        ? `${apiUrl}/api/posts/${editingPost.id}`
+        : `${apiUrl}/api/posts`;
+      const method = editingPost ? 'PUT' : 'POST';
+
+      // Only include created_at if set (not empty)
       const postData = {
         ...formData,
-        tags: tagsArray
+        tags: tagsArray,
+        ...(formData.created_at ? { created_at: formData.created_at } : {})
       };
 
       const response = await fetch(url, {
@@ -120,11 +131,10 @@ export default function AdminPage() {
       }
 
       setSuccessMessage(editingPost ? 'Post updated successfully!' : 'Post created successfully!');
-      setFormData({ title: '', content: '', author: '', author_avatar: '', video_url: '', thumbnail_url: '', tags: '' });
+      setFormData({ title: '', content: '', author: '', author_avatar: '', video_url: '', thumbnail_url: '', tags: '', created_at: '' });
       setIsCreating(false);
       setEditingPost(null);
       fetchPosts();
-      
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : `Failed to ${editingPost ? 'update' : 'create'} post`);
@@ -140,14 +150,15 @@ export default function AdminPage() {
       author_avatar: post.author_avatar || '',
       video_url: post.video_url || '',
       thumbnail_url: post.thumbnail_url || '',
-      tags: post.tags ? post.tags.join(', ') : ''
+      tags: post.tags ? post.tags.join(', ') : '',
+      created_at: post.created_at || ''
     });
     setIsCreating(true);
   };
 
   const handleCancelEdit = () => {
     setEditingPost(null);
-    setFormData({ title: '', content: '', author: '', author_avatar: '', video_url: '', thumbnail_url: '', tags: '' });
+  setFormData({ title: '', content: '', author: '', author_avatar: '', video_url: '', thumbnail_url: '', tags: '', created_at: '' });
     setIsCreating(false);
     setError(null);
   };
@@ -375,20 +386,78 @@ export default function AdminPage() {
                   </p>
                 </div>
 
-                <div>
+                <div className="relative">
                   <label htmlFor="tags" className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Tags (Optional)
                   </label>
                   <input
                     type="text"
                     id="tags"
+                    ref={tagInputRef}
                     value={formData.tags}
-                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, tags: e.target.value });
+                      setShowTagSuggestions(true);
+                    }}
+                    onFocus={() => setShowTagSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowTagSuggestions(false), 150)}
                     placeholder="healthcare, education, housing"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white"
+                    autoComplete="off"
+                  />
+                  {/* Tag suggestions dropdown */}
+                  {showTagSuggestions && tagSuggestions.length > 0 && (
+                    <div className="absolute z-10 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow max-h-40 overflow-y-auto mt-1">
+                      {tagSuggestions
+                        .filter((tag) => {
+                          const input = formData.tags.split(',').pop()?.trim().toLowerCase() || '';
+                          return input && tag.toLowerCase().startsWith(input) && !formData.tags.split(',').map(t => t.trim().toLowerCase()).includes(tag.toLowerCase());
+                        })
+                        .slice(0, 8)
+                        .map((tag) => (
+                          <div
+                            key={tag}
+                            className="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100"
+                            onMouseDown={() => {
+                              // Add the selected tag to the tags input
+                              const tagsArr = formData.tags.split(',').map(t => t.trim()).filter(Boolean);
+                              tagsArr[tagsArr.length - 1] = tag;
+                              setFormData({ ...formData, tags: tagsArr.join(', ') + ', ' });
+                              setShowTagSuggestions(false);
+                              // Refocus input
+                              setTimeout(() => tagInputRef.current?.focus(), 0);
+                            }}
+                          >
+                            {tag}
+                          </div>
+                        ))}
+                      {tagSuggestions.filter((tag) => {
+                        const input = formData.tags.split(',').pop()?.trim().toLowerCase() || '';
+                        return input && tag.toLowerCase().startsWith(input) && !formData.tags.split(',').map(t => t.trim().toLowerCase()).includes(tag.toLowerCase());
+                      }).length === 0 && (
+                        <div className="px-3 py-2 text-xs text-gray-400">No suggestions</div>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Separate tags with commas. Suggestions appear as you type.
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="created_at" className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Created Date (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    id="created_at"
+                    value={formData.created_at}
+                    onChange={(e) => setFormData({ ...formData, created_at: e.target.value })}
+                    placeholder="YYYY-MM-DDTHH:MM:SSZ or any ISO date"
                     className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] dark:bg-gray-700 dark:text-white"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Separate tags with commas
+                    Enter any ISO date/time (e.g. 2025-10-24T12:34:56Z) or leave blank for now
                   </p>
                 </div>
 
@@ -514,9 +583,7 @@ export default function AdminPage() {
                           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
                             {post.title}
                           </h3>
-                          <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-3">
-                            {post.content}
-                          </p>
+                          {/* Content is now optional and hidden in card */}
                           <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
                             <span className="flex items-center">
                               <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">

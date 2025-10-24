@@ -582,7 +582,19 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
             if not title or not content:
                 return create_response({"error": "Title and content are required"}, 400)
             
-            # Create new post
+
+            # Use provided created_at if present and valid, else use current UTC time
+            created_at = req_body.get('created_at')
+            try:
+                # Try to parse to ensure it's a valid date
+                if created_at:
+                    # Accept as string, optionally validate/parse
+                    datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                else:
+                    created_at = datetime.utcnow().isoformat()
+            except Exception:
+                created_at = datetime.utcnow().isoformat()
+
             new_post = {
                 "id": str(uuid.uuid4()),
                 "title": title,
@@ -592,7 +604,7 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
                 "video_url": video_url,
                 "thumbnail_url": thumbnail_url,
                 "tags": tags if isinstance(tags, list) else [],
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": created_at,
                 "updated_at": datetime.utcnow().isoformat()
             }
             
@@ -654,6 +666,7 @@ def update_post(req: func.HttpRequest) -> func.HttpResponse:
             existing_post = container.read_item(item=post_id, partition_key=post_id)
             
             # Update the post
+
             existing_post['title'] = title
             existing_post['content'] = content
             existing_post['author'] = author
@@ -661,6 +674,15 @@ def update_post(req: func.HttpRequest) -> func.HttpResponse:
             existing_post['video_url'] = video_url
             existing_post['thumbnail_url'] = thumbnail_url
             existing_post['tags'] = tags if isinstance(tags, list) else []
+            # If a new created_at is provided and different, update only created_at; always update updated_at to now
+            created_at = req_body.get('created_at')
+            if created_at and created_at != existing_post.get('created_at'):
+                try:
+                    # Validate ISO format
+                    datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    existing_post['created_at'] = created_at
+                except Exception:
+                    pass  # Ignore invalid date, keep existing
             existing_post['updated_at'] = datetime.utcnow().isoformat()
             
             # Replace the item in Cosmos DB
