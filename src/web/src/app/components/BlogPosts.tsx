@@ -208,7 +208,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
           {/* Carousel Title */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-              {sectionTitle || 'Latest News'}
+              {sectionTitle || t('blog.latestNews')}
             </h2>
             <button className="group flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm sm:text-base font-semibold">
               <span>Explore All</span>

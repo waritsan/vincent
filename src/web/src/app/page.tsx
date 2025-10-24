@@ -67,12 +67,12 @@ export default function Home() {
                 />
               </Link>
               <div className="flex space-x-6 text-sm font-medium">
+                <a href="#" className="hover:text-[#0066CC] transition-colors">{t('nav.news')}</a>
                 <a href="#" className="hover:text-[#0066CC] transition-colors">{t('nav.benefits')}</a>
-                <a href="#" className="hover:text-[#0066CC] transition-colors">{t('nav.services')}</a>
-                <a href="#" className="hover:text-[#0066CC] transition-colors">{t('nav.getHelp')}</a>
+                <a href="#" className="hover:text-[#0066CC] transition-colors">{t('nav.laws')}</a>
               </div>
             </div>
-            
+
             {/* Search Bar in Navbar - Desktop Only */}
             <div className="flex flex-1 max-w-md">
               <div className="relative w-full">
@@ -107,7 +107,7 @@ export default function Home() {
               </button>
             </div>
           </div>
-          
+
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 pb-3 border-t border-gray-200 dark:border-gray-700 pt-4">
@@ -169,7 +169,7 @@ export default function Home() {
               </h2>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-center">
             {/* Video Player */}
             <div className="lg:col-span-2">
@@ -183,18 +183,18 @@ export default function Home() {
                 ></iframe>
               </div>
             </div>
-            
+
             {/* Content Description */}
             <div className="space-y-4">
               <div>
                 <h3 className="text-2xl sm:text-3xl font-bold mb-3 leading-tight">
-                  สิทธิประโยชน์ที่คุณควรรู้
+                  {t('hero.subtitle')}
                 </h3>
                 <p className="text-gray-300 text-base sm:text-lg leading-relaxed mb-4">
                   {t('hero.description')}
                 </p>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row gap-3">
                 <button className="bg-[#0066CC] hover:bg-[#0052A3] text-white px-6 py-3 rounded-sm font-semibold transition-colors text-center">
                   เรียนรู้เพิ่มเติม
@@ -203,7 +203,7 @@ export default function Home() {
                   ดูวิดีโอทั้งหมด
                 </button>
               </div>
-              
+
               <div className="pt-4 border-t border-gray-700">
                 <div className="flex items-center gap-4 text-sm text-gray-400">
                   <div className="flex items-center gap-2">
@@ -229,14 +229,14 @@ export default function Home() {
       {/* Main Content */}
       <section className="py-8 sm:py-12 md:py-16 bg-white dark:bg-gray-900">
         <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
-          <BlogPosts searchQuery={searchQuery} excludeTag="สวัสดิการ" sectionTitle="Latest News" />
+          <BlogPosts searchQuery={searchQuery} excludeTag="สวัสดิการ" sectionTitle={t('blog.latestNews')} />
         </div>
       </section>
 
       {/* Benefits Section */}
       <section className="py-8 sm:py-12 md:py-16 bg-gray-50 dark:bg-gray-800">
         <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
-          <BlogPosts searchQuery={searchQuery} tagFilter="สวัสดิการ" sectionTitle="สิทธิประโยชน์และสวัสดิการ" />
+          <BlogPosts searchQuery={searchQuery} tagFilter="สวัสดิการ" sectionTitle={t('benefits.title')} />
         </div>
       </section>
 

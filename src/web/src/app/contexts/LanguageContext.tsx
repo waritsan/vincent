@@ -20,10 +20,13 @@ const translations: Record<Language, Record<string, string>> = {
         'nav.admin': 'ผู้ดูแลระบบ',
         'nav.myAccount': 'บัญชีของฉัน',
         'nav.searchPlaceholder': 'ค้นหาโพสต์...',
+    'nav.news': 'ข่าวสาร',
+    'nav.laws': 'กฎหมาย',
 
         // Hero Section
-        'hero.title': 'สิทธิของเรา สวัสดิการของเรา',
-        'hero.description': 'ค้นพบสิทธิประโยชน์ที่คุณมีและบริการสำคัญที่เราพร้อมสนับสนุนคุณ',
+        'hero.title': 'ช็อตฟีล STORY',
+        'hero.subtitle': 'เรื่องราวที่คุณควรรู้',
+        'hero.description': 'ค้นพบเรื่องราวที่น่าสนใจที่เราคัดสรรมาเพื่อคุณ',
 
         // Footer
         'footer.aboutUs': 'เกี่ยวกับเรา',
@@ -58,6 +61,9 @@ const translations: Record<Language, Record<string, string>> = {
         'blog.emptyState': 'ยังไม่มีข้อมูลในขณะนี้ กรุณาตรวจสอบอีกครั้งในภายหลัง!',
         'blog.filterByTag': 'กรองตามแท็ก',
         'blog.allTags': 'ทั้งหมด',
+        'blog.latestNews': 'ข่าวสารล่าสุด',
+        'benefits.title': 'สิทธิประโยชน์และสวัสดิการ',
+        'benefits.subtitle': 'สิทธิประโยชน์ที่คุณควรรู้',
     },
     en: {
         // Navigation
@@ -68,10 +74,13 @@ const translations: Record<Language, Record<string, string>> = {
         'nav.admin': 'Admin',
         'nav.myAccount': 'My Account',
         'nav.searchPlaceholder': 'Search posts...',
+    'nav.news': 'News',
+    'nav.laws': 'Laws',
 
         // Hero Section
-        'hero.title': 'Our Rights, Our Benefits',
-        'hero.description': 'Discover the benefits you\'re entitled to and the essential services we\'re here to support you with.',
+        'hero.title': 'SHOTFEEL STORํY',
+        'hero.subtitle': 'Stories You Should Know',
+        'hero.description': 'Discover the stories curated just for you that will make you feel empowered.',
 
         // Footer
         'footer.aboutUs': 'About Us',
@@ -106,6 +115,9 @@ const translations: Record<Language, Record<string, string>> = {
         'blog.emptyState': 'No updates available right now. Please check back later!',
         'blog.filterByTag': 'Filter by tag',
         'blog.allTags': 'All',
+        'blog.latestNews': 'Latest News',
+        'benefits.title': 'Benefits & Welfare',
+        'benefits.subtitle': 'Benefits You Should Know',
     }
 };
 
