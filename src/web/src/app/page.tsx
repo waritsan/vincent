@@ -17,7 +17,7 @@ export default function Home() {
     <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* TED-style Navigation */}
       <nav className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white sticky top-0 z-40 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 max-w-7xl">
+  <div className="px-4 sm:px-6 py-3 sm:py-4 w-full">
           {/* Mobile Layout */}
           <div className="md:hidden flex items-center justify-between">
             {/* Left: Hamburger Menu */}
@@ -158,7 +158,7 @@ export default function Home() {
 
       {/* Promoted Content - Featured Video */}
       <section className="bg-gradient-to-b from-gray-900 to-black text-white py-8 sm:py-12 md:py-16">
-        <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
+  <div className="px-4 sm:px-6 w-full">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-sm uppercase tracking-wider">
@@ -228,21 +228,21 @@ export default function Home() {
 
       {/* Main Content */}
       <section className="py-8 sm:py-12 md:py-16 bg-white dark:bg-gray-900">
-        <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
+  <div className="px-4 sm:px-6 w-full">
           <BlogPosts searchQuery={searchQuery} excludeTag="สวัสดิการ" sectionTitle={t('blog.latestNews')} />
         </div>
       </section>
 
       {/* Benefits Section */}
       <section className="py-8 sm:py-12 md:py-16 bg-gray-50 dark:bg-gray-800">
-        <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
+  <div className="px-4 sm:px-6 w-full">
           <BlogPosts searchQuery={searchQuery} tagFilter="สวัสดิการ" sectionTitle={t('benefits.title')} />
         </div>
       </section>
 
       {/* Footer */}
       <footer className="bg-black text-white py-8 sm:py-12">
-        <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
+  <div className="px-4 sm:px-6 w-full">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
             <div>
               <h3 className="font-bold text-lg mb-4">{t('footer.aboutUs')}</h3>
