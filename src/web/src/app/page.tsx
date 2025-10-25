@@ -1,7 +1,6 @@
 'use client';
 
 import BlogPosts from './components/BlogPosts';
-import AIChat from './components/AIChat';
 import { useLanguage } from './contexts/LanguageContext';
 import { useSearch } from './contexts/SearchContext';
 
@@ -94,9 +93,6 @@ export default function Home() {
           <BlogPosts searchQuery={searchQuery} tagFilter="สวัสดิการ" sectionTitle={t('benefits.title')} />
         </div>
       </section>
-
-      {/* AI Chat Widget */}
-      <AIChat />
     </div>
   );
 }

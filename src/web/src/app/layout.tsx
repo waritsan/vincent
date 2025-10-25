@@ -6,6 +6,7 @@ import { SearchProvider } from "./contexts/SearchContext";
 import { PostsProvider } from "./contexts/PostsContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import AIChat from "./components/AIChat";
 
 const inter = Inter({
   weight: ['300', '400', '500', '600', '700', '800'],
@@ -46,6 +47,7 @@ export default function RootLayout({
               <Navbar />
               <main className="flex-grow">{children}</main>
               <Footer />
+              <AIChat />
             </PostsProvider>
           </SearchProvider>
         </LanguageProvider>
