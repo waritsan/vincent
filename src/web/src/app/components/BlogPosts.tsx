@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { usePosts } from '../contexts/PostsContext';
 
 interface Post {
   id: string;
@@ -20,28 +21,20 @@ interface Post {
   tags?: string[];
 }
 
-interface PostsResponse {
-  posts: Post[];
-  total: number;
-}
-
 interface BlogPostsProps {
   searchQuery?: string;
-  tagFilter?: string;
+  tagFilter?: string | string[];
   excludeTag?: string;
+  authorFilter?: string | string[];
   sectionTitle?: string;
+  displayMode?: 'carousel' | 'grid';
+  onBreadcrumbClick?: () => void;
 }
 
-export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag = '', sectionTitle = '' }: BlogPostsProps = {}) {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag = '', authorFilter, sectionTitle = '', displayMode = 'carousel', onBreadcrumbClick }: BlogPostsProps = {}) {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const { posts, loading, error, refetchPosts } = usePosts();
   const { t } = useLanguage();
-
-  useEffect(() => {
-    fetchPosts();
-  }, []);
 
   // Helper function to scroll carousel
   const scrollCarousel = (rowId: string, direction: 'left' | 'right') => {
@@ -86,34 +79,6 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
     return null;
   };
 
-  const fetchPosts = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Get API URL from environment variable
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      
-      if (!apiUrl) {
-        throw new Error('API URL not configured. Please set NEXT_PUBLIC_API_URL environment variable.');
-      }
-      
-      const response = await fetch(`${apiUrl}/api/posts`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch posts: ${response.statusText}`);
-      }
-      
-      const data: PostsResponse = await response.json();
-      setPosts(data.posts);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load posts');
-      console.error('Error fetching posts:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -127,7 +92,9 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
   const filteredPosts = posts.filter((post) => {
     // Filter by tag (include only)
     if (tagFilter) {
-      if (!post.tags || !post.tags.includes(tagFilter)) {
+      const tags = Array.isArray(tagFilter) ? tagFilter : [tagFilter];
+      const hasMatchingTag = tags.some(tag => post.tags && post.tags.includes(tag));
+      if (!hasMatchingTag) {
         return false;
       }
     }
@@ -137,6 +104,15 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
       if (post.tags && post.tags.includes(excludeTag)) {
         return false;
       }
+    }
+    
+    // Filter by author
+    if (authorFilter) {
+      const authors = Array.isArray(authorFilter) ? authorFilter : [authorFilter];
+      const authorMatch = authors.some(author => 
+        post.author.toLowerCase().includes(author.toLowerCase())
+      );
+      if (!authorMatch) return false;
     }
     
     // Filter by search query
@@ -167,7 +143,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
         <p className="text-gray-900 dark:text-white font-bold text-xl mb-2">{t('blog.error')}</p>
         <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
         <button
-          onClick={fetchPosts}
+          onClick={refetchPosts}
           className="px-6 py-3 bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-sm transition-colors font-semibold"
         >
           {t('blog.tryAgain')}
@@ -202,61 +178,224 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
         </div>
       )}
 
-      {/* Posts Carousel (Netflix-style) */}
+      {/* Posts Display - Carousel or Grid */}
       {filteredPosts.length > 0 && (
-        <div className="relative group/row">
-          {/* Carousel Title */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-              {sectionTitle || t('blog.latestNews')}
-            </h2>
-            <button className="group flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm sm:text-base font-semibold">
-              <span>Explore All</span>
-              <svg 
-                className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
+        displayMode === 'carousel' ? (
+          <div className="relative group/row">
+            {/* Carousel Title */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                {sectionTitle || t('blog.latestNews')}
+              </h2>
+              <button className="group flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm sm:text-base font-semibold">
+                <span>Explore All</span>
+                <svg 
+                  className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Carousel Container */}
+            <div className="relative">
+              {/* Left Arrow */}
+              <button
+                onClick={() => scrollCarousel(Array.isArray(tagFilter) ? tagFilter.join('-') : (tagFilter || excludeTag || 'posts'), 'left')}
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-full bg-gradient-to-r from-white dark:from-gray-900 to-transparent opacity-0 group-hover/row:opacity-100 hover:from-white/95 dark:hover:from-gray-900/95 transition-opacity duration-300 flex items-center justify-start pl-2"
+                aria-label="Scroll left"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+                <svg className="w-8 h-8 text-gray-900 dark:text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
+              {/* Right Arrow */}
+              <button
+                onClick={() => scrollCarousel(Array.isArray(tagFilter) ? tagFilter.join('-') : (tagFilter || excludeTag || 'posts'), 'right')}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-full bg-gradient-to-l from-white dark:from-gray-900 to-transparent opacity-0 group-hover/row:opacity-100 hover:from-white/95 dark:hover:from-gray-900/95 transition-opacity duration-300 flex items-center justify-end pr-2"
+                aria-label="Scroll right"
+              >
+                <svg className="w-8 h-8 text-gray-900 dark:text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+              
+              {/* Scrollable Row */}
+              <div
+                id={`carousel-${Array.isArray(tagFilter) ? tagFilter.join('-') : (tagFilter || excludeTag || 'posts')}`}
+                className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory pb-4"
+                style={{
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  WebkitOverflowScrolling: 'touch'
+                }}
+              >
+                {filteredPosts.map((post) => {
+                  const videoId = post.video_url ? getYouTubeVideoId(post.video_url) : null;
+                  
+                  return (
+                    <article
+                      key={post.id}
+                      onClick={() => {
+                        // If it's a shared post with a source URL, open in new tab
+                        if (post.post_type === 'shared' && post.source_url) {
+                          window.open(post.source_url, '_blank', 'noopener,noreferrer');
+                        } else {
+                          setSelectedPost(post);
+                        }
+                      }}
+                      className="flex-none w-[280px] sm:w-[320px] lg:w-[380px] cursor-pointer snap-start group/card"
+                    >
+                      {/* Video or Image */}
+                      {videoId ? (
+                        <div className="aspect-video mb-3 relative overflow-hidden rounded-md bg-gray-900 transition-transform duration-300 group-hover/card:scale-105">
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 group-hover/card:bg-black/30 transition-colors z-10">
+                            <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center group-hover/card:scale-110 transition-transform duration-300 shadow-lg">
+                              <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </div>
+                          </div>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img 
+                            src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
+                            alt={post.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : post.thumbnail_url ? (
+                        <div className="aspect-video mb-3 relative overflow-hidden rounded-md bg-gray-200 dark:bg-gray-800 transition-transform duration-300 group-hover/card:scale-105">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img 
+                            src={post.thumbnail_url}
+                            alt={post.title}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
+                        </div>
+                      ) : (
+                        <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-800 mb-3 relative overflow-hidden rounded-md transition-transform duration-300 group-hover/card:scale-105">
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-14 h-14 rounded-full bg-[#0066CC] flex items-center justify-center">
+                              <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Content */}
+                      <div className="space-y-2">
+                        <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight group-hover/card:text-[#0066CC] transition-colors line-clamp-2 flex items-start gap-2">
+                          <span className="flex-1">{post.title}</span>
+                          {post.post_type === 'shared' && (
+                            <svg 
+                              className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 mt-1" 
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                              aria-label="External Article"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          )}
+                        </h3>
+                        
+                        <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-2">
+                          {post.content}
+                        </p>
+                        
+                        {/* Tags */}
+                        {post.tags && post.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {post.tags.slice(0, 2).map((tag, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between pt-1">
+                          <div className="flex items-center gap-2">
+                            {post.author_avatar ? (
+                              <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img 
+                                  src={post.author_avatar}
+                                  alt={post.author}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                                  {post.author.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            )}
+                            <span className="text-xs text-gray-500 dark:text-gray-500 truncate">
+                              {post.author}
+                            </span>
+                            {post.reading_time_minutes && (
+                              <>
+                                <span className="text-xs text-gray-400">•</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-500">
+                                  {post.reading_time_minutes} min read
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          <time className="text-xs text-gray-500 dark:text-gray-500 flex-shrink-0">
+                            {formatDate(post.created_at)}
+                          </time>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-          
-          {/* Carousel Container */}
-          <div className="relative">
-            {/* Left Arrow */}
-            <button
-              onClick={() => scrollCarousel(tagFilter || excludeTag || 'posts', 'left')}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-full bg-gradient-to-r from-white dark:from-gray-900 to-transparent opacity-0 group-hover/row:opacity-100 hover:from-white/95 dark:hover:from-gray-900/95 transition-opacity duration-300 flex items-center justify-start pl-2"
-              aria-label="Scroll left"
-            >
-              <svg className="w-8 h-8 text-gray-900 dark:text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            
-            {/* Right Arrow */}
-            <button
-              onClick={() => scrollCarousel(tagFilter || excludeTag || 'posts', 'right')}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-full bg-gradient-to-l from-white dark:from-gray-900 to-transparent opacity-0 group-hover/row:opacity-100 hover:from-white/95 dark:hover:from-gray-900/95 transition-opacity duration-300 flex items-center justify-end pr-2"
-              aria-label="Scroll right"
-            >
-              <svg className="w-8 h-8 text-gray-900 dark:text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-            
-            {/* Scrollable Row */}
-            <div
-              id={`carousel-${tagFilter || excludeTag || 'posts'}`}
-              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory pb-4"
-              style={{
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-                WebkitOverflowScrolling: 'touch'
-              }}
-            >
+        ) : (
+          /* Grid View */
+          <div className="space-y-8">
+            {/* Netflix-style Breadcrumb Title */}
+            {sectionTitle && (
+              <div className="mb-6">
+                <nav className="flex items-center space-x-2 text-sm">
+                  {sectionTitle.includes('>') ? (
+                    <>
+                      <button
+                        onClick={onBreadcrumbClick}
+                        className="text-gray-600 dark:text-gray-400 hover:text-[#0066CC] transition-colors font-medium"
+                      >
+                        {sectionTitle.split(' > ')[0]}
+                      </button>
+                      <span className="text-gray-400 dark:text-gray-500">›</span>
+                      <span className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                        {sectionTitle.split(' > ')[1]}
+                      </span>
+                    </>
+                  ) : (
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                      {sectionTitle}
+                    </h2>
+                  )}
+                </nav>
+              </div>
+            )}
+
+            {/* Grid Container */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredPosts.map((post) => {
                 const videoId = post.video_url ? getYouTubeVideoId(post.video_url) : null;
                 
@@ -271,14 +410,14 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                         setSelectedPost(post);
                       }
                     }}
-                    className="flex-none w-[280px] sm:w-[320px] lg:w-[380px] cursor-pointer snap-start group/card"
+                    className="cursor-pointer group/card bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden"
                   >
                     {/* Video or Image */}
                     {videoId ? (
-                      <div className="aspect-video mb-3 relative overflow-hidden rounded-md bg-gray-900 transition-transform duration-300 group-hover/card:scale-105">
+                      <div className="aspect-video relative overflow-hidden bg-gray-900">
                         <div className="absolute inset-0 flex items-center justify-center bg-black/50 group-hover/card:bg-black/30 transition-colors z-10">
-                          <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center group-hover/card:scale-110 transition-transform duration-300 shadow-lg">
-                            <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                          <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center group-hover/card:scale-110 transition-transform duration-300 shadow-lg">
+                            <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M8 5v14l11-7z"/>
                             </svg>
                           </div>
@@ -287,24 +426,24 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                         <img 
                           src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
                           alt={post.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
                         />
                       </div>
                     ) : post.thumbnail_url ? (
-                      <div className="aspect-video mb-3 relative overflow-hidden rounded-md bg-gray-200 dark:bg-gray-800 transition-transform duration-300 group-hover/card:scale-105">
+                      <div className="aspect-video relative overflow-hidden bg-gray-200 dark:bg-gray-800">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img 
                           src={post.thumbnail_url}
                           alt={post.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
                       </div>
                     ) : (
-                      <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-800 mb-3 relative overflow-hidden rounded-md transition-transform duration-300 group-hover/card:scale-105">
+                      <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-800 relative overflow-hidden">
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-14 h-14 rounded-full bg-[#0066CC] flex items-center justify-center">
-                            <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                          <div className="w-12 h-12 rounded-full bg-[#0066CC] flex items-center justify-center">
+                            <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M8 5v14l11-7z"/>
                             </svg>
                           </div>
@@ -313,8 +452,8 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                     )}
                     
                     {/* Content */}
-                    <div className="space-y-2">
-                      <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight group-hover/card:text-[#0066CC] transition-colors line-clamp-2 flex items-start gap-2">
+                    <div className="p-4 space-y-2">
+                      <h3 className="text-base font-bold text-gray-900 dark:text-white leading-tight group-hover/card:text-[#0066CC] transition-colors line-clamp-2 flex items-start gap-2">
                         <span className="flex-1">{post.title}</span>
                         {post.post_type === 'shared' && (
                           <svg 
@@ -347,7 +486,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                         </div>
                       )}
                       
-                      <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-center justify-between pt-2">
                         <div className="flex items-center gap-2">
                           {post.author_avatar ? (
                             <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
@@ -387,7 +526,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
               })}
             </div>
           </div>
-        </div>
+        )
       )}
 
       {/* Post Modal */}

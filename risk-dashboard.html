@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Management Dashboard (Thailand)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e9eff5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background-color: #f9fbfd;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .chart-card h3 {
+            margin-top: 0;
+            color: #555;
+            font-size: 1.2em;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            background-color: #ecf0f1;
+            border-radius: 8px;
+        }
+
+        .controls label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .controls select,
+        .controls input[type="text"] {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            min-width: 180px;
+            transition: border-color 0.3s;
+        }
+
+        .controls select:focus,
+        .controls input[type="text"]:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th,
+        td {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #dbe4f0;
+            color: #2c3e50;
+            cursor: pointer;
+            position: relative;
+        }
+
+        th:hover {
+            background-color: #c9d5e3;
+        }
+
+        th.sorted-asc::after {
+            content: ' ▲';
+            position: absolute;
+            right: 10px;
+            font-size: 0.8em;
+        }
+
+        th.sorted-desc::after {
+            content: ' ▼';
+            position: absolute;
+            right: 10px;
+            font-size: 0.8em;
+        }
+
+        .risk-level {
+            font-weight: bold;
+            padding: 6px 12px;
+            border-radius: 20px;
+            color: white;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+
+        .risk-low {
+            background-color: #2ecc71;
+        }
+
+        .risk-medium {
+            background-color: #f1c40f;
+        }
+
+        .risk-high {
+            background-color: #e67e22;
+        }
+
+        .risk-critical {
+            background-color: #e74c3c;
+        }
+
+        .tooltip {
+            position: relative;
+            cursor: pointer;
+            text-decoration: underline dotted;
+            color: #3498db;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 350px;
+            background-color: #555;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 15px;
+            position: absolute;
+            z-index: 1;
+            top: 125%;
+            left: 50%;
+            margin-left: -175px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            line-height: 1.5;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <div class="dashboard-container">
+        <h1>Risk Management Dashboard (Thailand)</h1>
+
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h3>Risk Level Distribution</h3>
+                <canvas id="riskLevelChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Risk Score Distribution</h3>
+                <canvas id="riskScoreChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>High-Risk Industries</h3>
+                <canvas id="industryRiskChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Most Common Risk Factors</h3>
+                <canvas id="commonFactorsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div>
+                <label for="risk-filter">Filter by Risk Level:</label>
+                <select id="risk-filter">
+                    <option value="all">All</option>
+                    <option value="Critical">Critical</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+            </div>
+            <div>
+                <label for="industry-filter">Filter by Industry:</label>
+                <select id="industry-filter">
+                    <option value="all">All</option>
+                </select>
+            </div>
+            <div>
+                <label for="search-box">Search:</label>
+                <input type="text" id="search-box" placeholder="Search by name...">
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="risk-table">
+                <thead>
+                    <tr>
+                        <th data-column="name" data-order="desc">Company Name</th>
+                        <th data-column="riskLevel" data-order="desc">Risk Level</th>
+                        <th data-column="riskScore" data-order="desc">Risk Score</th>
+                        <th data-column="industry" data-order="desc">Industry</th>
+                        <th>Risk Factors</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Table body will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const industries = ["Tourism", "Real Estate", "Financial Services", "E-commerce", "Construction", "Logistics", "Import/Export", "Hospitality", "Manufacturing"];
+            const riskFactors = {
+                "Tourism": ["Foreign Nominee Arrangement", "Money Laundering", "Tax Evasion", "Undisclosed Ownership", "Human Trafficking"],
+                "Real Estate": ["Foreign Nominee Arrangement", "Tax Evasion", "Shell Company Transactions", "Money Laundering", "Land Ownership Irregularities"],
+                "Financial Services": ["Money Laundering", "KYC Violations", "Fraudulent Transactions", "Unauthorized Services", "Cybercrime"],
+                "E-commerce": ["Consumer Fraud", "Illegal Digital Assets", "Tax Evasion", "Counterfeit Goods", "Data Privacy Violations"],
+                "Construction": ["Illegal Labor Practices", "Environmental Violations", "Bribery and Corruption", "Undisclosed Subcontractors", "Permit Violations"],
+                "Logistics": ["Contraband Trafficking", "Customs Evasion", "Regulatory Non-Compliance", "Undocumented Goods", "Bribery and Extortion"],
+                "Import/Export": ["Trade-Based Money Laundering", "Customs Fraud", "Counterfeit Goods", "Sanction Violations", "Misdeclaration of Goods"],
+                "Hospitality": ["Foreign Nominee Arrangement", "Tax Evasion", "Labor Law Violations", "Undisclosed Revenue", "Illegal Gambling"],
+                "Manufacturing": ["Illegal Waste Disposal", "Intellectual Property Theft", "Labor Exploitation", "Tax Evasion", "Counterfeit Products"]
+            };
+            const thaiCompanyNames = [
+                "สมบูรณ์การค้า", "แสงทองกรุ๊ป", "รุ่งเรืองโลหะ", "มงคลธุรกิจ", "ไทยเจริญโฮลดิ้ง",
+                "สยามอุตสาหกรรม", "พลังไทย", "กรุงเทพพัฒนา", "เอเชียสยาม", "ภาคินีอินเตอร์",
+                "มณีทรัพย์", "ช่างทอง", "แสงอรุณ", "ดวงแก้วการตลาด", "นภาธุรกิจ",
+                "วิถีไทย", "อินเตอร์เทรดดิ้ง", "มหาศาลคอนสตรัคชั่น", "เทอร์มินัลทัวร์", "สินทวีพร็อพเพอร์ตี้",
+                "อุดมทรัพย์", "เกียรติกุล", "อภิชาติการเกษตร", "นันทนาโลจิสติกส์", "ภูมิทัศน์ดีไซน์",
+                "สมาร์ทโซลูชั่น", "โชคชัยเฟอร์นิเจอร์", "เลิศพัฒนา", "ศิริชัยการขนส่ง", "ธนพัฒน์โฮเต็ล",
+                "มหาจักร", "ไทยฟู้ดส์", "อินโนเวชั่น จำกัด", "สุขุมวิทพลาซ่า", "ปิติกรุ๊ป",
+                "สิริวัฒนา", "แก้วกานต์", "สยามเทค", "ไทยทิพย์", "เจริญพรการช่าง",
+                "มานะทัวร์", "รัตนากรุ๊ป", "ศักดิ์ชัยวิศวกรรม", "ธนาคารไทย", "พรชัยดีเวลลอปเม้นท์",
+                "ร่มเกล้าธุรกิจ", "มิตรภาพโลหะ", "วิจิตรการพิมพ์", "ศรีสวัสดิ์", "ภัทราพร็อพเพอร์ตี้",
+                "วิษณุโฮเทล", "ไทยยูไนเต็ด", "ทัศนัยโลจิสติกส์", "พีรวัฒน์", "ประทีปไทย",
+                "ประยงค์อุตสาหกรรม", "วีระศักดิ์", "สุทัศน์การค้า", "ธนากรุ๊ป", "ชัยวัฒนาการก่อสร้าง",
+                "พนาสินทรัพย์", "แสงดาวสยาม", "สินทรัพย์ไทย", "ศิรินทิพย์", "วิวัฒน์การค้า",
+                "สุวรรณภูมิโลจิสติกส์", "เกริกเกียรติ", "สยามรีสอร์ท", "วรศักดิ์พลาซ่า", "ไทยวิศวกรรม",
+                "ไพฑูรย์พานิช", "กอบกุลอินเตอร์", "รุ่งอรุณดีเวลลอปเม้นท์", "พิพัฒน์ธุรกิจ", "มนัสการค้า",
+                "สุโขทัยกรุ๊ป", "ไทยโอเชี่ยน", "ธเนศการพิมพ์", "พนมทัวร์", "บุญส่งโฮลดิ้ง",
+                "ธนภรณ์", "แสงจันทร์", "เอกชัยอุตสาหกรรม", "จันทร์เพ็ญ", "อภิรมย์การเกษตร",
+                "พนาวัลย์", "แก้วไพลิน", "ไทยสมุทร", "มหาชนอุตสาหกรรม", "เพ็ญศรีเฟอร์นิเจอร์",
+                "วารีกรุ๊ป", "สินทรัพย์เจริญ", "สยามเอสเตท", "ประภาส", "เมธาธุรกิจ"
+            ];
+
+            let allCompanies = [];
+            let currentData = [];
+
+            function generateCompanyData() {
+                const data = [];
+                for (let i = 0; i < 100; i++) {
+                    const industry = industries[Math.floor(Math.random() * industries.length)];
+                    const companyRiskFactors = riskFactors[industry];
+                    const randomFactors = companyRiskFactors.sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 4) + 1);
+                    const riskScore = Math.floor(Math.random() * 95) + 5; // Scores between 5 and 99
+                    let riskLevel;
+                    if (riskScore > 85) riskLevel = 'Critical';
+                    else if (riskScore > 70) riskLevel = 'High';
+                    else if (riskScore > 40) riskLevel = 'Medium';
+                    else riskLevel = 'Low';
+
+                    data.push({
+                        name: thaiCompanyNames[Math.floor(Math.random() * thaiCompanyNames.length)] + ' ' + (i + 1),
+                        riskLevel: riskLevel,
+                        riskScore: riskScore,
+                        industry: industry,
+                        riskFactors: randomFactors
+                    });
+                }
+                return data;
+            }
+
+            function renderTable(data) {
+                const tbody = document.querySelector('#risk-table tbody');
+                tbody.innerHTML = '';
+                data.forEach(company => {
+                    const row = document.createElement('tr');
+                    const riskLevelClass = company.riskLevel.toLowerCase();
+                    const tooltipContent = `
+                        <strong>Details for ${company.name}:</strong><br>
+                        <strong>Risk Score:</strong> ${company.riskScore}<br>
+                        <strong>Industry:</strong> ${company.industry}<br>
+                        <strong>Risk Factors:</strong> ${company.riskFactors.join(', ')}
+                    `;
+                    row.innerHTML = `
+                        <td>${company.name}</td>
+                        <td><span class="risk-level risk-${riskLevelClass}">${company.riskLevel}</span></td>
+                        <td>${company.riskScore}</td>
+                        <td>${company.industry}</td>
+                        <td>
+                            <div class="tooltip">
+                                ${company.riskFactors.length > 0 ? company.riskFactors.join(', ') : 'N/A'}
+                                <span class="tooltiptext">${tooltipContent}</span>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+
+            function updateCharts() {
+                const riskLevelData = {
+                    Critical: 0, High: 0, Medium: 0, Low: 0
+                };
+                const industryRiskScores = {};
+                const riskFactorCounts = {};
+                const riskScoreBins = {
+                    '0-20': 0, '21-40': 0, '41-60': 0, '61-80': 0, '81-100': 0
+                };
+
+                currentData.forEach(company => {
+                    riskLevelData[company.riskLevel]++;
+
+                    if (!industryRiskScores[company.industry]) {
+                        industryRiskScores[company.industry] = { totalScore: 0, count: 0 };
+                    }
+                    industryRiskScores[company.industry].totalScore += company.riskScore;
+                    industryRiskScores[company.industry].count++;
+
+                    company.riskFactors.forEach(factor => {
+                        riskFactorCounts[factor] = (riskFactorCounts[factor] || 0) + 1;
+                    });
+
+                    if (company.riskScore <= 20) riskScoreBins['0-20']++;
+                    else if (company.riskScore <= 40) riskScoreBins['21-40']++;
+                    else if (company.riskScore <= 60) riskScoreBins['41-60']++;
+                    else if (company.riskScore <= 80) riskScoreBins['61-80']++;
+                    else riskScoreBins['81-100']++;
+                });
+
+                const sortedIndustryRisk = Object.keys(industryRiskScores).map(key => ({
+                    industry: key,
+                    avgScore: industryRiskScores[key].totalScore / industryRiskScores[key].count
+                })).sort((a, b) => b.avgScore - a.avgScore);
+
+                const sortedRiskFactors = Object.keys(riskFactorCounts).map(key => ({
+                    factor: key,
+                    count: riskFactorCounts[key]
+                })).sort((a, b) => b.count - a.count);
+
+                // Chart configurations
+                new Chart(document.getElementById('riskLevelChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Critical', 'High', 'Medium', 'Low'],
+                        datasets: [{
+                            data: [riskLevelData.Critical, riskLevelData.High, riskLevelData.Medium, riskLevelData.Low],
+                            backgroundColor: ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71'],
+                            hoverOffset: 4
+                        }]
+                    }
+                });
+
+                new Chart(document.getElementById('riskScoreChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(riskScoreBins),
+                        datasets: [{
+                            label: 'Number of Companies',
+                            data: Object.values(riskScoreBins),
+                            backgroundColor: '#3498db',
+                            borderColor: '#2980b9',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: { scales: { y: { beginAtZero: true } } }
+                });
+
+                new Chart(document.getElementById('industryRiskChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: sortedIndustryRisk.map(item => item.industry),
+                        datasets: [{
+                            label: 'Average Risk Score',
+                            data: sortedIndustryRisk.map(item => item.avgScore),
+                            backgroundColor: sortedIndustryRisk.map(item => {
+                                if (item.avgScore > 85) return '#e74c3c';
+                                if (item.avgScore > 70) return '#e67e22';
+                                if (item.avgScore > 40) return '#f1c40f';
+                                return '#2ecc71';
+                            }),
+                            borderColor: '#fff',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        scales: { x: { beginAtZero: true } }
+                    }
+                });
+
+                new Chart(document.getElementById('commonFactorsChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: sortedRiskFactors.map(item => item.factor),
+                        datasets: [{
+                            label: 'Frequency',
+                            data: sortedRiskFactors.map(item => item.count),
+                            backgroundColor: '#9b59b6',
+                            borderColor: '#8e44ad',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: { scales: { y: { beginAtZero: true } } }
+                });
+            }
+
+            function filterAndSearch() {
+                const riskFilter = document.getElementById('risk-filter').value;
+                const industryFilter = document.getElementById('industry-filter').value;
+                const searchTerm = document.getElementById('search-box').value.toLowerCase();
+
+                let filteredData = allCompanies.filter(company => {
+                    const riskMatch = riskFilter === 'all' || company.riskLevel === riskFilter;
+                    const industryMatch = industryFilter === 'all' || company.industry === industryFilter;
+                    const searchMatch = company.name.toLowerCase().includes(searchTerm);
+                    return riskMatch && industryMatch && searchMatch;
+                });
+                currentData = filteredData;
+                renderTable(currentData);
+                updateCharts();
+            }
+
+            function populateIndustryFilter() {
+                const industryFilter = document.getElementById('industry-filter');
+                const uniqueIndustries = [...new Set(allCompanies.map(item => item.industry))].sort();
+                uniqueIndustries.forEach(industry => {
+                    const option = document.createElement('option');
+                    option.value = industry;
+                    option.textContent = industry;
+                    industryFilter.appendChild(option);
+                });
+            }
+
+            function sortTable(columnIndex) {
+                const headers = document.querySelectorAll('#risk-table th');
+                const header = headers[columnIndex];
+                const column = header.dataset.column;
+                let order = header.dataset.order === 'asc' ? 'desc' : 'asc';
+
+                headers.forEach(h => h.classList.remove('sorted-asc', 'sorted-desc'));
+                header.classList.add(order === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                header.dataset.order = order;
+
+                currentData.sort((a, b) => {
+                    const valueA = a[column];
+                    const valueB = b[column];
+                    if (typeof valueA === 'string') {
+                        return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
+                    }
+                    return order === 'asc' ? valueA - valueB : valueB - valueA;
+                });
+
+                renderTable(currentData);
+            }
+
+            document.getElementById('risk-filter').addEventListener('change', filterAndSearch);
+            document.getElementById('industry-filter').addEventListener('change', filterAndSearch);
+            document.getElementById('search-box').addEventListener('input', filterAndSearch);
+
+            document.querySelectorAll('#risk-table th[data-column]').forEach((header, index) => {
+                header.addEventListener('click', () => sortTable(index));
+            });
+
+            allCompanies = generateCompanyData();
+            currentData = [...allCompanies];
+            populateIndustryFilter();
+            renderTable(currentData);
+            updateCharts();
+        });
+    </script>
+</body>
+
+</html>

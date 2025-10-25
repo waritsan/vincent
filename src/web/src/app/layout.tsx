@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Inter, Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { SearchProvider } from "./contexts/SearchContext";
+import { PostsProvider } from "./contexts/PostsContext";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 
 const inter = Inter({
   weight: ['300', '400', '500', '600', '700', '800'],
@@ -31,13 +35,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="th">
+    <html lang="th" className="h-full">
       <body
-        className={`${inter.variable} ${notoSansThai.variable} font-sans antialiased`}
+        className={`${inter.variable} ${notoSansThai.variable} font-sans antialiased min-h-full flex flex-col`}
         style={{ fontFamily: 'var(--font-noto-sans-thai), var(--font-inter), sans-serif' }}
       >
         <LanguageProvider>
-          {children}
+          <SearchProvider>
+            <PostsProvider>
+              <Navbar />
+              <main className="flex-grow">{children}</main>
+              <Footer />
+            </PostsProvider>
+          </SearchProvider>
         </LanguageProvider>
       </body>
     </html>
