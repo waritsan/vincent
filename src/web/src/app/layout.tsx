@@ -12,14 +12,16 @@ const inter = Inter({
   weight: ['300', '400', '500', '600', '700', '800'],
   variable: "--font-inter",
   subsets: ["latin"],
-  display: 'swap',
+  display: 'block', // Changed from 'swap' to 'block' for better font loading
+  preload: true,
 });
 
 const notoSansThai = Noto_Sans_Thai({
   weight: ['300', '400', '500', '600', '700'],
   variable: "--font-noto-sans-thai",
   subsets: ["thai", "latin"],
-  display: 'swap',
+  display: 'block', // Changed from 'swap' to 'block' for better font loading
+  preload: true,
 });
 
 export const metadata: Metadata = {
