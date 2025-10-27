@@ -3,7 +3,7 @@ import logging
 import json
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from openai import AzureOpenAI
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from azure.cosmos import CosmosClient, exceptions
@@ -136,6 +136,53 @@ def get_ai_agent():
         logging.error(f"Failed to create Azure AI Agent client: {e}", exc_info=True)
         return None, None
 
+@app.route(route="health", methods=["GET"])
+def health(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Health check endpoint
+    GET /api/health
+    """
+    logging.info('Processing health check request')
+    
+    try:
+        # Basic health check
+        health_status = {
+            "status": "healthy",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "version": "1.0.0",
+            "services": {}
+        }
+        
+        # Check Cosmos DB connection
+        try:
+            container = get_cosmos_container()
+            if container:
+                health_status["services"]["cosmos_db"] = "connected"
+            else:
+                health_status["services"]["cosmos_db"] = "not_configured"
+        except Exception as e:
+            health_status["services"]["cosmos_db"] = f"error: {str(e)}"
+        
+        # Check AI services
+        try:
+            project_client, agent = get_ai_agent()
+            if project_client and agent:
+                health_status["services"]["ai_agent"] = "configured"
+            else:
+                health_status["services"]["ai_agent"] = "not_configured"
+        except Exception as e:
+            health_status["services"]["ai_agent"] = f"error: {str(e)}"
+        
+        return create_response(health_status)
+        
+    except Exception as e:
+        logging.error(f"Error processing health check: {e}")
+        return create_response({
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }, 500)
+
 @app.route(route="chat", methods=["POST"])
 def chat(req: func.HttpRequest) -> func.HttpResponse:
     """
@@ -251,7 +298,7 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
                             stream_chunks.append(f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n")
                         
                         # Send completion signal
-                        stream_chunks.append(f"data: {json.dumps({'type': 'done', 'full_response': ai_response, 'timestamp': datetime.utcnow().isoformat()})}\n\n")
+                        stream_chunks.append(f"data: {json.dumps({'type': 'done', 'full_response': ai_response, 'timestamp': datetime.now(timezone.utc).isoformat()})}\n\n")
                         
                         # Return streaming response as concatenated string
                         return func.HttpResponse(
@@ -310,7 +357,7 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
                         "thread_id": thread_id,
                         "message": user_message,
                         "response": ai_response,
-                        "timestamp": datetime.utcnow().isoformat(),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
                         "agent_id": agent.id,
                         "is_new_conversation": thread_id == (thread.id if 'thread' in locals() else None)
                     }
@@ -332,7 +379,7 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
                 "conversation_id": conversation_id,
                 "message": user_message,
                 "response": "Azure AI Agent is not configured. Please set AZURE_AI_AGENT_ID environment variable after creating an agent manually in Azure AI Foundry.",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "configured": False
             }
         
@@ -592,9 +639,9 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
                     # Accept as string, optionally validate/parse
                     datetime.fromisoformat(created_at.replace('Z', '+00:00'))
                 else:
-                    created_at = datetime.utcnow().isoformat()
+                    created_at = datetime.now(timezone.utc).isoformat()
             except Exception:
-                created_at = datetime.utcnow().isoformat()
+                created_at = datetime.now(timezone.utc).isoformat()
 
             new_post = {
                 "id": str(uuid.uuid4()),
@@ -606,7 +653,7 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
                 "thumbnail_url": thumbnail_url,
                 "tags": tags if isinstance(tags, list) else [],
                 "created_at": created_at,
-                "updated_at": datetime.utcnow().isoformat()
+                "updated_at": datetime.now(timezone.utc).isoformat()
             }
             
             if not container:
@@ -684,7 +731,7 @@ def update_post(req: func.HttpRequest) -> func.HttpResponse:
                     existing_post['created_at'] = created_at
                 except Exception:
                     pass  # Ignore invalid date, keep existing
-            existing_post['updated_at'] = datetime.utcnow().isoformat()
+            existing_post['updated_at'] = datetime.now(timezone.utc).isoformat()
             
             # Replace the item in Cosmos DB
             updated_item = container.replace_item(
@@ -828,8 +875,8 @@ def create_post_from_url(req: func.HttpRequest) -> func.HttpResponse:
                             'post_type': 'shared',
                             'tags': list(set((tags if isinstance(tags, list) else []) + ['DBD', 'กรมพัฒนาธุรกิจการค้า', 'ข่าวประชาสัมพันธ์'])),
                             'reading_time_minutes': reading_time_minutes,
-                            'created_at': publish_date or datetime.utcnow().isoformat(),
-                            'updated_at': datetime.utcnow().isoformat(),
+                            'created_at': publish_date or datetime.now(timezone.utc).isoformat(),
+                            'updated_at': datetime.now(timezone.utc).isoformat(),
                         }
                         
                         created_item = container.create_item(body=post_data)
@@ -1051,8 +1098,8 @@ def create_post_from_url(req: func.HttpRequest) -> func.HttpResponse:
             'post_type': 'shared',
             'tags': all_tags,
             'reading_time_minutes': reading_time_minutes,
-            'created_at': publish_date or datetime.utcnow().isoformat(),
-            'updated_at': datetime.utcnow().isoformat(),
+            'created_at': publish_date or datetime.now(timezone.utc).isoformat(),
+            'updated_at': datetime.now(timezone.utc).isoformat(),
         }
         
         # Save to Cosmos DB
