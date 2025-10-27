@@ -8,6 +8,7 @@ from openai import AzureOpenAI
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from azure.cosmos import CosmosClient, exceptions
 from azure.ai.projects import AIProjectClient
+from text_extraction import extract_companies_and_locations
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -1090,10 +1091,34 @@ def create_post_from_url(req: func.HttpRequest) -> func.HttpResponse:
         return create_response({"error": str(e)}, 500)
 
 
-@app.route(route="health", methods=["GET"])
-def health(req: func.HttpRequest) -> func.HttpResponse:
-    """Health check endpoint"""
-    return create_response({"status": "healthy", "version": "1.0.0"})
+@app.route(route="extract/entities", methods=["POST"])
+def extract_entities(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Extract company names and their locations from text using Azure OpenAI
+    POST /api/extract/entities
+    Body: { "text": "text content to analyze" }
+    """
+    logging.info('Processing entity extraction request')
+    
+    try:
+        # Parse request body
+        req_body = req.get_json()
+        text = req_body.get('text')
+        
+        # Use the utility function
+        result = extract_companies_and_locations(text)
+        
+        if result["success"]:
+            return create_response(result)
+        else:
+            return create_response({"error": result["error"]}, 400)
+        
+    except ValueError as e:
+        logging.error(f"Invalid JSON in request: {e}")
+        return create_response({"error": "Invalid JSON in request body"}, 400)
+    except Exception as e:
+        logging.error(f"Error processing entity extraction request: {e}")
+        return create_response({"error": "Internal server error"}, 500)
 
 
 # Scheduled timer function to auto-fetch DBD news
