@@ -240,7 +240,11 @@ export default function Dashboard() {
                 />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="count" fill="#0066CC" />
+                <Bar dataKey="count">
+                  {locationChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
