@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Cell } from 'recharts';
 import dynamic from 'next/dynamic';
 
 // Dynamically import map components to avoid SSR issues
@@ -12,6 +12,9 @@ const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ss
 
 // Import leaflet CSS
 import 'leaflet/dist/leaflet.css';
+
+// Color palette for charts
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF7C7C'];
 
 interface Company {
   id: string;
@@ -263,7 +266,11 @@ export default function Dashboard() {
                   formatter={(value) => [value, 'Valuation']}
                   labelFormatter={(label) => valuationData.find(d => d.name === label)?.fullName || label}
                 />
-                <Bar dataKey="valuation" fill="#00C49F" minPointSize={5} />
+                <Bar dataKey="valuation" minPointSize={5}>
+                  {valuationData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
