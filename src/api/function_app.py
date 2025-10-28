@@ -1138,6 +1138,59 @@ def create_post_from_url(req: func.HttpRequest) -> func.HttpResponse:
         return create_response({"error": str(e)}, 500)
 
 
+@app.route(route="companies", methods=["GET"])
+def get_companies(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Get extracted companies from CosmosDB
+    GET /api/companies
+    Query parameters:
+    - limit: Number of companies to return (default: 10, max: 100)
+    """
+    logging.info('Processing companies request')
+    
+    try:
+        # Get limit from query parameters
+        limit = int(req.params.get('limit', '10'))
+        limit = min(max(1, limit), 100)  # Between 1 and 100
+        
+        # Import the companies container function
+        from text_extraction import get_companies_container
+        
+        container = get_companies_container()
+        
+        if not container:
+            return create_response({"error": "Companies database not configured"}, 503)
+        
+        try:
+            # Query individual company documents ordered by creation date (most recent first)
+            query = f"SELECT * FROM c ORDER BY c.created_at DESC OFFSET 0 LIMIT {limit}"
+            items = list(container.query_items(
+                query=query,
+                enable_cross_partition_query=True
+            ))
+            
+            # Transform to match expected format (each item is already a company document)
+            companies_data = {
+                "companies": items,
+                "total": len(items),
+                "limit": limit,
+                "source": "cosmos_db",
+                "container": "company_extractions"
+            }
+            
+            return create_response(companies_data)
+            
+        except exceptions.CosmosHttpResponseError as e:
+            logging.error(f"Cosmos DB query error: {e}")
+            return create_response({"error": f"Database error: {str(e)}"}, 500)
+            
+    except ValueError as e:
+        return create_response({"error": "Invalid limit parameter"}, 400)
+    except Exception as e:
+        logging.error(f"Error processing extractions request: {e}")
+        return create_response({"error": "Internal server error"}, 500)
+
+
 @app.route(route="extract/entities", methods=["POST"])
 def extract_entities(req: func.HttpRequest) -> func.HttpResponse:
     """

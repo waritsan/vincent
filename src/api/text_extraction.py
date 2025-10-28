@@ -7,6 +7,8 @@ import logging
 from typing import List, Dict, Optional
 from openai import AzureOpenAI
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from azure.cosmos import CosmosClient, exceptions
+from datetime import datetime, timezone
 
 
 def create_azure_client() -> Optional[AzureOpenAI]:
@@ -41,9 +43,72 @@ def create_azure_client() -> Optional[AzureOpenAI]:
         return None
 
 
+def get_companies_container():
+    """
+    Initialize and return Cosmos DB container client for company extractions in blogdb
+    """
+    connection_string = os.environ.get("AZURE_COSMOS_CONNECTION_STRING")
+    endpoint = os.environ.get("AZURE_COSMOS_ENDPOINT")
+    database_name = os.environ.get("AZURE_COSMOS_DATABASE_NAME", "blogdb")
+    container_name = "company_extractions"
+    
+    # Prefer connection string for local development, endpoint for production
+    if connection_string:
+        logging.info("Using Cosmos DB connection string for company extractions")
+        try:
+            client = CosmosClient.from_connection_string(connection_string)
+            database = client.get_database_client(database_name)
+            
+            # Create container if it doesn't exist
+            try:
+                container = database.create_container_if_not_exists(
+                    id=container_name,
+                    partition_key={'paths': ['/id'], 'kind': 'Hash'}
+                )
+                logging.info(f"Created/accessed container: {container_name}")
+            except exceptions.CosmosHttpResponseError as e:
+                if e.status_code == 409:  # Conflict - container already exists
+                    container = database.get_container_client(container_name)
+                else:
+                    raise
+            
+            return container
+        except Exception as e:
+            logging.error(f"Failed to create Cosmos DB client from connection string: {e}")
+            return None
+    elif endpoint:
+        logging.info("Using Cosmos DB endpoint with Managed Identity for company extractions")
+        try:
+            # Use Managed Identity for authentication
+            credential = DefaultAzureCredential()
+            client = CosmosClient(endpoint, credential=credential)
+            database = client.get_database_client(database_name)
+            
+            # Create container if it doesn't exist
+            try:
+                container = database.create_container_if_not_exists(
+                    id=container_name,
+                    partition_key={'paths': ['/id'], 'kind': 'Hash'}
+                )
+                logging.info(f"Created/accessed container: {container_name}")
+            except exceptions.CosmosHttpResponseError as e:
+                if e.status_code == 409:  # Conflict - container already exists
+                    container = database.get_container_client(container_name)
+                else:
+                    raise
+            
+            return container
+        except Exception as e:
+            logging.error(f"Failed to create Cosmos DB client with Managed Identity: {e}")
+            return None
+    else:
+        logging.warning("Neither AZURE_COSMOS_CONNECTION_STRING nor AZURE_COSMOS_ENDPOINT configured")
+        return None
+
+
 def extract_companies_and_locations(text: str) -> Dict:
     """
-    Extract company names and their locations from text using Azure OpenAI.
+    Extract company names, their locations, and asset valuations from text using Azure OpenAI.
 
     Args:
         text: The text content to analyze
@@ -52,7 +117,7 @@ def extract_companies_and_locations(text: str) -> Dict:
         Dictionary containing extraction results with the following structure:
         {
             "success": bool,
-            "companies": [{"name": str, "location": str}, ...],
+            "companies": [{"name": str, "location": str, "asset_valuation": str}, ...],
             "total_companies": int,
             "text_length": int,
             "error": str (if success is False)
@@ -87,21 +152,24 @@ def extract_companies_and_locations(text: str) -> Dict:
             messages=[
                 {
                     "role": "system",
-                    "content": """You are an AI assistant that extracts company names and their locations from text.
-Provide a list of unique company names along with their associated locations.
+                    "content": """You are an AI assistant that extracts company names, locations, and asset valuations from text.
+Provide a list of unique company names along with their associated locations and asset valuations.
 Return the results in JSON format with the following structure:
-{"companies": [{"name": "Company Name", "location": "Location"}]}
+{"companies": [{"name": "Company Name", "location": "Location", "asset_valuation": "Asset Valuation"}]}
 
 Guidelines:
-- Only extract companies that are clearly mentioned in the text
+- Only extract PRIVATE companies and business entities (exclude government agencies, ministries, departments, bureaus, police, task forces, etc.)
+- Focus on corporations, businesses, companies, and commercial entities
 - If a location is not explicitly mentioned for a company, use an empty string for location
+- If an asset valuation is not explicitly mentioned for a company, use an empty string for asset_valuation
 - Remove duplicates and normalize company names
-- Focus on business entities, organizations, and corporations
-- Ignore generic terms that aren't specific company names""",
+- Ignore government organizations, public agencies, and official bodies
+- Only include for-profit business entities and commercial companies
+- Extract asset valuations in their original format (e.g., "152 ล้านบาท", "$1.5 million")""",
                 },
                 {
                     "role": "user",
-                    "content": f"Extract all company names and their locations from the following text:\n\n{text}",
+                    "content": f"Extract all company names, their locations, and asset valuations from the following text:\n\n{text}",
                 }
             ],
             max_completion_tokens=4096,
@@ -130,8 +198,41 @@ Guidelines:
                                 seen_names.add(name)
                                 cleaned_companies.append({
                                     "name": name,
-                                    "location": company.get("location", "").strip() if company.get("location") else ""
+                                    "location": company.get("location", "").strip() if company.get("location") else "",
+                                    "asset_valuation": company.get("asset_valuation", "").strip() if company.get("asset_valuation") else ""
                                 })
+
+                    # Save results to CosmosDB - one document per company
+                    try:
+                        container = get_companies_container()
+                        if container:
+                            extraction_timestamp = datetime.now(timezone.utc).isoformat()
+                            extraction_id = f"extraction_{int(datetime.now(timezone.utc).timestamp() * 1000000)}"
+                            
+                            # Save each company as a separate document
+                            saved_companies = []
+                            for company in cleaned_companies:
+                                company_doc = {
+                                    "id": f"{extraction_id}_{len(saved_companies)}",
+                                    "extraction_id": extraction_id,
+                                    "extraction_timestamp": extraction_timestamp,
+                                    "source_text": text[:1000] + "..." if len(text) > 1000 else text,
+                                    "company_name": company["name"],
+                                    "location": company["location"],
+                                    "asset_valuation": company["asset_valuation"],
+                                    "model_used": model_name,
+                                    "text_length": len(text),
+                                    "created_at": extraction_timestamp
+                                }
+                                container.create_item(body=company_doc)
+                                saved_companies.append(company_doc)
+                            
+                            logging.info(f"Saved {len(saved_companies)} companies to CosmosDB: {extraction_id}")
+                        else:
+                            logging.warning("CosmosDB not configured - extraction results not saved")
+                    except Exception as db_error:
+                        logging.error(f"Failed to save extraction results to CosmosDB: {db_error}")
+                        # Don't fail the extraction if DB save fails
 
                     return {
                         "success": True,
