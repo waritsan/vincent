@@ -339,7 +339,19 @@ export default function Dashboard() {
           </h3>
           <div className="h-96 w-full">
             {typeof window !== 'undefined' && (
-              <MapContainer
+              <>
+                {/* Configure leaflet markers only on client side */}
+                {(() => {
+                  import('leaflet').then((L) => {
+                    L.Icon.Default.mergeOptions({
+                      iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+                      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+                      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+                    });
+                  });
+                  return null;
+                })()}
+                <MapContainer
                 center={[13.7563, 100.5018]}
                 zoom={6}
                 style={{ height: '100%', width: '100%' }}
@@ -372,6 +384,7 @@ export default function Dashboard() {
                   </Marker>
                 ))}
               </MapContainer>
+              </>
             )}
           </div>
           <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
