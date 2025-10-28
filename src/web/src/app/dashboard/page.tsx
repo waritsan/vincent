@@ -20,9 +20,6 @@ const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLaye
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
 
-// Import leaflet CSS
-import 'leaflet/dist/leaflet.css';
-
 // Color palette for charts
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF7C7C'];
 
@@ -58,6 +55,13 @@ const THAI_LOCATIONS: Record<string, { lat: number; lng: number; english: string
   'นครปฐม': { lat: 13.8196, lng: 100.0620, english: 'Nakhon Pathom' },
 };
 
+// Extend window interface for leaflet custom icon
+declare global {
+  interface Window {
+    leafletCustomIcon?: unknown;
+  }
+}
+
 export default function Dashboard() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,8 +72,46 @@ export default function Dashboard() {
   const [dynamicChart, setDynamicChart] = useState<DynamicChart | null>(null);
   const [showDynamicChart, setShowDynamicChart] = useState(false);
 
+  // Map loading state
+  const [mapLoaded, setMapLoaded] = useState(false);
+
   useEffect(() => {
     fetchCompanies();
+  }, []);
+
+  // Configure leaflet icons and CSS on client side
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Load leaflet CSS
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+      link.crossOrigin = '';
+      document.head.appendChild(link);
+
+      // Configure leaflet icons after a short delay to ensure CSS is loaded
+      setTimeout(() => {
+        import('leaflet').then((L) => {
+          // Create custom icon
+          const customIcon = new L.Icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+          });
+
+          // Store the custom icon in window for use in markers
+          window.leafletCustomIcon = customIcon;
+          setMapLoaded(true);
+        }).catch((err) => {
+          console.error('Failed to configure leaflet:', err);
+        });
+      }, 100);
+    }
   }, []);
 
   const fetchCompanies = async () => {
@@ -196,10 +238,13 @@ export default function Dashboard() {
 
   const handlePromptSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted with prompt:', prompt);
     const chart = parsePrompt(prompt);
+    console.log('Parsed chart:', chart);
     if (chart) {
       setDynamicChart(chart);
       setShowDynamicChart(true);
+      setPrompt(''); // Clear the prompt after successful generation
     } else {
       alert('Sorry, I couldn\'t understand that prompt. Try something like:\n- "show me top 10 companies by valuation"\n- "show companies by location"\n- "show timeline"');
     }
@@ -275,6 +320,55 @@ export default function Dashboard() {
             </p>
           </div>
         </div>
+
+        {/* Dynamic Chart - Show at top when generated */}
+        {showDynamicChart && dynamicChart && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {dynamicChart.title}
+              </h3>
+              <button
+                onClick={closeDynamicChart}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <ResponsiveContainer width="100%" height={400}>
+              {dynamicChart.type === 'bar' && (
+                <BarChart data={dynamicChart.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey={dynamicChart.xAxisKey}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    fontSize={11}
+                  />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey={dynamicChart.dataKey}>
+                    {dynamicChart.data.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              )}
+              {dynamicChart.type === 'area' && (
+                <AreaChart data={dynamicChart.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey={dynamicChart.xAxisKey} fontSize={12} />
+                  <YAxis />
+                  <Tooltip />
+                  <Area type="monotone" dataKey={dynamicChart.dataKey} stroke="#FFBB28" fill="#FFBB28" fillOpacity={0.6} />
+                </AreaChart>
+              )}
+            </ResponsiveContainer>
+          </div>
+        )}
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -399,75 +493,14 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Dynamic Chart */}
-        {showDynamicChart && dynamicChart && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {dynamicChart.title}
-              </h3>
-              <button
-                onClick={closeDynamicChart}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <ResponsiveContainer width="100%" height={400}>
-              {dynamicChart.type === 'bar' && (
-                <BarChart data={dynamicChart.data}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey={dynamicChart.xAxisKey}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    fontSize={11}
-                  />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey={dynamicChart.dataKey}>
-                    {dynamicChart.data.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              )}
-              {dynamicChart.type === 'area' && (
-                <AreaChart data={dynamicChart.data}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey={dynamicChart.xAxisKey} fontSize={12} />
-                  <YAxis />
-                  <Tooltip />
-                  <Area type="monotone" dataKey={dynamicChart.dataKey} stroke="#FFBB28" fill="#FFBB28" fillOpacity={0.6} />
-                </AreaChart>
-              )}
-            </ResponsiveContainer>
-          </div>
-        )}
-
         {/* Company Locations Map */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Company Locations Map
           </h3>
           <div className="h-96 w-full">
-            {typeof window !== 'undefined' && (
-              <>
-                {/* Configure leaflet markers only on client side */}
-                {(() => {
-                  import('leaflet').then((L) => {
-                    L.Icon.Default.mergeOptions({
-                      iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-                      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-                      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-                    });
-                  });
-                  return null;
-                })()}
-                <MapContainer
+            {typeof window !== 'undefined' && mapLoaded && (
+              <MapContainer
                 center={[13.7563, 100.5018]}
                 zoom={6}
                 style={{ height: '100%', width: '100%' }}
@@ -480,6 +513,7 @@ export default function Dashboard() {
                   <Marker
                     key={company.id}
                     position={[company.coordinates.lat, company.coordinates.lng]}
+                    icon={window.leafletCustomIcon as any}
                   >
                     <Popup>
                       <div className="p-2">
@@ -500,7 +534,14 @@ export default function Dashboard() {
                   </Marker>
                 ))}
               </MapContainer>
-              </>
+            )}
+            {typeof window !== 'undefined' && !mapLoaded && (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-gray-600 dark:text-gray-400">Loading map...</p>
+                </div>
+              </div>
             )}
           </div>
           <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
