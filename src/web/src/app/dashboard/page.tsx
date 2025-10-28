@@ -248,15 +248,17 @@ export default function Dashboard() {
               Top Company Valuations ({valuationData.length} companies)
             </h3>
             <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={valuationData} layout="horizontal">
+              <BarChart data={valuationData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 'dataMax + 50']} />
-                <YAxis
+                <XAxis
                   dataKey="name"
                   type="category"
-                  width={120}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
                   fontSize={11}
                 />
+                <YAxis type="number" domain={[0, 'dataMax + 50']} />
                 <Tooltip
                   formatter={(value) => [value, 'Valuation']}
                   labelFormatter={(label) => valuationData.find(d => d.name === label)?.fullName || label}
