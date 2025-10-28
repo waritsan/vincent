@@ -85,6 +85,12 @@ export default function Navbar() {
               >
                 {t('nav.benefits')}
               </Link>
+              <Link 
+                href="/dashboard" 
+                className={`transition-colors ${isActive('/dashboard') ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
+              >
+                Dashboard
+              </Link>
               <Link href="#" className="hover:text-[#0066CC] transition-colors">{t('nav.laws')}</Link>
             </div>
           </div>
@@ -167,6 +173,12 @@ export default function Navbar() {
               className={`text-sm font-medium py-1 transition-colors ${isActive('/benefits') ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
             >
               {t('nav.benefits')}
+            </Link>
+            <Link 
+              href="/dashboard" 
+              className={`text-sm font-medium py-1 transition-colors ${isActive('/dashboard') ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
+            >
+              Dashboard
             </Link>
             <Link href="#" className="text-sm font-medium hover:text-[#0066CC] transition-colors py-1">
               {t('nav.services')}
