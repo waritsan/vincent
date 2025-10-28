@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Cell } from 'recharts';
 import dynamic from 'next/dynamic';
+import * as L from 'leaflet';
 
 // Dynamic chart generation state
 interface DynamicChart {
@@ -513,7 +514,7 @@ export default function Dashboard() {
                   <Marker
                     key={company.id}
                     position={[company.coordinates.lat, company.coordinates.lng]}
-                    icon={window.leafletCustomIcon as any}
+                    icon={window.leafletCustomIcon as L.Icon}
                   >
                     <Popup>
                       <div className="p-2">

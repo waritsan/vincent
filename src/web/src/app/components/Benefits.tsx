@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useLanguage } from '../contexts/LanguageContext';
 
 interface Benefit {
   id: string;
@@ -14,7 +13,6 @@ interface Benefit {
 }
 
 export default function Benefits() {
-  const { t } = useLanguage();
   const [selectedBenefit, setSelectedBenefit] = useState<Benefit | null>(null);
 
   // Sample benefits data
