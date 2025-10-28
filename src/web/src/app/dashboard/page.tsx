@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import dynamic from 'next/dynamic';
 
 // Dynamically import map components to avoid SSR issues
@@ -25,8 +25,6 @@ interface Company {
   text_length: number;
   created_at: string;
 }
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF7C7C'];
 
 // Thai location coordinates mapping
 const THAI_LOCATIONS: Record<string, { lat: number; lng: number; english: string }> = {
@@ -99,11 +97,12 @@ export default function Dashboard() {
       const match = valuation.match(/(\d+(?:\.\d+)?)/);
       const value = match ? parseFloat(match[1]) : 0;
       return {
-        name: company.company_name.length > 20 ? company.company_name.substring(0, 20) + '...' : company.company_name,
+        name: company.company_name.length > 15 ? company.company_name.substring(0, 15) + '...' : company.company_name,
         valuation: value,
         fullName: company.company_name
       };
     })
+    .filter(item => item.valuation > 0) // Only include items with valid valuations
     .sort((a, b) => b.valuation - a.valuation)
     .slice(0, 10);
 
@@ -117,16 +116,6 @@ export default function Dashboard() {
   const timelineChartData = Object.entries(timelineData)
     .map(([date, count]) => ({ date, count }))
     .sort((a, b) => a.date.localeCompare(b.date));
-
-  // Model usage data
-  const modelData = companies.reduce((acc, company) => {
-    const model = company.model_used || 'Unknown';
-    acc[model] = (acc[model] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const modelChartData = Object.entries(modelData)
-    .map(([model, count]) => ({ model, count }));
 
   // Process data for map
   const mapData = companies
@@ -182,7 +171,7 @@ export default function Dashboard() {
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -227,20 +216,6 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">AI Models Used</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{Object.keys(modelData).length}</p>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Charts Grid */}
@@ -270,23 +245,23 @@ export default function Dashboard() {
           {/* Asset Valuations */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Top Company Valuations
+              Top Company Valuations ({valuationData.length} companies)
             </h3>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={400}>
               <BarChart data={valuationData} layout="horizontal">
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
+                <XAxis type="number" domain={[0, 'dataMax + 50']} />
                 <YAxis
                   dataKey="name"
                   type="category"
-                  width={100}
-                  fontSize={12}
+                  width={120}
+                  fontSize={11}
                 />
                 <Tooltip
                   formatter={(value) => [value, 'Valuation']}
                   labelFormatter={(label) => valuationData.find(d => d.name === label)?.fullName || label}
                 />
-                <Bar dataKey="valuation" fill="#00C49F" />
+                <Bar dataKey="valuation" fill="#00C49F" minPointSize={5} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -304,30 +279,6 @@ export default function Dashboard() {
                 <Tooltip />
                 <Area type="monotone" dataKey="count" stroke="#FFBB28" fill="#FFBB28" fillOpacity={0.6} />
               </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* AI Model Usage */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              AI Model Usage Distribution
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={modelChartData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {modelChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
