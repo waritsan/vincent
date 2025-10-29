@@ -12,11 +12,14 @@ from text_extraction import extract_companies_and_locations
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
-# CORS headers for local development
+# CORS headers for cross-origin requests
+# Allow specific origins in production, all origins in development
+allowed_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "*").split(",")
 CORS_HEADERS = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    'Access-Control-Allow-Origin': allowed_origins[0] if len(allowed_origins) == 1 else "*",
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, DELETE',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+    'Access-Control-Allow-Credentials': 'true' if len(allowed_origins) == 1 else 'false'
 }
 
 def create_response(body, status_code=200):

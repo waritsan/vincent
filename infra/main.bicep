@@ -117,6 +117,7 @@ module functionApp 'core/host/functions.bicep' = {
       // AZURE_AI_AGENT_ID will be set manually after agent creation
       AZURE_COSMOS_ENDPOINT: cosmosDb.outputs.endpoint
       AZURE_COSMOS_DATABASE_NAME: cosmosDb.outputs.databaseName
+      CORS_ALLOWED_ORIGINS: 'https://calm-bay-09b1e430f.1.azurestaticapps.net'
     }
   }
 }

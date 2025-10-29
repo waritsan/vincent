@@ -119,10 +119,8 @@ export default function Dashboard() {
     try {
       setLoading(true);
       // For development, fetch directly from Azure Functions
-      // In production, this would be the same domain
-      const apiUrl = process.env.NODE_ENV === 'production' 
-        ? '/api/companies?limit=100'
-        : 'http://localhost:7071/api/companies?limit=100';
+      // In production, use the configured API URL
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/companies?limit=100`;
       
       const response = await fetch(apiUrl);
       if (!response.ok) {
@@ -200,9 +198,7 @@ export default function Dashboard() {
       setLoading(true);
       
       // Call the AI-powered chart generation endpoint
-      const apiUrl = process.env.NODE_ENV === 'production' 
-        ? '/api/charts/generate'
-        : 'http://localhost:7071/api/charts/generate';
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/charts/generate`;
       
       const response = await fetch(apiUrl, {
         method: 'POST',
