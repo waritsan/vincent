@@ -1191,34 +1191,229 @@ def get_companies(req: func.HttpRequest) -> func.HttpResponse:
         return create_response({"error": "Internal server error"}, 500)
 
 
-@app.route(route="extract/entities", methods=["POST"])
-def extract_entities(req: func.HttpRequest) -> func.HttpResponse:
+@app.route(route="charts/generate", methods=["POST"])
+def generate_chart(req: func.HttpRequest) -> func.HttpResponse:
     """
-    Extract company names and their locations from text using Azure OpenAI
-    POST /api/extract/entities
-    Body: { "text": "text content to analyze" }
+    Generate chart configuration from natural language prompts using Azure OpenAI
+    POST /api/charts/generate
+    Body: { "prompt": "show me top 10 companies by valuation" }
     """
-    logging.info('Processing entity extraction request')
+    logging.info('Processing chart generation request')
     
     try:
         # Parse request body
         req_body = req.get_json()
-        text = req_body.get('text')
+        prompt = req_body.get('prompt')
         
-        # Use the utility function
-        result = extract_companies_and_locations(text)
+        if not prompt:
+            return create_response({"error": "Prompt is required"}, 400)
         
-        if result["success"]:
-            return create_response(result)
-        else:
-            return create_response({"error": result["error"]}, 400)
+        # Get Azure OpenAI client
+        ai_client = get_ai_client()
+        if not ai_client:
+            return create_response({"error": "Azure OpenAI not configured"}, 503)
+        
+        # Get companies data for context
+        from text_extraction import get_companies_container
+        container = get_companies_container()
+        
+        if not container:
+            return create_response({"error": "Companies database not configured"}, 503)
+        
+        try:
+            # Get recent companies for analysis
+            query = "SELECT * FROM c ORDER BY c.created_at DESC OFFSET 0 LIMIT 100"
+            companies = list(container.query_items(
+                query=query,
+                enable_cross_partition_query=True
+            ))
+            
+            # Prepare context for AI
+            companies_context = []
+            for company in companies[:50]:  # Limit to 50 for context
+                companies_context.append({
+                    "name": company.get("company_name", ""),
+                    "location": company.get("location", ""),
+                    "valuation": company.get("asset_valuation", ""),
+                    "created_at": company.get("created_at", "")
+                })
+            
+            # Create AI prompt for chart generation
+            system_prompt = """
+You are an expert data analyst specializing in creating chart configurations from natural language requests.
+Given a user's request and company data, generate a chart configuration in JSON format.
+
+Available chart types: bar, line, area, pie, scatter, heatmap
+Available data fields: name, location, valuation, created_at
+
+Chart configuration format:
+{
+  "type": "chart_type",
+  "title": "Chart Title",
+  "data": [array of data points],
+  "dataKey": "field_for_values",
+  "xAxisKey": "field_for_x_axis" (optional),
+  "yAxisKey": "field_for_y_axis" (optional),
+  "filters": {optional filters},
+  "aggregations": {optional aggregations}
+}
+
+Examples:
+- "show top 10 companies by valuation" -> bar chart with top 10 by valuation
+- "companies by location" -> bar chart grouped by location
+- "timeline of extractions" -> area chart over time
+- "valuation distribution" -> histogram/pie chart
+
+Return only valid JSON, no explanations.
+"""
+            
+            user_prompt = f"""
+User request: {prompt}
+
+Available companies data (first 50):
+{json.dumps(companies_context, indent=2, ensure_ascii=False)}
+
+Generate the appropriate chart configuration.
+"""
+            
+            # Call Azure OpenAI
+            response = ai_client.chat.completions.create(
+                model="gpt-4o",  # or your deployed model
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                max_tokens=1000,
+                temperature=0.1  # Low temperature for consistent results
+            )
+            
+            # Parse the response
+            chart_config_str = response.choices[0].message.content.strip()
+            
+            # Clean up the response (remove markdown code blocks if present)
+            if chart_config_str.startswith("```json"):
+                chart_config_str = chart_config_str[7:]
+            if chart_config_str.endswith("```"):
+                chart_config_str = chart_config_str[:-3]
+            
+            chart_config_str = chart_config_str.strip()
+            
+            try:
+                chart_config = json.loads(chart_config_str)
+                
+                # Validate the chart configuration
+                required_fields = ["type", "title", "data"]
+                for field in required_fields:
+                    if field not in chart_config:
+                        raise ValueError(f"Missing required field: {field}")
+                
+                # Process the data based on the configuration
+                processed_config = process_chart_data(chart_config, companies)
+                
+                return create_response({
+                    "success": True,
+                    "chart": processed_config,
+                    "prompt": prompt,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+                
+            except json.JSONDecodeError as e:
+                logging.error(f"Invalid JSON from AI: {chart_config_str}")
+                return create_response({"error": f"Invalid chart configuration: {str(e)}"}, 500)
+            except ValueError as e:
+                logging.error(f"Invalid chart config: {str(e)}")
+                return create_response({"error": f"Invalid chart configuration: {str(e)}"}, 400)
+                
+        except Exception as e:
+            logging.error(f"Database error: {e}")
+            return create_response({"error": f"Database error: {str(e)}"}, 500)
         
     except ValueError as e:
         logging.error(f"Invalid JSON in request: {e}")
         return create_response({"error": "Invalid JSON in request body"}, 400)
     except Exception as e:
-        logging.error(f"Error processing entity extraction request: {e}")
+        logging.error(f"Error processing chart generation request: {e}")
         return create_response({"error": "Internal server error"}, 500)
+
+
+def process_chart_data(chart_config, companies):
+    """
+    Process and validate chart data based on the AI-generated configuration
+    """
+    chart_type = chart_config["type"]
+    data_key = chart_config.get("dataKey", "")
+    x_axis_key = chart_config.get("xAxisKey", "")
+    y_axis_key = chart_config.get("yAxisKey", "")
+    
+    # If AI provided data, use it; otherwise generate based on type
+    if "data" in chart_config and chart_config["data"]:
+        # Validate and clean the AI-provided data
+        processed_data = []
+        for item in chart_config["data"]:
+            if isinstance(item, dict):
+                processed_data.append(item)
+        chart_config["data"] = processed_data
+    else:
+        # Generate data based on chart type and available fields
+        if chart_type == "bar":
+            if "valuation" in data_key.lower() or "top" in chart_config["title"].lower():
+                # Top companies by valuation
+                valuation_data = []
+                for company in companies:
+                    valuation_str = company.get("asset_valuation", "")
+                    if valuation_str:
+                        # Extract numeric value
+                        import re
+                        match = re.search(r'(\d+(?:\.\d+)?)', valuation_str)
+                        if match:
+                            value = float(match.group(1))
+                            valuation_data.append({
+                                "name": company.get("company_name", "")[:20] + "..." if len(company.get("company_name", "")) > 20 else company.get("company_name", ""),
+                                "valuation": value,
+                                "fullName": company.get("company_name", "")
+                            })
+                
+                # Sort by valuation descending and take top 10
+                valuation_data.sort(key=lambda x: x["valuation"], reverse=True)
+                chart_config["data"] = valuation_data[:10]
+                chart_config["dataKey"] = "valuation"
+                chart_config["xAxisKey"] = "name"
+                
+            elif "location" in chart_config["title"].lower():
+                # Companies by location
+                location_counts = {}
+                for company in companies:
+                    location = company.get("location", "Unknown")
+                    location_counts[location] = location_counts.get(location, 0) + 1
+                
+                chart_config["data"] = [
+                    {"location": loc, "count": count}
+                    for loc, count in sorted(location_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+                ]
+                chart_config["dataKey"] = "count"
+                chart_config["xAxisKey"] = "location"
+                
+        elif chart_type in ["area", "line"]:
+            if "timeline" in chart_config["title"].lower() or "time" in chart_config["title"].lower():
+                # Timeline data
+                from collections import defaultdict
+                timeline_data = defaultdict(int)
+                
+                for company in companies:
+                    date_str = company.get("created_at", "")
+                    if date_str:
+                        # Extract date part
+                        date = date_str.split("T")[0]
+                        timeline_data[date] += 1
+                
+                chart_config["data"] = [
+                    {"date": date, "count": count}
+                    for date, count in sorted(timeline_data.items())
+                ]
+                chart_config["dataKey"] = "count"
+                chart_config["xAxisKey"] = "date"
+    
+    return chart_config
 
 
 # Scheduled timer function to auto-fetch DBD news

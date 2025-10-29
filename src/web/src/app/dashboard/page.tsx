@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Cell, LineChart, Line, PieChart, Pie, ScatterChart, Scatter, PieLabelRenderProps } from 'recharts';
 import dynamic from 'next/dynamic';
 import * as L from 'leaflet';
 
 // Dynamic chart generation state
 interface DynamicChart {
-  type: 'bar' | 'area' | 'pie';
+  type: 'bar' | 'area' | 'pie' | 'line' | 'scatter';
   title: string;
   data: (Record<string, string | number>)[];
   dataKey: string;
@@ -192,62 +192,55 @@ export default function Dashboard() {
     .filter((location, index, arr) => arr.indexOf(location) === index); // unique locations
 
   // Dynamic chart generation functions
-  const parsePrompt = (input: string): DynamicChart | null => {
-    const lowerInput = input.toLowerCase().trim();
-    
-    // Parse "show me top X companies by valuation"
-    const topCompaniesMatch = lowerInput.match(/show\s+(?:me\s+)?top\s+(\d+)\s+companies\s+by\s+valu(e|ation)/);
-    if (topCompaniesMatch) {
-      const count = parseInt(topCompaniesMatch[1]);
-      const chartData = valuationData.slice(0, count);
-      return {
-        type: 'bar',
-        title: `Top ${count} Companies by Valuation`,
-        data: chartData,
-        dataKey: 'valuation',
-        xAxisKey: 'name',
-        yAxisKey: 'valuation'
-      };
-    }
-
-    // Parse "show companies by location"
-    if (lowerInput.includes('companies by location') || lowerInput.includes('location distribution')) {
-      return {
-        type: 'bar',
-        title: 'Companies by Location',
-        data: locationChartData,
-        dataKey: 'count',
-        xAxisKey: 'location',
-        yAxisKey: 'count'
-      };
-    }
-
-    // Parse "show timeline" or "extraction timeline"
-    if (lowerInput.includes('timeline') || lowerInput.includes('extractions over time')) {
-      return {
-        type: 'area',
-        title: 'Company Extractions Over Time',
-        data: timelineChartData,
-        dataKey: 'count',
-        xAxisKey: 'date',
-        yAxisKey: 'count'
-      };
-    }
-
-    return null;
-  };
-
-  const handlePromptSubmit = (e: React.FormEvent) => {
+  const handlePromptSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Form submitted with prompt:', prompt);
-    const chart = parsePrompt(prompt);
-    console.log('Parsed chart:', chart);
-    if (chart) {
-      setDynamicChart(chart);
-      setShowDynamicChart(true);
-      setPrompt(''); // Clear the prompt after successful generation
-    } else {
-      alert('Sorry, I couldn\'t understand that prompt. Try something like:\n- "show me top 10 companies by valuation"\n- "show companies by location"\n- "show timeline"');
+    
+    try {
+      setLoading(true);
+      
+      // Call the AI-powered chart generation endpoint
+      const apiUrl = process.env.NODE_ENV === 'production' 
+        ? '/api/charts/generate'
+        : 'http://localhost:7071/api/charts/generate';
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate chart');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success && result.chart) {
+        // Convert the AI response to our DynamicChart format
+        const aiChart = result.chart;
+        const dynamicChart: DynamicChart = {
+          type: aiChart.type as DynamicChart['type'],
+          title: aiChart.title,
+          data: aiChart.data,
+          dataKey: aiChart.dataKey,
+          xAxisKey: aiChart.xAxisKey,
+          yAxisKey: aiChart.yAxisKey,
+        };
+        
+        setDynamicChart(dynamicChart);
+        setShowDynamicChart(true);
+        setPrompt(''); // Clear the prompt after successful generation
+      } else {
+        throw new Error(result.error || 'Failed to generate chart');
+      }
+    } catch (error) {
+      console.error('Chart generation error:', error);
+      alert(`Sorry, I couldn't generate that chart. Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -306,7 +299,7 @@ export default function Dashboard() {
                 type="text"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder='Try: "show me top 10 companies by valuation"'
+                placeholder='Try: "show me top 10 companies by valuation" or "show pie chart of locations"'
                 className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
@@ -317,7 +310,7 @@ export default function Dashboard() {
               </button>
             </form>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              Examples: &quot;show me top 5 companies by valuation&quot;, &quot;show companies by location&quot;, &quot;show timeline&quot;
+              Examples: &quot;show me top 5 companies by valuation&quot;, &quot;show companies by location&quot;, &quot;show timeline&quot;, &quot;show pie chart of locations&quot;, &quot;show line chart of timeline&quot;
             </p>
           </div>
         </div>
@@ -366,6 +359,47 @@ export default function Dashboard() {
                   <Tooltip />
                   <Area type="monotone" dataKey={dynamicChart.dataKey} stroke="#FFBB28" fill="#FFBB28" fillOpacity={0.6} />
                 </AreaChart>
+              )}
+              {dynamicChart.type === 'line' && (
+                <LineChart data={dynamicChart.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey={dynamicChart.xAxisKey} fontSize={12} />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey={dynamicChart.dataKey} stroke="#8884d8" strokeWidth={2} />
+                </LineChart>
+              )}
+              {dynamicChart.type === 'pie' && (
+                <PieChart>
+                  <Pie
+                    data={dynamicChart.data}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={(props: PieLabelRenderProps) => {
+                      const { name, percent } = props;
+                      const percentValue = percent as number;
+                      return `${name} ${(percentValue * 100).toFixed(0)}%`;
+                    }}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey={dynamicChart.dataKey}
+                  >
+                    {dynamicChart.data.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              )}
+              {dynamicChart.type === 'scatter' && (
+                <ScatterChart data={dynamicChart.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey={dynamicChart.xAxisKey} fontSize={12} />
+                  <YAxis dataKey={dynamicChart.yAxisKey} />
+                  <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                  <Scatter name="Data Points" dataKey={dynamicChart.dataKey} fill="#8884d8" />
+                </ScatterChart>
               )}
             </ResponsiveContainer>
           </div>
