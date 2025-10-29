@@ -1246,6 +1246,12 @@ Given a user's request and company data, generate a chart configuration in JSON 
 Available chart types: bar, line, area, pie, scatter, heatmap
 Available data fields: name, location, valuation, created_at
 
+Advanced filtering capabilities:
+- Location filters: "in Bangkok", "from Chiang Mai", "companies in [location]"
+- Valuation filters: "over 100 million", "under 50 million", "between 10M and 500M", "valuation > 100"
+- Date filters: "from last month", "in 2024", "recent", "this year"
+- Combination filters: "companies in Bangkok with valuations over 100 million baht"
+
 Chart configuration format:
 {
   "type": "chart_type",
@@ -1254,7 +1260,13 @@ Chart configuration format:
   "dataKey": "field_for_values",
   "xAxisKey": "field_for_x_axis" (optional),
   "yAxisKey": "field_for_y_axis" (optional),
-  "filters": {optional filters},
+  "filters": {
+    "location": ["Bangkok", "Chiang Mai"], // array of locations to include
+    "valuation_min": 100, // minimum valuation in millions
+    "valuation_max": 500, // maximum valuation in millions
+    "date_from": "2024-01-01", // ISO date string
+    "date_to": "2024-12-31" // ISO date string
+  },
   "aggregations": {optional aggregations}
 }
 
@@ -1262,7 +1274,9 @@ Examples:
 - "show top 10 companies by valuation" -> bar chart with top 10 by valuation
 - "companies by location" -> bar chart grouped by location
 - "timeline of extractions" -> area chart over time
-- "valuation distribution" -> histogram/pie chart
+- "companies in Bangkok with valuations over 100 million baht" -> filtered bar chart
+- "show me companies from Chiang Mai under 50 million" -> filtered results
+- "valuation distribution for companies created this year" -> filtered histogram
 
 Return only valid JSON, no explanations.
 """
@@ -1339,12 +1353,17 @@ Generate the appropriate chart configuration.
 def process_chart_data(chart_config, companies):
     """
     Process and validate chart data based on the AI-generated configuration
+    Apply filters to the data before generating chart data points
     """
     chart_type = chart_config["type"]
     data_key = chart_config.get("dataKey", "")
     x_axis_key = chart_config.get("xAxisKey", "")
     y_axis_key = chart_config.get("yAxisKey", "")
-    
+    filters = chart_config.get("filters", {})
+
+    # Apply filters to companies data
+    filtered_companies = apply_filters(companies, filters)
+
     # If AI provided data, use it; otherwise generate based on type
     if "data" in chart_config and chart_config["data"]:
         # Validate and clean the AI-provided data
@@ -1359,7 +1378,7 @@ def process_chart_data(chart_config, companies):
             if "valuation" in data_key.lower() or "top" in chart_config["title"].lower():
                 # Top companies by valuation
                 valuation_data = []
-                for company in companies:
+                for company in filtered_companies:
                     valuation_str = company.get("asset_valuation", "")
                     if valuation_str:
                         # Extract numeric value
@@ -1372,48 +1391,186 @@ def process_chart_data(chart_config, companies):
                                 "valuation": value,
                                 "fullName": company.get("company_name", "")
                             })
-                
+
                 # Sort by valuation descending and take top 10
                 valuation_data.sort(key=lambda x: x["valuation"], reverse=True)
                 chart_config["data"] = valuation_data[:10]
                 chart_config["dataKey"] = "valuation"
                 chart_config["xAxisKey"] = "name"
-                
+
             elif "location" in chart_config["title"].lower():
                 # Companies by location
                 location_counts = {}
-                for company in companies:
+                for company in filtered_companies:
                     location = company.get("location", "Unknown")
                     location_counts[location] = location_counts.get(location, 0) + 1
-                
+
                 chart_config["data"] = [
                     {"location": loc, "count": count}
                     for loc, count in sorted(location_counts.items(), key=lambda x: x[1], reverse=True)[:10]
                 ]
                 chart_config["dataKey"] = "count"
                 chart_config["xAxisKey"] = "location"
-                
+
         elif chart_type in ["area", "line"]:
             if "timeline" in chart_config["title"].lower() or "time" in chart_config["title"].lower():
                 # Timeline data
                 from collections import defaultdict
                 timeline_data = defaultdict(int)
-                
-                for company in companies:
+
+                for company in filtered_companies:
                     date_str = company.get("created_at", "")
                     if date_str:
                         # Extract date part
                         date = date_str.split("T")[0]
                         timeline_data[date] += 1
-                
+
                 chart_config["data"] = [
                     {"date": date, "count": count}
                     for date, count in sorted(timeline_data.items())
                 ]
                 chart_config["dataKey"] = "count"
                 chart_config["xAxisKey"] = "date"
-    
+
+        elif chart_type == "pie":
+            # Pie chart for location distribution
+            location_counts = {}
+            for company in filtered_companies:
+                location = company.get("location", "Unknown")
+                location_counts[location] = location_counts.get(location, 0) + 1
+
+            chart_config["data"] = [
+                {"location": loc, "count": count}
+                for loc, count in sorted(location_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+            ]
+            chart_config["dataKey"] = "count"
+            chart_config["xAxisKey"] = "location"
+
+        elif chart_type == "scatter":
+            # Scatter plot for valuation vs some other metric
+            scatter_data = []
+            for company in filtered_companies:
+                valuation_str = company.get("asset_valuation", "")
+                if valuation_str:
+                    import re
+                    match = re.search(r'(\d+(?:\.\d+)?)', valuation_str)
+                    if match:
+                        value = float(match.group(1))
+                        scatter_data.append({
+                            "name": company.get("company_name", "")[:15] + "..." if len(company.get("company_name", "")) > 15 else company.get("company_name", ""),
+                            "valuation": value,
+                            "location": company.get("location", "Unknown"),
+                            "x": value,  # Use valuation as x-axis
+                            "y": value  # Could be enhanced to use other metrics
+                        })
+
+            chart_config["data"] = scatter_data[:20]  # Limit for readability
+            chart_config["dataKey"] = "valuation"
+            chart_config["xAxisKey"] = "x"
+            chart_config["yAxisKey"] = "y"
+
     return chart_config
+
+
+def apply_filters(companies, filters):
+    """
+    Apply filters to the companies data
+    """
+    if not filters:
+        return companies
+
+    filtered_companies = companies.copy()
+
+    # Location filter
+    if "location" in filters and filters["location"]:
+        locations = [loc.lower() for loc in filters["location"]]
+        filtered_companies = [
+            company for company in filtered_companies
+            if company.get("location", "").lower() in locations
+        ]
+
+    # Valuation filters
+    valuation_min = filters.get("valuation_min")
+    valuation_max = filters.get("valuation_max")
+
+    if valuation_min is not None or valuation_max is not None:
+        filtered_companies = [
+            company for company in filtered_companies
+            if _company_matches_valuation_filter(company, valuation_min, valuation_max)
+        ]
+
+    # Date filters
+    date_from = filters.get("date_from")
+    date_to = filters.get("date_to")
+
+    if date_from or date_to:
+        filtered_companies = [
+            company for company in filtered_companies
+            if _company_matches_date_filter(company, date_from, date_to)
+        ]
+
+    return filtered_companies
+
+
+def _company_matches_valuation_filter(company, min_val, max_val):
+    """
+    Check if company matches valuation filter
+    """
+    valuation_str = company.get("asset_valuation", "")
+    if not valuation_str:
+        return False
+
+    import re
+    match = re.search(r'(\d+(?:\.\d+)?)', valuation_str)
+    if not match:
+        return False
+
+    try:
+        valuation = float(match.group(1))
+
+        if min_val is not None and valuation < min_val:
+            return False
+        if max_val is not None and valuation > max_val:
+            return False
+
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+def _company_matches_date_filter(company, date_from, date_to):
+    """
+    Check if company matches date filter
+    """
+    created_at = company.get("created_at", "")
+    if not created_at:
+        return False
+
+    try:
+        # Extract date part if it's a full ISO string
+        if "T" in created_at:
+            company_date_str = created_at.split("T")[0]
+        else:
+            company_date_str = created_at
+
+        from datetime import datetime
+        company_date = datetime.fromisoformat(company_date_str).date()
+
+        if date_from:
+            from datetime import datetime
+            filter_date_from = datetime.fromisoformat(date_from).date()
+            if company_date < filter_date_from:
+                return False
+
+        if date_to:
+            from datetime import datetime
+            filter_date_to = datetime.fromisoformat(date_to).date()
+            if company_date > filter_date_to:
+                return False
+
+        return True
+    except (ValueError, TypeError):
+        return False
 
 
 # Scheduled timer function to auto-fetch DBD news

@@ -299,7 +299,7 @@ export default function Dashboard() {
                 type="text"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder='Try: "show me top 10 companies by valuation" or "show pie chart of locations"'
+                placeholder='Try: "companies in Bangkok with valuations over 100 million baht"'
                 className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
@@ -310,7 +310,7 @@ export default function Dashboard() {
               </button>
             </form>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              Examples: &quot;show me top 5 companies by valuation&quot;, &quot;show companies by location&quot;, &quot;show timeline&quot;, &quot;show pie chart of locations&quot;, &quot;show line chart of timeline&quot;
+              Examples: &quot;companies in Bangkok with valuations over 100 million baht&quot;, &quot;show top 5 companies from Chiang Mai&quot;, &quot;companies under 50 million created this year&quot;, &quot;pie chart of locations&quot;
             </p>
           </div>
         </div>
