@@ -29,7 +29,7 @@ export default function Home() {
             <div className="lg:col-span-2">
               <div className="relative w-full bg-black rounded-lg overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
                 <iframe
-                  src="https://www.youtube.com/embed/N_Rdn8PdqMg?autoplay=0&rel=0"
+                  src="https://www.youtube.com/embed/N_Rdn8PdqMg?autoplay=0&rel=0&modestbranding=1"
                   title="Promoted Content"
                   allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
