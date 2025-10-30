@@ -29,11 +29,13 @@ export default function Home() {
             <div className="lg:col-span-2">
               <div className="relative w-full bg-black rounded-lg overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
                 <iframe
-                  src={`https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
-                  title="Promoted Content"
+                  src="https://www.youtube.com/embed/q361DIh-7Dw?si=USzNoj2WgUr1IQ3Y"
+                  title="YouTube video player"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen
                   className="absolute inset-0 w-full h-full"
+                  style={{ border: 0 }}
                 ></iframe>
               </div>
             </div>
