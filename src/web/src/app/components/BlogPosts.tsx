@@ -55,28 +55,70 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
   // Helper function to extract YouTube video ID from various URL formats
   const getYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
-    
+
     try {
+      // Clean the URL
+      const cleanUrl = url.trim();
+
       // Handle youtu.be format
-      const youtuBeMatch = url.match(/youtu\.be\/([^?&]+)/);
-      if (youtuBeMatch) return youtuBeMatch[1];
-      
+      const youtuBeMatch = cleanUrl.match(/youtu\.be\/([^?&]+)/);
+      if (youtuBeMatch) {
+        const videoId = youtuBeMatch[1];
+        if (/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+          return videoId;
+        }
+      }
+
       // Handle youtube.com/watch format
-      const youtubeMatch = url.match(/[?&]v=([^&]+)/);
-      if (youtubeMatch) return youtubeMatch[1];
-      
+      const youtubeMatch = cleanUrl.match(/[?&]v=([^&]+)/);
+      if (youtubeMatch) {
+        const videoId = youtubeMatch[1];
+        if (/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+          return videoId;
+        }
+      }
+
       // Handle youtube.com/embed format
-      const embedMatch = url.match(/\/embed\/([^?&]+)/);
-      if (embedMatch) return embedMatch[1];
-      
-      // Handle youtube.com/v/ format
-      const vMatch = url.match(/\/v\/([^?&]+)/);
-      if (vMatch) return vMatch[1];
-    } catch (e) {
-      console.error('Error extracting YouTube video ID:', e);
+      const embedMatch = cleanUrl.match(/\/embed\/([^?&]+)/);
+      if (embedMatch) {
+        const videoId = embedMatch[1];
+        if (/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+          return videoId;
+        }
+      }
+
+      // Handle youtube.com/v/ format (legacy)
+      const vMatch = cleanUrl.match(/\/v\/([^?&]+)/);
+      if (vMatch) {
+        const videoId = vMatch[1];
+        if (/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+          return videoId;
+        }
+      }
+
+      // Handle youtube.com/shorts format
+      const shortsMatch = cleanUrl.match(/\/shorts\/([^?&]+)/);
+      if (shortsMatch) {
+        const videoId = shortsMatch[1];
+        if (/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+          return videoId;
+        }
+      }
+
+      // Handle youtube.com/live format
+      const liveMatch = cleanUrl.match(/\/live\/([^?&]+)/);
+      if (liveMatch) {
+        const videoId = liveMatch[1];
+        if (/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+          return videoId;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.warn('Error parsing YouTube URL:', error);
+      return null;
     }
-    
-    return null;
   };
 
   const formatDate = (dateString: string) => {
@@ -577,9 +619,9 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
             ) : selectedPost.video_url && getYouTubeVideoId(selectedPost.video_url) ? (
               <div className="w-full bg-black relative" style={{ aspectRatio: '16/9' }}>
                 <iframe
-                  src={`https://www.youtube.com/embed/${getYouTubeVideoId(selectedPost.video_url)}`}
+                  src={`https://www.youtube.com/embed/${getYouTubeVideoId(selectedPost.video_url)}?rel=0&modestbranding=1`}
                   title={selectedPost.title}
-                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                   className="w-full h-full border-0"
                 ></iframe>
