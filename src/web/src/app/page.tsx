@@ -29,9 +29,9 @@ export default function Home() {
             <div className="lg:col-span-2">
               <div className="relative w-full bg-black rounded-lg overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
                 <iframe
-                  src="https://www.youtube.com/embed/N_Rdn8PdqMg?autoplay=0&rel=0&modestbranding=1"
+                  src={`https://www.youtube.com/embed/N_Rdn8PdqMg?autoplay=0&rel=0&modestbranding=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
                   title="Promoted Content"
-                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                   className="absolute inset-0 w-full h-full"
                 ></iframe>

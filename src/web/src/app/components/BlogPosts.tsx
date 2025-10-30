@@ -619,7 +619,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
             ) : selectedPost.video_url && getYouTubeVideoId(selectedPost.video_url) ? (
               <div className="w-full bg-black relative" style={{ aspectRatio: '16/9' }}>
                 <iframe
-                  src={`https://www.youtube.com/embed/${getYouTubeVideoId(selectedPost.video_url)}?rel=0&modestbranding=1`}
+                  src={`https://www.youtube.com/embed/${getYouTubeVideoId(selectedPost.video_url)}?rel=0&modestbranding=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
                   title={selectedPost.title}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
