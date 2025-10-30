@@ -1,0 +1,18 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/static/*.{png,jpg,jpeg,gif,svg}", "/favicon.ico"]
+  },
+  "mimeTypes": {
+    ".json": "application/json"
+  },
+  "globalHeaders": {
+    "Content-Security-Policy": "frame-src 'self' https://www.youtube.com https://youtube.com; script-src 'self' 'unsafe-inline' https://www.youtube.com https://youtube.com; connect-src 'self' https://www.youtube.com https://youtube.com;"
+  },
+  "routes": [
+    {
+      "route": "/api/*",
+      "allowedRoles": ["anonymous"]
+    }
+  ]
+}
