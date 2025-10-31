@@ -591,20 +591,9 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
                     enable_cross_partition_query=True
                 ))
                 
-                # Sort in Python: posts with fetch_order first (DESC by fetch_order), 
-                # then manual posts (DESC by created_at)
+                # Sort posts by created_at DESC (latest to oldest)
                 def sort_key(post):
-                    # Return tuple for sorting:
-                    # - Posts with fetch_order: (1, -fetch_order, created_at) 
-                    # - Manual posts: (0, 0, created_at)
-                    # We negate fetch_order because reverse=True will make higher values come first
-                    has_fetch_order = 'fetch_order' in post and post['fetch_order'] is not None
-                    if has_fetch_order:
-                        # Auto-fetched posts: sort by fetch_order DESC (higher = newer)
-                        return (1, -post['fetch_order'], post.get('created_at', '1970-01-01T00:00:00Z'))
-                    else:
-                        # Manual posts: sort by created_at DESC
-                        return (0, 0, post.get('created_at', '1970-01-01T00:00:00Z'))
+                    return post.get('created_at', '1970-01-01T00:00:00Z')
                 
                 items.sort(key=sort_key, reverse=True)
                 
