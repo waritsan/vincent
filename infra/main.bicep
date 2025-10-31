@@ -117,6 +117,7 @@ module functionApp 'core/host/functions.bicep' = {
       // AZURE_AI_AGENT_ID will be set manually after agent creation
       AZURE_COSMOS_ENDPOINT: cosmosDb.outputs.endpoint
       AZURE_COSMOS_DATABASE_NAME: cosmosDb.outputs.databaseName
+      AZURE_COSMOS_CONNECTION_STRING: cosmosDb.outputs.connectionString
       CORS_ALLOWED_ORIGINS: 'https://calm-bay-09b1e430f.1.azurestaticapps.net'
     }
   }
@@ -263,17 +264,6 @@ module cosmosDb 'core/database/cosmos/cosmos-serverless.bicep' = {
         partitionKeyPath: '/id'
       }
     ]
-  }
-}
-
-// Grant the Function App access to Cosmos DB
-module cosmosDbRoleAssignment 'core/database/cosmos/sql/cosmos-sql-role-assign.bicep' = {
-  name: 'cosmosdb-role-assignment'
-  scope: rg
-  params: {
-    accountName: cosmosDb.outputs.name
-    roleDefinitionId: '${cosmosDb.outputs.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002' // Cosmos DB Built-in Data Contributor
-    principalId: functionApp.outputs.identityPrincipalId
   }
 }
 

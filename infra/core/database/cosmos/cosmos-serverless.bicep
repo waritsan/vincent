@@ -76,3 +76,4 @@ output endpoint string = cosmosAccount.properties.documentEndpoint
 output id string = cosmosAccount.id
 output name string = cosmosAccount.name
 output databaseName string = databaseName
+output connectionString string = cosmosAccount.listConnectionStrings().connectionStrings[0].connectionString
