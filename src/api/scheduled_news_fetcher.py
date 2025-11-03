@@ -6,10 +6,15 @@ Runs on a schedule (e.g., every 6 hours)
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict
 import azure.functions as func
-from news_scraper import scrape_dbd_news
+from news_scraper import (
+    scrape_dbd_news, 
+    should_store_in_blob, 
+    store_content_in_blob, 
+    create_content_preview
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -98,12 +103,35 @@ def save_articles_to_db(articles: List[Dict], tags: List[str] = None) -> Dict:
                 stats['skipped'] += 1
                 continue
             
-            # Prepare content preview (first 300 characters)
-            content = article['content']
-            content_preview = content[:300] + ('...' if len(content) > 300 else '')
+            # Prepare full content with source link
+            full_content = article['content'] + f"\n\nอ่านเพิ่มเติม: {source_url}"
+            
+            # Determine storage strategy based on content size
+            if should_store_in_blob(full_content):
+                # Store large content in blob storage
+                blob_name = f"articles/dbd-{article.get('slug', 'unknown')}-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}.txt"
+                blob_url = store_content_in_blob(full_content, blob_name)
+                
+                if blob_url:
+                    # Store preview in Cosmos DB and reference blob
+                    content_preview = create_content_preview(full_content)
+                    content_storage = 'blob'
+                    content_blob_url = blob_url
+                    logger.info(f"Stored large article '{article['title'][:50]}...' in blob storage")
+                else:
+                    # Fallback to Cosmos DB if blob storage fails
+                    content_preview = create_content_preview(full_content)
+                    content_storage = 'cosmos'
+                    content_blob_url = None
+                    logger.warning(f"Blob storage failed for '{article['title'][:50]}...', using Cosmos DB")
+            else:
+                # Store small content directly in Cosmos DB
+                content_preview = full_content
+                content_storage = 'cosmos'
+                content_blob_url = None
             
             # Calculate reading time
-            word_count = len(content.split())
+            word_count = len(full_content.split())
             reading_time_minutes = max(1, word_count // 200)
             
             # Calculate fetch_order (higher number = newer/more recent)
@@ -115,6 +143,8 @@ def save_articles_to_db(articles: List[Dict], tags: List[str] = None) -> Dict:
                 'id': post_id,
                 'title': article['title'][:500],
                 'content': content_preview,
+                'content_storage': content_storage,
+                'content_blob_url': content_blob_url,
                 'author': article['source'],
                 'author_avatar': 'https://www.dbd.go.th/images/Logo100.png',
                 'thumbnail_url': article.get('image_url', ''),
@@ -126,10 +156,10 @@ def save_articles_to_db(articles: List[Dict], tags: List[str] = None) -> Dict:
                 'post_type': 'shared',
                 'tags': tags,
                 'reading_time_minutes': reading_time_minutes,
-                'created_at': article.get('created_at', datetime.utcnow().isoformat()),  # Original publish date
-                'updated_at': datetime.utcnow().isoformat(),
+                'created_at': article.get('created_at', datetime.now(timezone.utc).isoformat()),  # Original publish date
+                'updated_at': datetime.now(timezone.utc).isoformat(),
                 'auto_fetched': True,  # Mark as automatically fetched
-                'fetch_date': datetime.utcnow().isoformat(),
+                'fetch_date': datetime.now(timezone.utc).isoformat(),
                 'fetch_order': fetch_order,  # Preserve DBD API order
                 'original_date_display': article.get('date', '')  # Thai date string for display
             }
@@ -187,7 +217,7 @@ def fetch_and_save_dbd_news(limit: int = 10, keyword: str = '') -> Dict:
             "success": True,
             "message": f"Processed {len(articles)} articles",
             "stats": stats,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
     except Exception as e:

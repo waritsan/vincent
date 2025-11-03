@@ -6,9 +6,11 @@ Supports multiple categories: Press Release, Activities, etc.
 
 import logging
 import re
-from datetime import datetime
-from typing import List, Dict, Optional
+import os
+from datetime import datetime, timezone
+from typing import List, Dict, Optional, Tuple
 import requests
+from azure.storage.blob import BlobServiceClient
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,7 @@ def parse_thai_date(thai_date: str) -> str:
     Output: "2025-10-22T00:00:00Z"
     """
     if not thai_date:
-        return datetime.utcnow().isoformat()
+        return datetime.now(timezone.utc).isoformat()
     
     try:
         # Thai month names mapping
@@ -77,11 +79,134 @@ def parse_thai_date(thai_date: str) -> str:
             return date_obj.isoformat() + 'Z'
         
         # Fallback
-        return datetime.utcnow().isoformat()
+        return datetime.now(timezone.utc).isoformat()
         
     except Exception as e:
         logger.warning(f"Failed to parse date '{thai_date}': {e}")
-        return datetime.utcnow().isoformat()
+        return datetime.now(timezone.utc).isoformat()
+
+
+def get_blob_service_client() -> Optional[BlobServiceClient]:
+    """Get Azure Blob Storage service client"""
+    try:
+        connection_string = os.environ.get('AZURE_STORAGE_CONNECTION_STRING')
+        if not connection_string:
+            logger.warning("AZURE_STORAGE_CONNECTION_STRING not found")
+            return None
+        
+        return BlobServiceClient.from_connection_string(connection_string)
+    except Exception as e:
+        logger.error(f"Failed to create blob service client: {e}")
+        return None
+
+
+def store_content_in_blob(content: str, blob_name: str) -> Optional[str]:
+    """
+    Store content in Azure Blob Storage
+    
+    Args:
+        content: The content to store
+        blob_name: Name of the blob (e.g., 'articles/article-123.txt')
+    
+    Returns:
+        Blob URL if successful, None otherwise
+    """
+    try:
+        blob_service_client = get_blob_service_client()
+        if not blob_service_client:
+            return None
+        
+        # Get blob client
+        blob_client = blob_service_client.get_blob_client(
+            container="articles", 
+            blob=blob_name
+        )
+        
+        # Upload content
+        blob_client.upload_blob(content, overwrite=True)
+        
+        logger.info(f"Stored content in blob: {blob_name}")
+        return blob_client.url
+        
+    except Exception as e:
+        logger.error(f"Failed to store content in blob '{blob_name}': {e}")
+        return None
+
+
+def get_content_from_blob(blob_url: str) -> Optional[str]:
+    """
+    Retrieve content from Azure Blob Storage
+    
+    Args:
+        blob_url: The blob URL
+    
+    Returns:
+        Content string if successful, None otherwise
+    """
+    try:
+        blob_service_client = get_blob_service_client()
+        if not blob_service_client:
+            return None
+        
+        # Parse blob URL to get container and blob name
+        # URL format: https://account.blob.core.windows.net/container/blob
+        url_parts = blob_url.split('/')
+        container_name = url_parts[-2]
+        blob_name = url_parts[-1]
+        
+        blob_client = blob_service_client.get_blob_client(
+            container=container_name, 
+            blob=blob_name
+        )
+        
+        # Download content
+        download_stream = blob_client.download_blob()
+        content = download_stream.readall().decode('utf-8')
+        
+        return content
+        
+    except Exception as e:
+        logger.error(f"Failed to retrieve content from blob '{blob_url}': {e}")
+        return None
+
+
+def should_store_in_blob(content: str, threshold_kb: int = 5) -> bool:
+    """
+    Determine if content should be stored in blob storage based on size
+    
+    Args:
+        content: The content to check
+        threshold_kb: Size threshold in KB (default: 5KB)
+    
+    Returns:
+        True if content should be stored in blob, False otherwise
+    """
+    content_size_kb = len(content.encode('utf-8')) / 1024
+    return content_size_kb >= threshold_kb
+
+
+def create_content_preview(content: str, max_length: int = 500) -> str:
+    """
+    Create a preview of the content for storage in Cosmos DB
+    
+    Args:
+        content: Full content
+        max_length: Maximum preview length
+    
+    Returns:
+        Content preview
+    """
+    if len(content) <= max_length:
+        return content
+    
+    # Try to cut at word boundary
+    preview = content[:max_length]
+    last_space = preview.rfind(' ')
+    
+    if last_space > max_length * 0.8:  # If space is not too far back
+        preview = preview[:last_space]
+    
+    return preview + "..."
 
 
 def scrape_dbd_news(limit: int = 10, keyword: str = '') -> List[Dict]:
@@ -247,7 +372,7 @@ def fetch_dbd_article_by_slug(slug: str) -> Optional[Dict]:
 
 def fetch_news_as_posts(limit: int = 10, keyword: str = '') -> List[Dict]:
     """
-    Fetch news and format as post objects for the database
+    Fetch news and format as post objects for the database with hybrid storage
     
     Args:
         limit: Number of articles to fetch
@@ -267,21 +392,64 @@ def fetch_news_as_posts(limit: int = 10, keyword: str = '') -> List[Dict]:
         if keyword and keyword not in tags:
             tags.append(keyword)
         
-        # Format as post object
-        post = {
-            'title': article['title'],
-            'content': article['content'] + f"\n\nอ่านเพิ่มเติม: {article['link']}",
-            'author': 'กรมพัฒนาธุรกิจการค้า (DBD)',
-            'author_avatar': 'https://www.dbd.go.th/images/Logo100.png',
-            'thumbnail_url': article.get('image_url', ''),
-            'tags': tags,
-            'source_url': article['link'],
-            'is_external': True,  # Mark as external content
-            'created_at': article.get('created_at')  # Use article's original date
-        }
+        # Prepare full content with source link
+        full_content = article['content'] + f"\n\nอ่านเพิ่มเติม: {article['link']}"
+        
+        # Determine storage strategy based on content size
+        if should_store_in_blob(full_content):
+            # Store large content in blob storage
+            blob_name = f"articles/dbd-{article.get('slug', 'unknown')}-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}.txt"
+            blob_url = store_content_in_blob(full_content, blob_name)
+            
+            if blob_url:
+                # Store preview in Cosmos DB and reference blob
+                post = {
+                    'title': article['title'],
+                    'content': create_content_preview(full_content),
+                    'content_blob_url': blob_url,
+                    'content_storage': 'blob',  # Mark storage type
+                    'author': 'กรมพัฒนาธุรกิจการค้า (DBD)',
+                    'author_avatar': 'https://www.dbd.go.th/images/Logo100.png',
+                    'thumbnail_url': article.get('image_url', ''),
+                    'tags': tags,
+                    'source_url': article['link'],
+                    'is_external': True,  # Mark as external content
+                    'created_at': article.get('created_at')  # Use article's original date
+                }
+                logger.info(f"Stored large article '{article['title'][:50]}...' in blob storage")
+            else:
+                # Fallback to Cosmos DB if blob storage fails
+                post = {
+                    'title': article['title'],
+                    'content': full_content,
+                    'content_storage': 'cosmos',
+                    'author': 'กรมพัฒนาธุรกิจการค้า (DBD)',
+                    'author_avatar': 'https://www.dbd.go.th/images/Logo100.png',
+                    'thumbnail_url': article.get('image_url', ''),
+                    'tags': tags,
+                    'source_url': article['link'],
+                    'is_external': True,
+                    'created_at': article.get('created_at')
+                }
+                logger.warning(f"Blob storage failed for '{article['title'][:50]}...', stored in Cosmos DB")
+        else:
+            # Store small content directly in Cosmos DB
+            post = {
+                'title': article['title'],
+                'content': full_content,
+                'content_storage': 'cosmos',
+                'author': 'กรมพัฒนาธุรกิจการค้า (DBD)',
+                'author_avatar': 'https://www.dbd.go.th/images/Logo100.png',
+                'thumbnail_url': article.get('image_url', ''),
+                'tags': tags,
+                'source_url': article['link'],
+                'is_external': True,
+                'created_at': article.get('created_at')
+            }
+        
         posts.append(post)
     
-    logger.info(f'Formatted {len(posts)} news articles as posts')
+    logger.info(f'Formatted {len(posts)} news articles as posts with hybrid storage')
     return posts
 
 

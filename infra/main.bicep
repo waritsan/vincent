@@ -66,13 +66,45 @@ module monitoring 'core/monitor/monitoring.bicep' = {
 }
 
 // Storage account for Azure Functions
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+  name: '${abbrs.storageStorageAccounts}${resourceToken}'
+  location: location
+  tags: tags
+  kind: 'StorageV2'
+  sku: {
+    name: 'Standard_LRS'
+  }
+  properties: {
+    accessTier: 'Hot'
+    allowBlobPublicAccess: false
+    allowSharedKeyAccess: true
+    minimumTlsVersion: 'TLS1_2'
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: 'Allow'
+    }
+    supportsHttpsTrafficOnly: true
+  }
+}
+
+// Storage account module (keeping for compatibility)
 module storage 'core/storage/storage-account.bicep' = {
   name: 'storage'
   scope: rg
   params: {
-    name: '${abbrs.storageStorageAccounts}${resourceToken}'
+    name: storageAccount.name
     location: location
     tags: tags
+  }
+}
+
+// Blob container for article content storage
+module articleContainer 'core/storage/blob-container.bicep' = {
+  name: 'article-container'
+  scope: rg
+  params: {
+    name: 'articles'
+    storageAccountName: storageAccount.name
   }
 }
 
@@ -103,7 +135,7 @@ module functionApp 'core/host/functions.bicep' = {
     appServicePlanId: appServicePlan.outputs.id
     runtimeName: 'python'
     runtimeVersion: '3.12'
-    storageAccountName: storage.outputs.name
+    storageAccountName: storageAccount.name
     managedIdentity: true
     alwaysOn: false
     allowedOrigins: [
@@ -118,6 +150,7 @@ module functionApp 'core/host/functions.bicep' = {
       AZURE_COSMOS_ENDPOINT: cosmosDb.outputs.endpoint
       AZURE_COSMOS_DATABASE_NAME: cosmosDb.outputs.databaseName
       AZURE_COSMOS_CONNECTION_STRING: cosmosDb.outputs.connectionString
+      AZURE_STORAGE_CONNECTION_STRING: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
       CORS_ALLOWED_ORIGINS: 'https://calm-bay-09b1e430f.1.azurestaticapps.net'
     }
   }

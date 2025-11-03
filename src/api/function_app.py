@@ -9,6 +9,7 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from azure.cosmos import CosmosClient, exceptions
 from azure.ai.projects import AIProjectClient
 from text_extraction import extract_companies_and_locations
+from news_scraper import get_content_from_blob
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -372,7 +373,7 @@ def chat(req: func.HttpRequest) -> func.HttpResponse:
                     "conversation_id": conversation_id,
                     "message": user_message,
                     "response": f"AI service error: {str(ai_error)}",
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "error": True
                 }
         else:
@@ -596,6 +597,16 @@ def posts(req: func.HttpRequest) -> func.HttpResponse:
                     return post.get('created_at', '1970-01-01T00:00:00Z')
                 
                 items.sort(key=sort_key, reverse=True)
+                
+                # Retrieve full content from blob storage if needed
+                for post in items:
+                    if post.get('content_storage') == 'blob' and post.get('content_blob_url'):
+                        full_content = get_content_from_blob(post['content_blob_url'])
+                        if full_content:
+                            post['content'] = full_content
+                            logging.debug(f"Retrieved full content from blob for post: {post.get('title', '')[:50]}...")
+                        else:
+                            logging.warning(f"Failed to retrieve content from blob for post: {post.get('id')}")
                 
                 posts_data = {
                     "posts": items,
