@@ -10,7 +10,7 @@ from azure.cosmos import CosmosClient, exceptions
 from azure.ai.projects import AIProjectClient
 from text_extraction import extract_companies_and_locations
 from news_scraper import get_content_from_blob
-from ai_utils import generate_ai_tags
+from ai_utils import generate_ai_tags, get_ai_client
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
