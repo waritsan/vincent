@@ -15,6 +15,7 @@ from news_scraper import (
     store_content_in_blob, 
     create_content_preview
 )
+from ai_utils import generate_ai_tags
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -106,6 +107,21 @@ def save_articles_to_db(articles: List[Dict], tags: List[str] = None) -> Dict:
             # Prepare full content with source link
             full_content = article['content'] + f"\n\nอ่านเพิ่มเติม: {source_url}"
             
+            # Generate AI-powered tags for this article
+            article_tags = list(tags) if tags else ['DBD', 'กรมพัฒนาธุรกิจการค้า', 'ข่าวประชาสัมพันธ์']
+            try:
+                ai_tags = generate_ai_tags(full_content, article.get('title', ''))
+                if ai_tags:
+                    # Add AI-generated tags, avoiding duplicates
+                    for tag in ai_tags:
+                        if tag not in article_tags:
+                            article_tags.append(tag)
+                    logger.info(f"Generated AI tags for '{article['title'][:30]}...': {ai_tags}")
+                else:
+                    logger.info(f"No AI tags generated for '{article['title'][:30]}...', using default tags")
+            except Exception as e:
+                logger.warning(f"Failed to generate AI tags for '{article['title'][:30]}...': {e}")
+            
             # Determine storage strategy based on content size
             if should_store_in_blob(full_content):
                 # Store large content in blob storage
@@ -154,7 +170,7 @@ def save_articles_to_db(articles: List[Dict], tags: List[str] = None) -> Dict:
                 'embed_type': 'preview',
                 'iframe_allowed': False,
                 'post_type': 'shared',
-                'tags': tags,
+                'tags': article_tags,
                 'reading_time_minutes': reading_time_minutes,
                 'created_at': article.get('created_at', datetime.now(timezone.utc).isoformat()),  # Original publish date
                 'updated_at': datetime.now(timezone.utc).isoformat(),

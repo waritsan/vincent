@@ -66,15 +66,15 @@ module monitoring 'core/monitor/monitoring.bicep' = {
 }
 
 // Storage account for Azure Functions
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
-  name: '${abbrs.storageStorageAccounts}${resourceToken}'
-  location: location
-  tags: tags
-  kind: 'StorageV2'
-  sku: {
-    name: 'Standard_LRS'
-  }
-  properties: {
+module storageAccount 'core/storage/storage-account.bicep' = {
+  name: 'storage-account'
+  scope: rg
+  params: {
+    name: '${abbrs.storageStorageAccounts}${resourceToken}'
+    location: location
+    tags: tags
+    sku: 'Standard_LRS'
+    kind: 'StorageV2'
     accessTier: 'Hot'
     allowBlobPublicAccess: false
     allowSharedKeyAccess: true
@@ -92,7 +92,7 @@ module storage 'core/storage/storage-account.bicep' = {
   name: 'storage'
   scope: rg
   params: {
-    name: storageAccount.name
+    name: storageAccount.outputs.name
     location: location
     tags: tags
   }
@@ -104,7 +104,7 @@ module articleContainer 'core/storage/blob-container.bicep' = {
   scope: rg
   params: {
     name: 'articles'
-    storageAccountName: storageAccount.name
+    storageAccountName: storageAccount.outputs.name
   }
 }
 
@@ -135,7 +135,7 @@ module functionApp 'core/host/functions.bicep' = {
     appServicePlanId: appServicePlan.outputs.id
     runtimeName: 'python'
     runtimeVersion: '3.12'
-    storageAccountName: storageAccount.name
+    storageAccountName: storageAccount.outputs.name
     managedIdentity: true
     alwaysOn: false
     allowedOrigins: [
@@ -150,7 +150,7 @@ module functionApp 'core/host/functions.bicep' = {
       AZURE_COSMOS_ENDPOINT: cosmosDb.outputs.endpoint
       AZURE_COSMOS_DATABASE_NAME: cosmosDb.outputs.databaseName
       AZURE_COSMOS_CONNECTION_STRING: cosmosDb.outputs.connectionString
-      AZURE_STORAGE_CONNECTION_STRING: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+      AZURE_STORAGE_CONNECTION_STRING: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.outputs.name};AccountKey=${storageAccount.outputs.keys[0].value};EndpointSuffix=core.windows.net'
       CORS_ALLOWED_ORIGINS: 'https://calm-bay-09b1e430f.1.azurestaticapps.net'
     }
   }
@@ -180,7 +180,7 @@ module aiFoundry 'core/ai/ai-foundry-project.bicep' = {
     location: location
     tags: tags
     deployGPT4o: true
-    modelDeploymentName: 'gpt-4o'
+    modelDeploymentName: 'gpt-5-mini'
   }
 }
 

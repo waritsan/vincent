@@ -10,6 +10,7 @@ from azure.cosmos import CosmosClient, exceptions
 from azure.ai.projects import AIProjectClient
 from text_extraction import extract_companies_and_locations
 from news_scraper import get_content_from_blob
+from ai_utils import generate_ai_tags
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -32,32 +33,6 @@ def create_response(body, status_code=200):
         headers=CORS_HEADERS
     )
 
-# Initialize Azure AI client
-def get_ai_client():
-    """Initialize and return Azure OpenAI client"""
-    endpoint = os.environ.get("AZURE_AI_ENDPOINT")
-    
-    if not endpoint:
-        logging.warning("AZURE_AI_ENDPOINT not configured")
-        return None
-    
-    try:
-        # Use Managed Identity for authentication
-        credential = DefaultAzureCredential()
-        token_provider = get_bearer_token_provider(
-            credential,
-            "https://cognitiveservices.azure.com/.default"
-        )
-        
-        client = AzureOpenAI(
-            azure_endpoint=endpoint,
-            azure_ad_token_provider=token_provider,
-            api_version="2024-10-21"
-        )
-        return client
-    except Exception as e:
-        logging.error(f"Failed to create Azure OpenAI client: {e}")
-        return None
 
 # Initialize Cosmos DB client
 def get_cosmos_container():

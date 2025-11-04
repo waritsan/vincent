@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from typing import List, Dict, Optional, Tuple
 import requests
 from azure.storage.blob import BlobServiceClient
+from ai_utils import generate_ai_tags
 
 logger = logging.getLogger(__name__)
 
@@ -391,6 +392,20 @@ def fetch_news_as_posts(limit: int = 10, keyword: str = '') -> List[Dict]:
         # Add keyword as a tag if provided
         if keyword and keyword not in tags:
             tags.append(keyword)
+        
+        # Generate AI-powered tags for this article
+        try:
+            ai_tags = generate_ai_tags(full_content, article.get('title', ''))
+            if ai_tags:
+                # Add AI-generated tags, avoiding duplicates
+                for tag in ai_tags:
+                    if tag not in tags:
+                        tags.append(tag)
+                logger.info(f"Generated AI tags for '{article['title'][:30]}...': {ai_tags}")
+            else:
+                logger.info(f"No AI tags generated for '{article['title'][:30]}...', using base tags")
+        except Exception as e:
+            logger.warning(f"Failed to generate AI tags for '{article['title'][:30]}...': {e}")
         
         # Prepare full content with source link
         full_content = article['content'] + f"\n\nอ่านเพิ่มเติม: {article['link']}"
