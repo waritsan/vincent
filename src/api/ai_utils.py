@@ -76,7 +76,7 @@ Content: {content[:2000]}
 Return only a JSON array of tag strings."""
 
         response = ai_client.chat.completions.create(
-            model=os.environ.get("AZURE_AI_DEPLOYMENT_NAME", "gpt-5-mini"),
+            model=os.environ.get("AZURE_AI_DEPLOYMENT_NAME", "gpt-4o-mini"),
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}

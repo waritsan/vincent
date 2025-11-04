@@ -6,7 +6,7 @@ param location string = resourceGroup().location
 param tags object = {}
 
 param deployGPT4o bool = true
-param modelDeploymentName string = 'gpt-5-mini'
+param modelDeploymentName string = 'gpt-4o-mini'
 param modelCapacity int = 10
 
 /*
@@ -41,7 +41,7 @@ resource aiProject 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = 
   properties: {}
 }
 /*
-  Model deployment for GPT-5 mini
+  Model deployment for GPT-4o mini
 */
 resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-06-01' = if (deployGPT4o) {
   parent: aiFoundry
@@ -52,9 +52,9 @@ resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-
   }
   properties: {
     model: {
-      name: 'gpt-5-mini'
+      name: 'gpt-4o-mini'
       format: 'OpenAI'
-      version: '2024-09-12'
+      version: '2024-07-18'
     }
     versionUpgradeOption: 'OnceNewDefaultVersionAvailable'
   }

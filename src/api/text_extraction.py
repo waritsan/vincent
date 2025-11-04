@@ -145,8 +145,8 @@ def extract_companies_and_locations(text: str) -> Dict:
 
     try:
         # Use the configured model/deployment from environment or defaults
-        model_name = os.environ.get("AZURE_OPENAI_MODEL", "gpt-5-mini")
-        deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-5-mini")
+        model_name = os.environ.get("AZURE_OPENAI_MODEL", "gpt-4o-mini")
+        deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o-mini")
 
         response = client.chat.completions.create(
             messages=[

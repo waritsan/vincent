@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "10572466755199298185"
+      "templateHash": "7870046353716182793"
     }
   },
   "parameters": {
@@ -2979,7 +2979,7 @@
             "value": true
           },
           "modelDeploymentName": {
-            "value": "gpt-5-mini"
+            "value": "gpt-4o-mini"
           }
         },
         "template": {
@@ -2989,7 +2989,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "3624893791855645009"
+              "templateHash": "1521675559046198789"
             },
             "description": "Creates an Azure AI Foundry project with model deployment"
           },
@@ -3014,7 +3014,7 @@
             },
             "modelDeploymentName": {
               "type": "string",
-              "defaultValue": "gpt-5-mini"
+              "defaultValue": "gpt-4o-mini"
             },
             "modelCapacity": {
               "type": "int",
@@ -3065,9 +3065,9 @@
               },
               "properties": {
                 "model": {
-                  "name": "gpt-5-mini",
+                  "name": "gpt-4o-mini",
                   "format": "OpenAI",
-                  "version": "2024-09-12"
+                  "version": "2024-07-18"
                 },
                 "versionUpgradeOption": "OnceNewDefaultVersionAvailable"
               },

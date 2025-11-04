@@ -180,7 +180,7 @@ module aiFoundry 'core/ai/ai-foundry-project.bicep' = {
     location: location
     tags: tags
     deployGPT4o: true
-    modelDeploymentName: 'gpt-5-mini'
+    modelDeploymentName: 'gpt-4o-mini'
   }
 }
 
