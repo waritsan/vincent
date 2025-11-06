@@ -65,13 +65,22 @@ Requirements:
 - Include both Thai and English tags when appropriate  
 - Focus on business sectors, regions, industries, and key topics
 - Consider DBD (Department of Business Development) context
+- Include nomination-related tags when articles discuss nominees, nominations, or selection processes
+- Use "นอมินี" (nominee) tag for articles about nominated individuals or entities
 
-Example output: ["ธุรกิจ SME", "SME", "ภาครัฐ", "government", "เศรษฐกิจ", "economy"]"""
+Example output: ["ธุรกิจ SME", "SME", "ภาครัฐ", "government", "เศรษฐกิจ", "economy", "นอมินี", "nominee"]"""
 
         user_prompt = f"""Analyze this Thai business news article and generate 3-8 relevant tags:
 
 Title: {title}
 Content: {content[:2000]}
+
+Pay special attention to:
+- Business sectors and industries
+- Geographic regions and locations
+- Nomination and selection processes (use "นอมินี" for nominees)
+- Government and regulatory topics
+- Economic and market developments
 
 Return only a JSON array of tag strings."""
 
