@@ -407,6 +407,25 @@ def fetch_news_as_posts(limit: int = 10, keyword: str = '') -> List[Dict]:
         except Exception as e:
             logger.warning(f"Failed to generate AI tags for '{article['title'][:30]}...': {e}")
         
+        # Extract companies from nominee-tagged articles
+        nominee_tags = ['นอมินี', 'นอมินีหุ้น', 'นอมินีผิดกฎหมาย']
+        has_nominee_tag = any(tag in nominee_tags for tag in tags)
+        
+        if has_nominee_tag:
+            try:
+                from text_extraction import extract_nominee_companies
+                extraction_result = extract_nominee_companies(
+                    full_content, 
+                    article.get('link', ''), 
+                    article.get('title', '')
+                )
+                if extraction_result["success"]:
+                    logger.info(f"Extracted {extraction_result['companies_extracted']} companies from nominee article '{article['title'][:30]}...', stored {extraction_result.get('companies_stored', 0)} in CosmosDB")
+                else:
+                    logger.warning(f"Failed to extract companies from nominee article '{article['title'][:30]}...': {extraction_result.get('error', 'Unknown error')}")
+            except Exception as e:
+                logger.warning(f"Error in nominee company extraction for '{article['title'][:30]}...': {e}")
+        
         # Prepare full content with source link
         full_content = article['content'] + f"\n\nอ่านเพิ่มเติม: {article['link']}"
         

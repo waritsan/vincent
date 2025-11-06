@@ -311,6 +311,154 @@ def extract_from_file(file_path: str) -> Dict:
         }
 
 
+def extract_nominee_companies(text: str, source_url: str = "", article_title: str = "") -> Dict:
+    """
+    Extract company information from nominee-tagged news articles and store in CosmosDB.
+    
+    Args:
+        text: The article text to extract companies from
+        source_url: URL of the source article
+        article_title: Title of the article
+        
+    Returns:
+        Dict with extraction results and storage status
+    """
+    client = create_azure_client()
+    if not client:
+        logging.warning("Azure OpenAI client not available for nominee company extraction")
+        return {
+            "success": False,
+            "error": "Azure OpenAI client not available",
+            "companies_extracted": 0
+        }
+
+    try:
+        # Use the configured model/deployment from environment or defaults
+        model_name = os.environ.get("AZURE_OPENAI_MODEL", "gpt-4o-mini")
+        deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o-mini")
+
+        response = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "system",
+                    "content": """You are an AI assistant that extracts company information from Thai news articles about nominees and nominee shareholders.
+Extract companies mentioned in the context of nominations, nominee shareholders, or nominee arrangements.
+
+Return the results in JSON format with the following structure:
+{"companies": [{"name": "Company Name", "location": "Location", "asset_valuation": "Asset Valuation", "nominee_context": "Context description"}]}
+
+Guidelines:
+- Only extract companies mentioned in nominee contexts (nominations, nominee shareholders, nominee arrangements)
+- Focus on companies that are subjects of nominee arrangements or nominations
+- Include location if mentioned, otherwise use empty string
+- Include asset valuation if mentioned, otherwise use empty string
+- Add nominee_context field describing the nominee relationship or situation
+- Remove duplicates and normalize company names
+- Only include for-profit business entities and commercial companies
+- Extract asset valuations in their original format (e.g., "152 ล้านบาท", "$1.5 million")""",
+                },
+                {
+                    "role": "user",
+                    "content": f"Extract companies from this nominee-related news article:\n\nTitle: {article_title}\n\nContent: {text}",
+                }
+            ],
+            max_completion_tokens=4096,
+            model=deployment,
+            response_format={"type": "json_object"}  # Ensure JSON response
+        )
+
+        # Parse the response
+        result_text = response.choices[0].message.content
+        if result_text:
+            try:
+                # Parse JSON response
+                result_data = json.loads(result_text)
+
+                # Validate structure
+                if "companies" in result_data and isinstance(result_data["companies"], list):
+                    # Clean up and validate each company entry
+                    cleaned_companies = []
+                    seen_names = set()  # Track unique company names
+
+                    for company in result_data["companies"]:
+                        if isinstance(company, dict) and "name" in company:
+                            name = company["name"].strip()
+                            # Skip duplicates
+                            if name and name.lower() not in [n.lower() for n in seen_names]:
+                                seen_names.add(name)
+                                cleaned_companies.append({
+                                    "name": name,
+                                    "location": company.get("location", "").strip(),
+                                    "asset_valuation": company.get("asset_valuation", "").strip(),
+                                    "nominee_context": company.get("nominee_context", "").strip(),
+                                    "source_url": source_url,
+                                    "article_title": article_title,
+                                    "extraction_date": datetime.now(timezone.utc).isoformat(),
+                                    "id": f"{name.lower().replace(' ', '_')}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+                                })
+
+                    # Store in CosmosDB if we have companies
+                    if cleaned_companies:
+                        container = get_companies_container()
+                        if container:
+                            stored_count = 0
+                            for company in cleaned_companies:
+                                try:
+                                    container.upsert_item(company)
+                                    stored_count += 1
+                                    logging.info(f"Stored nominee company: {company['name']}")
+                                except Exception as e:
+                                    logging.error(f"Failed to store company {company['name']}: {e}")
+                            
+                            return {
+                                "success": True,
+                                "companies_extracted": len(cleaned_companies),
+                                "companies_stored": stored_count,
+                                "companies": cleaned_companies
+                            }
+                        else:
+                            logging.error("Could not get companies container for storage")
+                            return {
+                                "success": False,
+                                "error": "Could not access companies container",
+                                "companies_extracted": len(cleaned_companies),
+                                "companies": cleaned_companies
+                            }
+                    else:
+                        return {
+                            "success": True,
+                            "companies_extracted": 0,
+                            "companies_stored": 0,
+                            "companies": []
+                        }
+                else:
+                    return {
+                        "success": False,
+                        "error": "Invalid response structure from AI",
+                        "companies_extracted": 0
+                    }
+            except json.JSONDecodeError as e:
+                logging.error(f"Failed to parse JSON response: {e}")
+                return {
+                    "success": False,
+                    "error": f"JSON parsing error: {e}",
+                    "companies_extracted": 0
+                }
+        else:
+            return {
+                "success": False,
+                "error": "Empty response from AI",
+                "companies_extracted": 0
+            }
+    except Exception as e:
+        logging.error(f"Error in nominee company extraction: {e}")
+        return {
+            "success": False,
+            "error": f"Extraction error: {str(e)}",
+            "companies_extracted": 0
+        }
+
+
 # Example usage
 if __name__ == "__main__":
     # Example with file path
