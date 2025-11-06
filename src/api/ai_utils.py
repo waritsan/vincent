@@ -67,8 +67,10 @@ Requirements:
 - Consider DBD (Department of Business Development) context
 - Include nomination-related tags when articles discuss nominees, nominations, or selection processes
 - Use "นอมินี" (nominee) tag for articles about nominated individuals or entities
+- Use "นอมินีหุ้น" (nominee shareholder) tag for articles about nominee shareholders
+- Use "นอมินีผิดกฎหมาย" (illegal nominee) tag for articles about illegal nominee shareholders or nominee abuse
 
-Example output: ["ธุรกิจ SME", "SME", "ภาครัฐ", "government", "เศรษฐกิจ", "economy", "นอมินี", "nominee"]"""
+Example output: ["ธุรกิจ SME", "SME", "ภาครัฐ", "government", "เศรษฐกิจ", "economy", "นอมินี", "nominee", "นอมินีหุ้น", "nominee shareholder"]"""
 
         user_prompt = f"""Analyze this Thai business news article and generate 3-8 relevant tags:
 
@@ -79,6 +81,8 @@ Pay special attention to:
 - Business sectors and industries
 - Geographic regions and locations
 - Nomination and selection processes (use "นอมินี" for nominees)
+- Nominee shareholders and beneficial ownership (use "นอมินีหุ้น" for nominee shareholders)
+- Illegal nominee arrangements and nominee abuse (use "นอมินีผิดกฎหมาย" for illegal nominees)
 - Government and regulatory topics
 - Economic and market developments
 
