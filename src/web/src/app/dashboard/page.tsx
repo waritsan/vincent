@@ -170,8 +170,19 @@ export default function Dashboard() {
 
   // Timeline data (companies extracted over time)
   const timelineData = companies.reduce((acc, company) => {
-    const date = new Date(company.created_at).toISOString().split('T')[0];
-    acc[date] = (acc[date] || 0) + 1;
+    if (company.created_at) {
+      try {
+        const dateObj = new Date(company.created_at);
+        // Check if the date is valid
+        if (!isNaN(dateObj.getTime())) {
+          const date = dateObj.toISOString().split('T')[0];
+          acc[date] = (acc[date] || 0) + 1;
+        }
+      } catch {
+        // Skip invalid dates
+        console.warn('Invalid date for company:', company.id, company.created_at);
+      }
+    }
     return acc;
   }, {} as Record<string, number>);
 
