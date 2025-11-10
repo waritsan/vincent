@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Cell, LineChart, Line, PieChart, Pie, ScatterChart, Scatter, PieLabelRenderProps } from 'recharts';
 import dynamic from 'next/dynamic';
 import * as L from 'leaflet';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Dynamic chart generation state
 interface DynamicChart {
@@ -73,9 +74,13 @@ export default function Dashboard() {
   const [prompt, setPrompt] = useState('');
   const [dynamicChart, setDynamicChart] = useState<DynamicChart | null>(null);
   const [showDynamicChart, setShowDynamicChart] = useState(false);
+  const [aiResponse, setAiResponse] = useState<string>('');
 
   // Map loading state
   const [mapLoaded, setMapLoaded] = useState(false);
+
+  // Language hook
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchCompanies();
@@ -168,28 +173,6 @@ export default function Dashboard() {
     .sort((a, b) => b.valuation - a.valuation)
     .slice(0, 10);
 
-  // Timeline data (companies extracted over time)
-  const timelineData = companies.reduce((acc, company) => {
-    if (company.created_at) {
-      try {
-        const dateObj = new Date(company.created_at);
-        // Check if the date is valid
-        if (!isNaN(dateObj.getTime())) {
-          const date = dateObj.toISOString().split('T')[0];
-          acc[date] = (acc[date] || 0) + 1;
-        }
-      } catch {
-        // Skip invalid dates
-        console.warn('Invalid date for company:', company.id, company.created_at);
-      }
-    }
-    return acc;
-  }, {} as Record<string, number>);
-
-  const timelineChartData = Object.entries(timelineData)
-    .map(([date, count]) => ({ date, count }))
-    .sort((a, b) => a.date.localeCompare(b.date));
-
   // Process data for map
   const mapData = companies
     .filter(company => company.location && THAI_LOCATIONS[company.location])
@@ -241,6 +224,7 @@ export default function Dashboard() {
         };
         
         setDynamicChart(dynamicChart);
+        setAiResponse(result.ai_response || '');
         setShowDynamicChart(true);
         setPrompt(''); // Clear the prompt after successful generation
       } else {
@@ -248,7 +232,7 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error('Chart generation error:', error);
-      alert(`Sorry, I couldn't generate that chart. Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert(`${t('dashboard.sorryCouldNotGenerateChart')}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -257,6 +241,7 @@ export default function Dashboard() {
   const closeDynamicChart = () => {
     setShowDynamicChart(false);
     setDynamicChart(null);
+    setAiResponse('');
     setPrompt('');
   };
 
@@ -265,7 +250,7 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0066CC] mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('dashboard.loading')}</p>
         </div>
       </div>
     );
@@ -275,7 +260,7 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-500 mb-4">Error: {error}</div>
+          <div className="text-red-500 mb-4">{t('dashboard.error')}: {error}</div>
           <button
             onClick={fetchCompanies}
             className="bg-[#0066CC] hover:bg-[#0052A3] text-white px-4 py-2 rounded-sm"
@@ -293,34 +278,34 @@ export default function Dashboard() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Company Analytics Dashboard
+            {t('dashboard.title')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Insights from {companies.length} extracted companies
+            {t('dashboard.subtitle').replace('{count}', companies.length.toString())}
           </p>
           
           {/* Dynamic Chart Prompt */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-              Ask for Custom Charts
+              {t('dashboard.askForCustomCharts')}
             </h3>
             <form onSubmit={handlePromptSubmit} className="flex gap-2">
               <input
                 type="text"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder='Try: "companies in Bangkok with valuations over 100 million baht"'
+                placeholder={t('dashboard.chartPromptPlaceholder')}
                 className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 type="submit"
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors"
               >
-                Generate Chart
+                {t('dashboard.generateChart')}
               </button>
             </form>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              Examples: &quot;companies in Bangkok with valuations over 100 million baht&quot;, &quot;show top 5 companies from Chiang Mai&quot;, &quot;companies under 50 million created this year&quot;, &quot;pie chart of locations&quot;
+              {t('dashboard.chartExamples')}
             </p>
           </div>
         </div>
@@ -341,6 +326,22 @@ export default function Dashboard() {
                 </svg>
               </button>
             </div>
+            
+            {/* AI Response Text */}
+            {aiResponse && (
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <div className="text-sm text-blue-800 dark:text-blue-200">
+                    <p className="font-medium mb-1">{t('dashboard.aiAnalysis')}</p>
+                    <p className="whitespace-pre-wrap">{aiResponse}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <ResponsiveContainer width="100%" height={400}>
               {dynamicChart.type === 'bar' && (
                 <BarChart data={dynamicChart.data}>
@@ -425,7 +426,7 @@ export default function Dashboard() {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Companies</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('dashboard.totalCompanies')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{companies.length}</p>
               </div>
             </div>
@@ -440,7 +441,7 @@ export default function Dashboard() {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Locations</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('dashboard.locations')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{Object.keys(locationData).length}</p>
               </div>
             </div>
@@ -454,7 +455,7 @@ export default function Dashboard() {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">With Valuation</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('dashboard.withValuation')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {companies.filter(c => c.asset_valuation && c.asset_valuation !== '').length}
                 </p>
@@ -468,7 +469,7 @@ export default function Dashboard() {
           {/* Location Distribution */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Company Locations Distribution
+              {t('dashboard.companyLocationsDistribution')}
             </h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={locationChartData}>
@@ -494,7 +495,7 @@ export default function Dashboard() {
           {/* Asset Valuations */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Top Company Valuations ({valuationData.length} companies)
+              {t('dashboard.topCompanyValuations').replace('{count}', valuationData.length.toString())}
             </h3>
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={valuationData}>
@@ -521,27 +522,12 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
 
-          {/* Extraction Timeline */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Company Extractions Over Time
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={timelineChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" fontSize={12} />
-                <YAxis />
-                <Tooltip />
-                <Area type="monotone" dataKey="count" stroke="#FFBB28" fill="#FFBB28" fillOpacity={0.6} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
         </div>
 
         {/* Company Locations Map */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Company Locations Map
+            {t('dashboard.companyLocationsMap')}
           </h3>
           <div className="h-96 w-full">
             {typeof window !== 'undefined' && mapLoaded && (
@@ -564,11 +550,11 @@ export default function Dashboard() {
                       <div className="p-2">
                         <h4 className="font-semibold text-sm">{company.company_name || company.name || 'Unknown Company'}</h4>
                         <p className="text-xs text-gray-600">
-                          Location: {company.coordinates.english}
+                          {t('dashboard.location')}: {company.coordinates.english}
                         </p>
                         {company.asset_valuation && (
                           <p className="text-xs text-gray-600">
-                            Valuation: {company.asset_valuation}
+                            {t('dashboard.valuation')}: {company.asset_valuation}
                           </p>
                         )}
                         <p className="text-xs text-gray-500 mt-1">

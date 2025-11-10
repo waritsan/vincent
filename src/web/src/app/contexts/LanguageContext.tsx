@@ -73,6 +73,26 @@ const translations: Record<Language, Record<string, string>> = {
         'filter.allNews': 'ข่าวสารทั้งหมด',
         'benefits.title': 'สิทธิประโยชน์และสวัสดิการ',
         'benefits.subtitle': 'สิทธิประโยชน์ที่คุณควรรู้',
+
+        // Dashboard
+        'dashboard.loading': 'กำลังโหลดแดชบอร์ด...',
+        'dashboard.error': 'ข้อผิดพลาด',
+        'dashboard.sorryCouldNotGenerateChart': 'ขออภัย ฉันไม่สามารถสร้างกราฟได้ ข้อผิดพลาด',
+        'dashboard.title': 'แดชบอร์ดบริษัท',
+        'dashboard.subtitle': 'ข้อมูลเชิงลึกจากบริษัทที่ถูกดึงข้อมูล {count} แห่ง',
+        'dashboard.totalCompanies': 'จำนวนบริษัททั้งหมด',
+        'dashboard.locations': 'สถานที่ตั้ง',
+        'dashboard.withValuation': 'มีมูลค่าทรัพย์สิน',
+        'dashboard.companyLocationsDistribution': 'การกระจายสถานที่ตั้งบริษัท',
+        'dashboard.topCompanyValuations': 'มูลค่าบริษัทสูงสุด ({count} บริษัท)',
+        'dashboard.companyLocationsMap': 'แผนที่สถานที่ตั้งบริษัท',
+        'dashboard.askForCustomCharts': 'ขอกราฟแบบกำหนดเอง',
+        'dashboard.generateChart': 'สร้างกราฟ',
+        'dashboard.chartPromptPlaceholder': 'ลอง: "บริษัทในกรุงเทพที่มีมูลค่าเกิน 100 ล้านบาท"',
+        'dashboard.chartExamples': 'ตัวอย่าง: "บริษัทในกรุงเทพที่มีมูลค่าเกิน 100 ล้านบาท", "แสดงบริษัท 5 อันดับแรกจากเชียงใหม่", "บริษัทที่มีมูลค่าต่ำกว่า 50 ล้านที่สร้างในปีนี้", "แผนภูมิวงกลมของสถานที่ตั้ง"',
+        'dashboard.aiAnalysis': 'การวิเคราะห์ AI:',
+        'dashboard.location': 'สถานที่ตั้ง',
+        'dashboard.valuation': 'มูลค่าทรัพย์สิน',
     },
     en: {
         // Navigation
@@ -136,6 +156,26 @@ const translations: Record<Language, Record<string, string>> = {
         'filter.allNews': 'All News',
         'benefits.title': 'Benefits & Welfare',
         'benefits.subtitle': 'Benefits You Should Know',
+
+        // Dashboard
+        'dashboard.loading': 'Loading dashboard...',
+        'dashboard.error': 'Error',
+        'dashboard.sorryCouldNotGenerateChart': 'Sorry, I couldn\'t generate that chart. Error',
+        'dashboard.title': 'Company Dashboard',
+        'dashboard.subtitle': 'Insights from {count} extracted companies',
+        'dashboard.totalCompanies': 'Total Companies',
+        'dashboard.locations': 'Locations',
+        'dashboard.withValuation': 'With Valuation',
+        'dashboard.companyLocationsDistribution': 'Company Locations Distribution',
+        'dashboard.topCompanyValuations': 'Top Company Valuations ({count} companies)',
+        'dashboard.companyLocationsMap': 'Company Locations Map',
+        'dashboard.askForCustomCharts': 'Ask for Custom Charts',
+        'dashboard.generateChart': 'Generate Chart',
+        'dashboard.chartPromptPlaceholder': 'Try: "companies in Bangkok with valuations over 100 million baht"',
+        'dashboard.chartExamples': 'Examples: "companies in Bangkok with valuations over 100 million baht", "show top 5 companies from Chiang Mai", "companies under 50 million created this year", "pie chart of locations"',
+        'dashboard.aiAnalysis': 'AI Analysis:',
+        'dashboard.location': 'Location',
+        'dashboard.valuation': 'Valuation',
     }
 };
 

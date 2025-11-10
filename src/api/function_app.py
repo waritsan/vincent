@@ -1219,7 +1219,15 @@ def generate_chart(req: func.HttpRequest) -> func.HttpResponse:
             # Create AI prompt for chart generation
             system_prompt = """
 You are an expert data analyst specializing in creating chart configurations from natural language requests.
-Given a user's request and company data, generate a chart configuration in JSON format.
+Given a user's request and company data, generate BOTH a natural language summary AND a chart configuration in JSON format.
+
+CRITICAL LANGUAGE RULE: Determine the response language BASED SOLELY ON THE USER'S QUERY TEXT, NOT the data content.
+- If the user's query contains ANY Thai characters (ก-ฮ, ฯ, ะ-์, ั, ิ, ี, ึ, ื, ุ, ู, ่, ้, ๊, ๋, ์), respond in Thai
+- If the user's query contains ONLY English/Latin characters and NO Thai characters, respond in English
+- IGNORE the language of company names, locations, or any data in the context
+
+First, provide a brief, informative summary of the data insights (1-2 sentences) in the detected language.
+Then, provide the chart configuration in JSON format.
 
 Available chart types: bar, line, area, pie, scatter, heatmap
 Available data fields: name, location, valuation, created_at
@@ -1230,7 +1238,10 @@ Advanced filtering capabilities:
 - Date filters: "from last month", "in 2024", "recent", "this year"
 - Combination filters: "companies in Bangkok with valuations over 100 million baht"
 
-Chart configuration format:
+Response format:
+SUMMARY: [Your brief summary here, 1-2 sentences about key insights in the detected language]
+
+JSON_CONFIG:
 {
   "type": "chart_type",
   "title": "Chart Title",
@@ -1249,18 +1260,20 @@ Chart configuration format:
 }
 
 Examples:
-- "show top 10 companies by valuation" -> bar chart with top 10 by valuation
-- "companies by location" -> bar chart grouped by location
-- "timeline of extractions" -> area chart over time
-- "companies in Bangkok with valuations over 100 million baht" -> filtered bar chart
-- "show me companies from Chiang Mai under 50 million" -> filtered results
-- "valuation distribution for companies created this year" -> filtered histogram
+English request: "show top 10 companies by valuation" -> "Top 10 companies show valuations ranging from 50M to 500M baht, with Company A leading at 500M." + bar chart config
+Thai request: "แสดงบริษัทที่มีมูลค่ามากที่สุด 10 อันดับ" -> "บริษัท 10 อันดับแรกมีมูลค่าตั้งแต่ 50M ถึง 500M บาท โดยบริษัท A เป็นผู้นำที่ 500M" + bar chart config
+English request: "companies by location" -> "Bangkok hosts the majority of companies with 15 total, followed by Chiang Mai with 8." + bar chart config
+Thai request: "บริษัทตามสถานที่ตั้ง" -> "กรุงเทพฯ มีบริษัทส่วนใหญ่ทั้งหมด 15 แห่ง รองลงมาคือ เชียงใหม่ 8 แห่ง" + bar chart config
+English request: "companies in Bangkok with valuations over 100 million baht" -> "5 companies in Bangkok exceed 100M baht valuation, with an average of 250M baht." + filtered bar chart
+Thai request: "บริษัทในกรุงเทพที่มีมูลค่าเกิน 100 ล้านบาท" -> "มีบริษัท 5 แห่งในกรุงเทพฯ ที่มีมูลค่าเกิน 100M บาท โดยเฉลี่ยอยู่ที่ 250M บาท" + filtered bar chart
 
-Return only valid JSON, no explanations.
+Always include both SUMMARY and JSON_CONFIG sections.
 """
             
             user_prompt = f"""
 User request: {prompt}
+
+LANGUAGE ANALYSIS: This request {"contains Thai characters" if any(ord(c) >= 0x0E00 and ord(c) <= 0x0E7F for c in prompt) else "contains only English/Latin characters"}.
 
 Available companies data (first 50):
 {json.dumps(companies_context, indent=2, ensure_ascii=False)}
@@ -1279,10 +1292,28 @@ Generate the appropriate chart configuration.
                 temperature=0.1  # Low temperature for consistent results
             )
             
-            # Parse the response
-            chart_config_str = response.choices[0].message.content.strip()
+            # Parse the response - extract summary and JSON config
+            full_response = response.choices[0].message.content.strip()
             
-            # Clean up the response (remove markdown code blocks if present)
+            # Extract summary and JSON config
+            summary = ""
+            chart_config_str = ""
+            
+            if "SUMMARY:" in full_response and "JSON_CONFIG:" in full_response:
+                # Split by sections
+                parts = full_response.split("JSON_CONFIG:")
+                if len(parts) >= 2:
+                    summary_part = parts[0].replace("SUMMARY:", "").strip()
+                    summary = summary_part
+                    chart_config_str = parts[1].strip()
+                else:
+                    # Fallback: treat whole response as JSON
+                    chart_config_str = full_response
+            else:
+                # Fallback: treat whole response as JSON
+                chart_config_str = full_response
+            
+            # Clean up the chart config string (remove markdown code blocks if present)
             if chart_config_str.startswith("```json"):
                 chart_config_str = chart_config_str[7:]
             if chart_config_str.endswith("```"):
@@ -1305,6 +1336,7 @@ Generate the appropriate chart configuration.
                 return create_response({
                     "success": True,
                     "chart": processed_config,
+                    "ai_response": summary if summary else "Chart generated successfully",
                     "prompt": prompt,
                     "timestamp": datetime.now(timezone.utc).isoformat()
                 })
