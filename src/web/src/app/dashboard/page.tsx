@@ -26,7 +26,8 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'
 
 interface Company {
   id: string;
-  company_name: string;
+  company_name?: string;
+  name?: string;
   location: string;
   asset_valuation: string;
   extraction_id: string;
@@ -155,10 +156,12 @@ export default function Dashboard() {
       // Extract numbers from valuation strings (e.g., "500 ล้านบาท" -> 500)
       const match = valuation.match(/(\d+(?:\.\d+)?)/);
       const value = match ? parseFloat(match[1]) : 0;
+      // Handle both company_name and name fields for backward compatibility
+      const companyName = company.company_name || company.name || 'Unknown Company';
       return {
-        name: company.company_name.length > 15 ? company.company_name.substring(0, 15) + '...' : company.company_name,
+        name: companyName.length > 15 ? companyName.substring(0, 15) + '...' : companyName,
         valuation: value,
-        fullName: company.company_name
+        fullName: companyName
       };
     })
     .filter(item => item.valuation > 0) // Only include items with valid valuations
@@ -548,7 +551,7 @@ export default function Dashboard() {
                   >
                     <Popup>
                       <div className="p-2">
-                        <h4 className="font-semibold text-sm">{company.company_name}</h4>
+                        <h4 className="font-semibold text-sm">{company.company_name || company.name || 'Unknown Company'}</h4>
                         <p className="text-xs text-gray-600">
                           Location: {company.coordinates.english}
                         </p>
@@ -615,7 +618,7 @@ export default function Dashboard() {
                 {companies.slice(0, 10).map((company) => (
                   <tr key={company.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      {company.company_name}
+                      {company.company_name || company.name || 'Unknown Company'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                       {company.location || 'N/A'}

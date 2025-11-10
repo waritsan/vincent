@@ -387,13 +387,13 @@ Guidelines:
                             if name and name.lower() not in [n.lower() for n in seen_names]:
                                 seen_names.add(name)
                                 cleaned_companies.append({
-                                    "name": name,
+                                    "company_name": name,
                                     "location": company.get("location", "").strip(),
                                     "asset_valuation": company.get("asset_valuation", "").strip(),
                                     "nominee_context": company.get("nominee_context", "").strip(),
                                     "source_url": source_url,
                                     "article_title": article_title,
-                                    "extraction_date": datetime.now(timezone.utc).isoformat(),
+                                    "created_at": datetime.now(timezone.utc).isoformat(),
                                     "id": f"{name.lower().replace(' ', '_')}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
                                 })
 
@@ -406,7 +406,7 @@ Guidelines:
                                 try:
                                     container.upsert_item(company)
                                     stored_count += 1
-                                    logging.info(f"Stored nominee company: {company['name']}")
+                                    logging.info(f"Stored nominee company: {company['company_name']}")
                                 except Exception as e:
                                     logging.error(f"Failed to store company {company['name']}: {e}")
                             
