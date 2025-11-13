@@ -10,7 +10,7 @@ from azure.cosmos import CosmosClient, exceptions
 from azure.ai.projects import AIProjectClient
 from text_extraction import extract_companies_and_locations
 from news_scraper import get_content_from_blob
-from ai_utils import generate_ai_tags, get_ai_client
+from ai_utils import generate_ai_tags, get_ai_client, get_available_tags
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -160,6 +160,91 @@ def health(req: func.HttpRequest) -> func.HttpResponse:
             "status": "unhealthy",
             "error": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
+        }, 500)
+
+@app.route(route="tags", methods=["GET"])
+def get_tags(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Get available predefined tags for article categorization
+    GET /api/tags
+    """
+    logging.info('Processing get tags request')
+    
+    try:
+        tags = get_available_tags()
+        return create_response({
+            "tags": tags,
+            "count": len(tags),
+            "categories": {
+                "business_finance": [tag for tag in tags if tag in [
+                    "ธุรกิจ", "business", "การเงิน", "finance", "ธนาคาร", "banking"
+                ]],
+                "technology_digital": [tag for tag in tags if tag in [
+                    "เทคโนโลยี", "technology", "ดิจิทัล", "digital", "ฟินเทค", "fintech"
+                ]],
+                "government_regulatory": [tag for tag in tags if tag in [
+                    "ภาครัฐ", "government", "กฎระเบียบ", "regulations", "กรมพัฒนาธุรกิจการค้า", "DBD"
+                ]],
+                "nomination_ownership": [tag for tag in tags if tag in [
+                    "นอมินี", "nominee", "กรรมสิทธิ์", "ownership", "ผู้ถือหุ้น", "shareholder"
+                ]],
+                "legal_compliance": [tag for tag in tags if tag in [
+                    "กฎหมาย", "law", "การสอบสวน", "investigation", "การฟ้องร้อง", "lawsuit"
+                ]],
+                "regional_local": [tag for tag in tags if tag in [
+                    "กรุงเทพฯ", "Bangkok", "ภาคภูมิภาค", "regional", "ท้องถิ่น", "local"
+                ]],
+                "international": [tag for tag in tags if tag in [
+                    "ต่างประเทศ", "international", "เอเชีย", "Asia", "ยุโรป", "Europe"
+                ]],
+                "economy_market": [tag for tag in tags if tag in [
+                    "เศรษฐกิจ", "economy", "ตลาด", "market", "การลงทุน", "investment"
+                ]]
+            }
+        })
+        
+    except Exception as e:
+        logging.error(f"Error processing get tags request: {e}")
+        return create_response({
+            "error": str(e),
+            "tags": [],
+            "count": 0
+        }, 500)
+
+@app.route(route="tags/generate", methods=["POST"])
+def generate_tags(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Generate tags for article content using AI or fallback logic
+    POST /api/tags/generate
+    Body: { "content": "article content", "title": "optional title", "max_tags": 8 }
+    """
+    logging.info('Processing generate tags request')
+    
+    try:
+        req_body = req.get_json()
+        content = req_body.get('content', '')
+        title = req_body.get('title', '')
+        max_tags = req_body.get('max_tags', 8)
+        
+        if not content:
+            return create_response({
+                "error": "Content is required"
+            }, 400)
+        
+        tags = generate_ai_tags(content, title, max_tags)
+        
+        return create_response({
+            "tags": tags,
+            "count": len(tags),
+            "content_length": len(content),
+            "title": title
+        })
+        
+    except Exception as e:
+        logging.error(f"Error processing generate tags request: {e}")
+        return create_response({
+            "error": str(e),
+            "tags": []
         }, 500)
 
 @app.route(route="chat", methods=["POST"])
