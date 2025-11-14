@@ -1,6 +1,7 @@
 'use client';
 
 import BlogPosts from './components/BlogPosts';
+import YouTubeCarousel from './components/YouTubeCarousel';
 import { useLanguage } from './contexts/LanguageContext';
 import { useSearch } from './contexts/SearchContext';
 
@@ -25,19 +26,9 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-center">
-            {/* Video Player */}
+            {/* Video Carousel */}
             <div className="lg:col-span-2">
-              <div className="relative w-full bg-black rounded-lg overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
-                <iframe
-                  src="https://www.youtube.com/embed/q361DIh-7Dw?si=USzNoj2WgUr1IQ3Y"
-                  title="YouTube video player"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
-                  className="absolute inset-0 w-full h-full"
-                  style={{ border: 0 }}
-                ></iframe>
-              </div>
+              <YouTubeCarousel />
             </div>
 
             {/* Content Description */}

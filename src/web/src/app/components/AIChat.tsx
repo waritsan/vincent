@@ -65,11 +65,11 @@ export default function AIChat() {
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_CHAT_API_URL || process.env.NEXT_PUBLIC_API_URL;
-      
+
       if (!apiUrl) {
         throw new Error('API URL not configured. Please set NEXT_PUBLIC_CHAT_API_URL or NEXT_PUBLIC_API_URL environment variable.');
       }
-      
+
       const response = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST',
         headers: {
@@ -96,7 +96,7 @@ export default function AIChat() {
         // Handle streaming response
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
-        
+
         if (!reader) {
           throw new Error('Response body is not readable');
         }
@@ -110,9 +110,9 @@ export default function AIChat() {
           timestamp: new Date().toISOString(),
           isStreaming: true,
         };
-        
+
         setMessages((prev) => [...prev, assistantMessage]);
-        
+
         let accumulatedContent = '';
         let buffer = '';
         const chunkQueue: string[] = [];
@@ -123,7 +123,7 @@ export default function AIChat() {
         const processChunkQueue = async () => {
           if (isProcessing) return;
           isProcessing = true;
-          
+
           while (chunkQueue.length > 0) {
             const chunk = chunkQueue.shift();
             if (chunk) {
@@ -139,13 +139,13 @@ export default function AIChat() {
               await new Promise(resolve => setTimeout(resolve, 20));
             }
           }
-          
+
           isProcessing = false;
         };
 
         while (true) {
           const { done, value } = await reader.read();
-          
+
           if (done) {
             // Wait for any remaining chunks in queue to be processed
             while (chunkQueue.length > 0 || isProcessing) {
@@ -161,20 +161,20 @@ export default function AIChat() {
             );
             break;
           }
-          
+
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
-          
+
           // Keep the last incomplete line in the buffer
           buffer = lines.pop() || '';
-          
+
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const dataStr = line.slice(6);
-              
+
               try {
                 const data = JSON.parse(dataStr);
-                
+
                 if (data.type === 'metadata') {
                   // Store thread_id from metadata
                   if (data.thread_id) {
@@ -192,13 +192,13 @@ export default function AIChat() {
                 } else if (data.type === 'done') {
                   // Wait for any pending chunks to be processed
                   await processChunkQueue();
-                  
+
                   const completionTime = Date.now();
                   console.log(`✅ Response complete: ${completionTime - performanceStart}ms total`);
                   console.log(`   - Network: ${responseReceived - performanceStart}ms`);
                   console.log(`   - First chunk: ${firstChunkTime ? firstChunkTime - performanceStart : 'N/A'}ms`);
                   console.log(`   - AI processing: ${completionTime - responseReceived}ms`);
-                  
+
                   // Finalize message and remove streaming cursor
                   setMessages((prev) =>
                     prev.map((msg) =>
@@ -285,12 +285,11 @@ export default function AIChat() {
   }
 
   return (
-    <div 
-      className={`fixed bg-white dark:bg-gray-800 rounded-lg shadow-2xl flex flex-col z-50 border border-gray-200 dark:border-gray-700 transition-all duration-300 ${
-        isMaximized 
+    <div
+      className={`fixed bg-white dark:bg-gray-800 rounded-lg shadow-2xl flex flex-col z-50 border border-gray-200 dark:border-gray-700 transition-all duration-300 ${isMaximized
           ? 'inset-4 sm:inset-8 md:inset-12' // Maximized: larger padding from edges on desktop/tablet
           : 'bottom-4 sm:bottom-6 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-[calc(100vh-2rem)] sm:h-[600px]' // Normal size
-      }`}
+        }`}
     >
       {/* Header */}
       <div className="bg-black text-white p-3 sm:p-4 rounded-t-lg flex items-center justify-between">
@@ -371,11 +370,10 @@ export default function AIChat() {
                   </div>
                 )}
                 <div
-                  className={`${message.role === 'user' ? 'max-w-[85%] sm:max-w-[80%]' : 'max-w-[90%] sm:max-w-[85%]'} rounded-lg p-2.5 sm:p-3 ${
-                    message.role === 'user'
+                  className={`${message.role === 'user' ? 'max-w-[85%] sm:max-w-[80%]' : 'max-w-[90%] sm:max-w-[85%]'} rounded-lg p-2.5 sm:p-3 ${message.role === 'user'
                       ? 'bg-[#0066CC] text-white'
                       : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 shadow-sm'
-                  }`}
+                    }`}
                 >
                   {message.role === 'user' ? (
                     <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
@@ -387,7 +385,7 @@ export default function AIChat() {
                           code: ({ className, children, ...props }) => {
                             const match = /language-(\w+)/.exec(className || '');
                             const language = match ? match[1] : '';
-                            
+
                             if (language) {
                               return (
                                 <div className="my-3 rounded-lg overflow-hidden">
@@ -417,7 +415,7 @@ export default function AIChat() {
                                 </div>
                               );
                             }
-                            
+
                             return (
                               <code
                                 className="bg-gray-100 dark:bg-gray-700 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded text-xs font-mono border"
@@ -506,11 +504,10 @@ export default function AIChat() {
                     </div>
                   )}
                   <p
-                    className={`text-xs mt-2 ${
-                      message.role === 'user'
+                    className={`text-xs mt-2 ${message.role === 'user'
                         ? 'text-white/70'
                         : 'text-gray-500 dark:text-gray-400'
-                    }`}
+                      }`}
                   >
                     {new Date(message.timestamp).toLocaleTimeString()}
                   </p>

@@ -1703,6 +1703,36 @@ def scheduled_dbd_news_fetch(myTimer: func.TimerRequest) -> None:
         logging.error(f"❌ Error in scheduled news fetch: {e}")
 
 
+# Scheduled timer function to auto-fetch YouTube videos
+@app.timer_trigger(schedule="0 0 9 * * *", arg_name="myTimer", run_on_startup=False,
+              use_monitor=False) 
+def scheduled_youtube_video_fetch(myTimer: func.TimerRequest) -> None:
+    """
+    Scheduled function to automatically fetch latest YouTube videos from The Globe Online
+    Runs every day at 9:00 AM (0 0 9 * * *)
+    
+    Schedule format (CRON): second minute hour day month dayOfWeek
+    """
+    from youtube_fetcher import fetch_and_save_youtube_videos
+    
+    logging.info('🎥 Scheduled YouTube video fetch triggered')
+    
+    if myTimer.past_due:
+        logging.info('⏰ Timer is past due, running now')
+    
+    try:
+        # Fetch latest 3 videos
+        result = fetch_and_save_youtube_videos(limit=3)
+        
+        if result['success']:
+            logging.info(f"✅ YouTube fetch successful: {len(result['videos'])} videos saved")
+        else:
+            logging.error(f"❌ YouTube fetch failed: {result['message']}")
+            
+    except Exception as e:
+        logging.error(f"❌ Error in scheduled YouTube video fetch: {e}")
+
+
 # Manual trigger endpoint for news fetching
 @app.route(route="news/fetch", methods=["GET", "OPTIONS"])
 def manual_news_fetch(req: func.HttpRequest) -> func.HttpResponse:
@@ -1760,4 +1790,79 @@ def manual_news_fetch(req: func.HttpRequest) -> func.HttpResponse:
         return create_response({"error": "Invalid parameters", "details": str(e)}, 400)
     except Exception as e:
         logging.error(f"Error in manual news fetch: {e}")
+        return create_response({"error": str(e)}, 500)
+
+
+@app.route(route="youtube/fetch", methods=["GET", "OPTIONS"])
+def manual_youtube_fetch(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Manually trigger YouTube video fetch from The Globe Online
+    GET /api/youtube/fetch
+    Query parameters:
+    - limit: Number of videos to fetch (default: 3, max: 10)
+    """
+    logging.info('Manual YouTube video fetch requested')
+    
+    # Handle CORS preflight
+    if req.method == "OPTIONS":
+        return func.HttpResponse(status_code=200, headers=CORS_HEADERS)
+    
+    try:
+        from youtube_fetcher import fetch_and_save_youtube_videos
+        
+        # Get parameters
+        limit = int(req.params.get('limit', '3'))
+        
+        # Validate limit
+        limit = min(max(1, limit), 10)  # Between 1 and 10
+        
+        logging.info(f"Fetching {limit} YouTube videos")
+        
+        # Fetch and save videos
+        result = fetch_and_save_youtube_videos(limit=limit)
+        
+        return create_response({
+            "success": result['success'],
+            "message": result['message'],
+            "videos_count": len(result.get('videos', [])),
+            "videos": result.get('videos', []),
+            "timestamp": result.get('timestamp')
+        })
+            
+    except ValueError as e:
+        return create_response({"error": "Invalid limit parameter"}, 400)
+    except Exception as e:
+        logging.error(f"Error in manual YouTube fetch: {e}")
+        return create_response({"error": str(e)}, 500)
+
+
+@app.route(route="youtube/videos", methods=["GET"])
+def get_youtube_videos(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Get cached YouTube videos from JSON file
+    GET /api/youtube/videos
+    """
+    logging.info('Getting YouTube videos from cache')
+    
+    try:
+        import json
+        import os
+        from datetime import datetime, timezone
+        
+        file_path = '/Users/waritsan/Developer/vincent/src/web/public/youtube_videos.json'
+        
+        if not os.path.exists(file_path):
+            return create_response({
+                "videos": [],
+                "count": 0,
+                "message": "No cached videos found"
+            })
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        return create_response(data)
+        
+    except Exception as e:
+        logging.error(f"Error getting YouTube videos: {e}")
         return create_response({"error": str(e)}, 500)

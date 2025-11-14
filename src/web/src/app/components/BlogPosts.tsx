@@ -41,10 +41,10 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
     const carousel = document.getElementById(`carousel-${rowId}`);
     if (carousel) {
       const scrollAmount = carousel.offsetWidth * 0.8;
-      const newScrollPos = direction === 'left' 
-        ? carousel.scrollLeft - scrollAmount 
+      const newScrollPos = direction === 'left'
+        ? carousel.scrollLeft - scrollAmount
         : carousel.scrollLeft + scrollAmount;
-      
+
       carousel.scrollTo({
         left: newScrollPos,
         behavior: 'smooth'
@@ -140,23 +140,23 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
         return false;
       }
     }
-    
+
     // Exclude posts with specific tag
     if (excludeTag) {
       if (post.tags && post.tags.includes(excludeTag)) {
         return false;
       }
     }
-    
+
     // Filter by author
     if (authorFilter) {
       const authors = Array.isArray(authorFilter) ? authorFilter : [authorFilter];
-      const authorMatch = authors.some(author => 
+      const authorMatch = authors.some(author =>
         post.author.toLowerCase().includes(author.toLowerCase())
       );
       if (!authorMatch) return false;
     }
-    
+
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -167,7 +167,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
       );
       if (!matchesSearch) return false;
     }
-    
+
     return true;
   });
 
@@ -231,17 +231,17 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
               </h2>
               <button className="group flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm sm:text-base font-semibold">
                 <span>Explore All</span>
-                <svg 
-                  className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1" 
-                  fill="none" 
-                  stroke="currentColor" 
+                <svg
+                  className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1"
+                  fill="none"
+                  stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
             </div>
-            
+
             {/* Carousel Container */}
             <div className="relative">
               {/* Left Arrow */}
@@ -254,7 +254,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              
+
               {/* Right Arrow */}
               <button
                 onClick={() => scrollCarousel(Array.isArray(tagFilter) ? tagFilter.join('-') : (tagFilter || excludeTag || 'posts'), 'right')}
@@ -265,7 +265,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
-              
+
               {/* Scrollable Row */}
               <div
                 id={`carousel-${Array.isArray(tagFilter) ? tagFilter.join('-') : (tagFilter || excludeTag || 'posts')}`}
@@ -278,7 +278,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
               >
                 {filteredPosts.map((post) => {
                   const videoId = post.video_url ? getYouTubeVideoId(post.video_url) : null;
-                  
+
                   return (
                     <article
                       key={post.id}
@@ -298,12 +298,12 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                           <div className="absolute inset-0 flex items-center justify-center bg-black/50 group-hover/card:bg-black/30 transition-colors z-10">
                             <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center group-hover/card:scale-110 transition-transform duration-300 shadow-lg">
                               <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z"/>
+                                <path d="M8 5v14l11-7z" />
                               </svg>
                             </div>
                           </div>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img 
+                          <img
                             src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
                             alt={post.title}
                             className="w-full h-full object-cover"
@@ -312,7 +312,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                       ) : post.thumbnail_url ? (
                         <div className="aspect-video mb-3 relative overflow-hidden rounded-md bg-gray-200 dark:bg-gray-800 transition-transform duration-300 group-hover/card:scale-105">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img 
+                          <img
                             src={post.thumbnail_url}
                             alt={post.title}
                             className="w-full h-full object-cover"
@@ -324,22 +324,22 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="w-14 h-14 rounded-full bg-[#0066CC] flex items-center justify-center">
                               <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z"/>
+                                <path d="M8 5v14l11-7z" />
                               </svg>
                             </div>
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Content */}
                       <div className="space-y-2">
                         <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight group-hover/card:text-[#0066CC] transition-colors line-clamp-2 flex items-start gap-2">
                           <span className="flex-1">{post.title}</span>
                           {post.post_type === 'shared' && (
-                            <svg 
-                              className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 mt-1" 
-                              fill="none" 
-                              stroke="currentColor" 
+                            <svg
+                              className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 mt-1"
+                              fill="none"
+                              stroke="currentColor"
                               viewBox="0 0 24 24"
                               aria-label="External Article"
                             >
@@ -347,11 +347,11 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                             </svg>
                           )}
                         </h3>
-                        
+
                         <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-2">
                           {post.content}
                         </p>
-                        
+
                         {/* Tags */}
                         {post.tags && post.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1">
@@ -365,13 +365,13 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                             ))}
                           </div>
                         )}
-                        
+
                         <div className="flex items-center justify-between pt-1">
                           <div className="flex items-center gap-2">
                             {post.author_avatar ? (
                               <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img 
+                                <img
                                   src={post.author_avatar}
                                   alt={post.author}
                                   className="w-full h-full object-cover"
@@ -440,7 +440,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredPosts.map((post) => {
                 const videoId = post.video_url ? getYouTubeVideoId(post.video_url) : null;
-                
+
                 return (
                   <article
                     key={post.id}
@@ -460,12 +460,12 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                         <div className="absolute inset-0 flex items-center justify-center bg-black/50 group-hover/card:bg-black/30 transition-colors z-10">
                           <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center group-hover/card:scale-110 transition-transform duration-300 shadow-lg">
                             <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z"/>
+                              <path d="M8 5v14l11-7z" />
                             </svg>
                           </div>
                         </div>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img 
+                        <img
                           src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
                           alt={post.title}
                           className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
@@ -474,7 +474,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                     ) : post.thumbnail_url ? (
                       <div className="aspect-video relative overflow-hidden bg-gray-200 dark:bg-gray-800">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img 
+                        <img
                           src={post.thumbnail_url}
                           alt={post.title}
                           className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
@@ -486,22 +486,22 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="w-12 h-12 rounded-full bg-[#0066CC] flex items-center justify-center">
                             <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z"/>
+                              <path d="M8 5v14l11-7z" />
                             </svg>
                           </div>
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Content */}
                     <div className="p-4 space-y-2">
                       <h3 className="text-base font-bold text-gray-900 dark:text-white leading-tight group-hover/card:text-[#0066CC] transition-colors line-clamp-2 flex items-start gap-2">
                         <span className="flex-1">{post.title}</span>
                         {post.post_type === 'shared' && (
-                          <svg 
-                            className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 mt-1" 
-                            fill="none" 
-                            stroke="currentColor" 
+                          <svg
+                            className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 mt-1"
+                            fill="none"
+                            stroke="currentColor"
                             viewBox="0 0 24 24"
                             aria-label="External Article"
                           >
@@ -509,11 +509,11 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                           </svg>
                         )}
                       </h3>
-                      
+
                       <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-2">
                         {post.content}
                       </p>
-                      
+
                       {/* Tags */}
                       {post.tags && post.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1">
@@ -527,13 +527,13 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                           ))}
                         </div>
                       )}
-                      
+
                       <div className="flex items-center justify-between pt-2">
                         <div className="flex items-center gap-2">
                           {post.author_avatar ? (
                             <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img 
+                              <img
                                 src={post.author_avatar}
                                 alt={post.author}
                                 className="w-full h-full object-cover"
@@ -573,11 +573,11 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
 
       {/* Post Modal */}
       {selectedPost && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/90 z-50 flex items-start justify-center p-0 sm:p-4 backdrop-blur-sm overflow-y-auto"
           onClick={() => setSelectedPost(null)}
         >
-          <div 
+          <div
             className="bg-white dark:bg-gray-800 sm:rounded-lg max-w-4xl w-full my-0 sm:my-8 shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
@@ -629,7 +629,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
             ) : selectedPost.thumbnail_url ? (
               <div className="w-full bg-gray-100 dark:bg-gray-900 relative sm:rounded-t-lg overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
+                <img
                   src={selectedPost.thumbnail_url}
                   alt={selectedPost.title}
                   className="w-full h-auto object-contain"
@@ -639,7 +639,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
               <div className="aspect-video w-full bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
                 <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#0066CC] flex items-center justify-center">
                   <svg className="w-10 h-10 sm:w-12 sm:h-12 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
+                    <path d="M8 5v14l11-7z" />
                   </svg>
                 </div>
               </div>
@@ -651,12 +651,12 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                 <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
                   {selectedPost.title}
                 </h2>
-                
+
                 <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-gray-200 dark:border-gray-700">
                   {selectedPost.author_avatar ? (
                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img 
+                      <img
                         src={selectedPost.author_avatar}
                         alt={selectedPost.author}
                         className="w-full h-full object-cover"
@@ -696,7 +696,7 @@ export default function BlogPosts({ searchQuery = '', tagFilter = '', excludeTag
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                       Article loaded above. If it doesn&apos;t display properly, the website may block embedding.
                     </p>
-                    <a 
+                    <a
                       href={selectedPost.source_url}
                       target="_blank"
                       rel="noopener noreferrer"

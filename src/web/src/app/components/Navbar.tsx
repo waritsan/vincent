@@ -73,20 +73,20 @@ export default function Navbar() {
               />
             </Link>
             <div className="flex space-x-6 text-sm font-medium">
-              <Link 
-                href="/posts" 
+              <Link
+                href="/posts"
                 className={`transition-colors ${isActive('/posts') ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
               >
                 {t('nav.news')}
               </Link>
-              <Link 
-                href="/benefits" 
+              <Link
+                href="/benefits"
                 className={`transition-colors ${isActive('/benefits') ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
               >
                 {t('nav.benefits')}
               </Link>
-              <Link 
-                href="/dashboard" 
+              <Link
+                href="/dashboard"
                 className={`transition-colors ${isActive('/dashboard') ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
               >
                 Dashboard
@@ -162,20 +162,20 @@ export default function Navbar() {
 
           {/* Navigation Links */}
           <div className="flex flex-col space-y-3">
-            <Link 
-              href="/posts" 
+            <Link
+              href="/posts"
               className={`text-sm font-medium py-1 transition-colors ${isActive('/posts') ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
             >
               {t('nav.news')}
             </Link>
-            <Link 
-              href="/benefits" 
+            <Link
+              href="/benefits"
               className={`text-sm font-medium py-1 transition-colors ${isActive('/benefits') ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
             >
               {t('nav.benefits')}
             </Link>
-            <Link 
-              href="/dashboard" 
+            <Link
+              href="/dashboard"
               className={`text-sm font-medium py-1 transition-colors ${isActive('/dashboard') ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
             >
               Dashboard

@@ -88,10 +88,10 @@ export default function Benefits() {
     const carousel = document.getElementById('benefits-carousel');
     if (carousel) {
       const scrollAmount = carousel.offsetWidth * 0.8;
-      const newScrollPos = direction === 'left' 
-        ? carousel.scrollLeft - scrollAmount 
+      const newScrollPos = direction === 'left'
+        ? carousel.scrollLeft - scrollAmount
         : carousel.scrollLeft + scrollAmount;
-      
+
       carousel.scrollTo({
         left: newScrollPos,
         behavior: 'smooth'
@@ -110,17 +110,17 @@ export default function Benefits() {
           </h2>
           <button className="group flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm sm:text-base font-semibold">
             <span>ดูทั้งหมด</span>
-            <svg 
-              className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1" 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1"
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
         </div>
-        
+
         {/* Carousel Container */}
         <div className="relative">
           {/* Left Arrow */}
@@ -133,7 +133,7 @@ export default function Benefits() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          
+
           {/* Right Arrow */}
           <button
             onClick={() => scrollCarousel('right')}
@@ -144,7 +144,7 @@ export default function Benefits() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
-          
+
           {/* Scrollable Row */}
           <div
             id="benefits-carousel"
@@ -164,21 +164,21 @@ export default function Benefits() {
                 {/* Card with gradient background */}
                 <div className={`relative h-48 mb-3 overflow-hidden rounded-lg bg-gradient-to-br ${benefit.color} transition-transform duration-300 group-hover/card:scale-105 shadow-lg`}>
                   <div className="absolute inset-0 bg-black/20 group-hover/card:bg-black/10 transition-colors"></div>
-                  
+
                   {/* Icon */}
                   <div className="absolute top-4 left-4">
                     <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-4xl">
                       {benefit.icon}
                     </div>
                   </div>
-                  
+
                   {/* Category Badge */}
                   <div className="absolute top-4 right-4">
                     <span className="px-3 py-1 bg-white/90 text-gray-900 text-xs font-semibold rounded-full">
                       {benefit.category}
                     </span>
                   </div>
-                  
+
                   {/* Title */}
                   <div className="absolute bottom-4 left-4 right-4">
                     <h3 className="text-xl font-bold text-white drop-shadow-lg line-clamp-2">
@@ -186,13 +186,13 @@ export default function Benefits() {
                     </h3>
                   </div>
                 </div>
-                
+
                 {/* Description */}
                 <div className="space-y-2">
                   <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-3">
                     {benefit.description}
                   </p>
-                  
+
                   <button className="text-[#0066CC] hover:text-[#0052A3] text-sm font-semibold flex items-center gap-1 transition-colors">
                     <span>เรียนรู้เพิ่มเติม</span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,11 +208,11 @@ export default function Benefits() {
 
       {/* Benefit Detail Modal */}
       {selectedBenefit && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/90 z-50 flex items-start justify-center p-0 sm:p-4 backdrop-blur-sm overflow-y-auto"
           onClick={() => setSelectedBenefit(null)}
         >
-          <div 
+          <div
             className="bg-white dark:bg-gray-800 sm:rounded-lg max-w-2xl w-full my-0 sm:my-8 shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
@@ -229,7 +229,7 @@ export default function Benefits() {
             {/* Header with gradient */}
             <div className={`relative h-48 sm:rounded-t-lg overflow-hidden bg-gradient-to-br ${selectedBenefit.color}`}>
               <div className="absolute inset-0 bg-black/20"></div>
-              
+
               <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
                 <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-5xl mb-4">
                   {selectedBenefit.icon}
@@ -249,7 +249,7 @@ export default function Benefits() {
                 <p className="text-gray-700 dark:text-gray-300 text-base sm:text-lg leading-relaxed">
                   {selectedBenefit.description}
                 </p>
-                
+
                 <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
                     วิธีการสมัคร
@@ -261,7 +261,7 @@ export default function Benefits() {
                     <li>💰 เริ่มรับสิทธิประโยชน์</li>
                   </ul>
                 </div>
-                
+
                 <div className="mt-6 flex flex-col sm:flex-row gap-3">
                   <button className="flex-1 bg-[#0066CC] hover:bg-[#0052A3] text-white px-6 py-3 rounded-sm font-semibold transition-colors">
                     สมัครเลย

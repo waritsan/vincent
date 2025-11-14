@@ -1,7 +1,10 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/static/*.{png,jpg,jpeg,gif,svg}", "/favicon.ico"]
+    "exclude": [
+      "/static/*.{png,jpg,jpeg,gif,svg}",
+      "/favicon.ico"
+    ]
   },
   "mimeTypes": {
     ".json": "application/json"
@@ -12,7 +15,9 @@
   "routes": [
     {
       "route": "/api/*",
-      "allowedRoles": ["anonymous"]
+      "allowedRoles": [
+        "anonymous"
+      ]
     }
   ]
 }

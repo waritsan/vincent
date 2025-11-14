@@ -33,11 +33,10 @@ export default function FilterBar({ selectedTags, onTagToggle, availableTags = [
                     onTagToggle(tag);
                   }
                 }}
-                className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex-shrink-0 ${
-                  isSelected
+                className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex-shrink-0 ${isSelected
                     ? 'bg-black dark:bg-white text-white dark:text-black'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                  }`}
               >
                 {isAllTag ? (t('filter.all') || 'All') : tag}
               </button>

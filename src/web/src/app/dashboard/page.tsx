@@ -69,7 +69,7 @@ export default function Dashboard() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Dynamic chart generation
   const [prompt, setPrompt] = useState('');
   const [dynamicChart, setDynamicChart] = useState<DynamicChart | null>(null);
@@ -127,7 +127,7 @@ export default function Dashboard() {
       // For development, fetch directly from Azure Functions
       // In production, use the configured API URL
       const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/companies?limit=100`;
-      
+
       const response = await fetch(apiUrl);
       if (!response.ok) {
         throw new Error('Failed to fetch companies');
@@ -190,13 +190,13 @@ export default function Dashboard() {
   const handlePromptSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Form submitted with prompt:', prompt);
-    
+
     try {
       setLoading(true);
-      
+
       // Call the AI-powered chart generation endpoint
       const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/charts/generate`;
-      
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -204,13 +204,13 @@ export default function Dashboard() {
         },
         body: JSON.stringify({ prompt }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to generate chart');
       }
-      
+
       const result = await response.json();
-      
+
       if (result.success && result.chart) {
         // Convert the AI response to our DynamicChart format
         const aiChart = result.chart;
@@ -222,7 +222,7 @@ export default function Dashboard() {
           xAxisKey: aiChart.xAxisKey,
           yAxisKey: aiChart.yAxisKey,
         };
-        
+
         setDynamicChart(dynamicChart);
         setAiResponse(result.ai_response || '');
         setShowDynamicChart(true);
@@ -283,7 +283,7 @@ export default function Dashboard() {
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             {t('dashboard.subtitle').replace('{count}', companies.length.toString())}
           </p>
-          
+
           {/* Dynamic Chart Prompt */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
@@ -326,7 +326,7 @@ export default function Dashboard() {
                 </svg>
               </button>
             </div>
-            
+
             {/* AI Response Text */}
             {aiResponse && (
               <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -341,7 +341,7 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
-            
+
             <ResponsiveContainer width="100%" height={400}>
               {dynamicChart.type === 'bar' && (
                 <BarChart data={dynamicChart.data}>
