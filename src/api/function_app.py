@@ -1836,33 +1836,355 @@ def manual_youtube_fetch(req: func.HttpRequest) -> func.HttpResponse:
         return create_response({"error": str(e)}, 500)
 
 
-@app.route(route="youtube/videos", methods=["GET"])
-def get_youtube_videos(req: func.HttpRequest) -> func.HttpResponse:
+@app.route(route="analytics/article", methods=["POST"])
+def analyze_article(req: func.HttpRequest) -> func.HttpResponse:
     """
-    Get cached YouTube videos from JSON file
-    GET /api/youtube/videos
+    Analyze a news article for comprehensive analytics
+    POST /api/analytics/article
+    Body: { "title": "Article title", "content": "Article content", "article_id": "optional_id" }
     """
-    logging.info('Getting YouTube videos from cache')
+    logging.info('Processing article analytics request')
     
     try:
-        import json
-        import os
-        from datetime import datetime, timezone
+        req_body = req.get_json()
+        title = req_body.get('title', '')
+        content = req_body.get('content', '')
+        article_id = req_body.get('article_id')
         
-        file_path = '/Users/waritsan/Developer/vincent/src/web/public/youtube_videos.json'
+        if not title or not content:
+            return create_response({"error": "Title and content are required"}, 400)
         
-        if not os.path.exists(file_path):
-            return create_response({
-                "videos": [],
-                "count": 0,
-                "message": "No cached videos found"
-            })
+        from news_analytics import analyze_article
+        result = analyze_article(title, content, article_id)
         
-        with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        return create_response(result)
         
-        return create_response(data)
+    except ValueError as e:
+        logging.error(f"Invalid JSON in analytics request: {e}")
+        return create_response({"error": "Invalid JSON in request body"}, 400)
+    except Exception as e:
+        logging.error(f"Error in article analytics: {e}")
+        return create_response({"error": "Internal server error"}, 500)
+
+
+@app.route(route="analytics/trending", methods=["GET"])
+def get_trending_topics(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Get trending topics analysis
+    GET /api/analytics/trending
+    Query parameters:
+    - days: Number of days to analyze (default: 7, max: 90)
+    """
+    logging.info('Processing trending topics request')
+    
+    try:
+        days = int(req.params.get('days', '7'))
+        days = min(max(1, days), 90)  # Between 1 and 90 days
+        
+        from news_analytics import get_trending_topics
+        result = get_trending_topics(days)
+        
+        return create_response(result)
+        
+    except ValueError as e:
+        return create_response({"error": "Invalid days parameter"}, 400)
+    except Exception as e:
+        logging.error(f"Error getting trending topics: {e}")
+        return create_response({"error": "Internal server error"}, 500)
+
+
+@app.route(route="analytics/report", methods=["GET"])
+def get_business_intelligence_report(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Generate business intelligence report
+    GET /api/analytics/report
+    """
+    logging.info('Processing BI report request')
+    
+    try:
+        from news_analytics import generate_bi_report
+        result = generate_bi_report()
+        
+        return create_response(result)
         
     except Exception as e:
-        logging.error(f"Error getting YouTube videos: {e}")
-        return create_response({"error": str(e)}, 500)
+        logging.error(f"Error generating BI report: {e}")
+        return create_response({"error": "Internal server error"}, 500)
+
+
+@app.route(route="analytics/volume", methods=["GET"])
+def get_news_volume_analytics(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Get news volume and trends analytics
+    GET /api/analytics/volume
+    Query parameters:
+    - months: Number of months to analyze (default: 6, max: 24)
+    """
+    logging.info('Processing volume analytics request')
+    
+    try:
+        months = int(req.params.get('months', '6'))
+        months = min(max(1, months), 24)  # Between 1 and 24 months
+        
+        from news_analytics import NewsAnalytics
+        analytics = NewsAnalytics()
+        result = analytics.analyze_news_volume_trends(months)
+        
+        return create_response(result)
+        
+    except ValueError as e:
+        return create_response({"error": "Invalid months parameter"}, 400)
+    except Exception as e:
+        logging.error(f"Error in volume analytics: {e}")
+        return create_response({"error": "Internal server error"}, 500)
+
+
+@app.route(route="analytics/clusters", methods=["POST"])
+def get_content_clusters(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Analyze content clusters from multiple articles
+    POST /api/analytics/clusters
+    Body: { "articles": [{"id": "id1", "title": "title1", "content": "content1"}, ...] }
+    """
+    logging.info('Processing content clusters request')
+    
+    try:
+        req_body = req.get_json()
+        articles = req_body.get('articles', [])
+        
+        if not articles or len(articles) == 0:
+            return create_response({"error": "Articles array is required"}, 400)
+        
+        if len(articles) > 50:
+            return create_response({"error": "Maximum 50 articles allowed"}, 400)
+        
+        from news_analytics import NewsAnalytics
+        analytics = NewsAnalytics()
+        result = analytics.detect_content_clusters(articles)
+        
+        return create_response(result)
+        
+    except ValueError as e:
+        logging.error(f"Invalid JSON in clusters request: {e}")
+        return create_response({"error": "Invalid JSON in request body"}, 400)
+    except Exception as e:
+        logging.error(f"Error in content clustering: {e}")
+        return create_response({"error": "Internal server error"}, 500)
+
+
+@app.route(route="analytics/dashboard", methods=["GET"])
+def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Get comprehensive analytics dashboard data
+    GET /api/analytics/dashboard
+    """
+    logging.info('Processing analytics dashboard request')
+    
+    try:
+        from news_analytics import NewsAnalytics
+        analytics = NewsAnalytics()
+        
+        # Get multiple analytics in parallel
+        trending = analytics.generate_trending_topics(7)
+        volume = analytics.analyze_news_volume_trends(3)
+        bi_report = analytics.generate_business_intelligence_report()
+        
+        # Get recent company extractions
+        companies_data = []
+        try:
+            from text_extraction import get_companies_container
+            container = get_companies_container()
+            if container:
+                query = "SELECT * FROM c ORDER BY c.created_at DESC OFFSET 0 LIMIT 10"
+                companies_data = list(container.query_items(
+                    query=query,
+                    enable_cross_partition_query=True
+                ))
+        except Exception as e:
+            logging.warning(f"Could not fetch companies data: {e}")
+        
+        # Get recent analytics data to extract minister/policy/media metrics
+        minister_metrics = []
+        policy_metrics = []
+        media_sentiment_metrics = []
+        
+        # Initialize summary aggregations
+        ministers_summary = {
+            "total_minister_mentions": 0,
+            "total_ministry_mentions": 0,
+            "responsibility_areas": {},
+            "key_achievements": [],
+            "policies_endorsed": [],
+            "budgets_announced": []
+        }
+        
+        policies_summary = {
+            "total_projects": 0,
+            "agencies_involved": {},
+            "target_groups": {},
+            "financial_commitments": [],
+            "expected_outcomes": []
+        }
+        
+        media_summary = {
+            "sentiment_distribution": {"positive": 0, "negative": 0, "neutral": 0},
+            "tone_distribution": {},
+            "framing_distribution": {},
+            "sources": {},
+            "categories": {}
+        }
+        
+        try:
+            analytics_container = analytics.container
+            if analytics_container:
+                # Get recent article analytics (last 50 for better aggregation)
+                query = "SELECT * FROM c WHERE c.analytics_type = 'article_analysis' ORDER BY c.analyzed_at DESC OFFSET 0 LIMIT 50"
+                recent_analytics = list(analytics_container.query_items(
+                    query=query,
+                    enable_cross_partition_query=True
+                ))
+                
+                for item in recent_analytics:
+                    # Extract minister metrics
+                    minister_data = item.get('minister_focused_metrics', {})
+                    if minister_data:
+                        minister_metrics.append({
+                            "article_id": item.get("article_id", ""),
+                            "title": item.get("title", ""),
+                            "minister_mentions": minister_data.get("minister_mentions", {}),
+                            "achievements_actions": minister_data.get("achievements_actions", {}),
+                            "responsibility_areas": minister_data.get("responsibility_areas", []),
+                            "analyzed_at": item.get("analyzed_at", "")
+                        })
+                        
+                        # Aggregate minister summary
+                        mentions = minister_data.get("minister_mentions", {})
+                        ministers_summary["total_minister_mentions"] += mentions.get("minister_name_count", 0)
+                        ministers_summary["total_ministry_mentions"] += mentions.get("ministry_name_count", 0)
+                        
+                        # Aggregate responsibility areas
+                        for area in minister_data.get("responsibility_areas", []):
+                            ministers_summary["responsibility_areas"][area] = ministers_summary["responsibility_areas"].get(area, 0) + 1
+                        
+                        # Aggregate achievements and policies
+                        achievements = minister_data.get("achievements_actions", {})
+                        ministers_summary["key_achievements"].extend(achievements.get("key_achievements", []))
+                        ministers_summary["policies_endorsed"].extend(achievements.get("policies_endorsed", []))
+                        ministers_summary["budgets_announced"].extend(achievements.get("budgets_announced", []))
+                    
+                    # Extract policy metrics
+                    policy_data = item.get('policy_program_metrics', {})
+                    if policy_data:
+                        policy_metrics.append({
+                            "article_id": item.get("article_id", ""),
+                            "title": item.get("title", ""),
+                            "policy_identification": policy_data.get("policy_identification", {}),
+                            "public_impact": policy_data.get("public_impact", {}),
+                            "financial_info": policy_data.get("financial_info", {}),
+                            "risks_issues": policy_data.get("risks_issues", {}),
+                            "analyzed_at": item.get("analyzed_at", "")
+                        })
+                        
+                        # Aggregate policy summary
+                        policies_summary["total_projects"] += 1
+                        
+                        # Aggregate agencies
+                        agency = policy_data.get("policy_identification", {}).get("agency_involved", "")
+                        if agency:
+                            policies_summary["agencies_involved"][agency] = policies_summary["agencies_involved"].get(agency, 0) + 1
+                        
+                        # Aggregate target groups
+                        for group in policy_data.get("public_impact", {}).get("target_group", []):
+                            policies_summary["target_groups"][group] = policies_summary["target_groups"].get(group, 0) + 1
+                        
+                        # Aggregate financial info
+                        budget = policy_data.get("financial_info", {}).get("budget_amount", "")
+                        if budget:
+                            policies_summary["financial_commitments"].append(budget)
+                        
+                        # Aggregate outcomes
+                        policies_summary["expected_outcomes"].extend(policy_data.get("public_impact", {}).get("expected_outcomes", []))
+                    
+                    # Extract media sentiment metrics
+                    media_data = item.get('media_sentiment_metrics', {})
+                    if media_data:
+                        media_sentiment_metrics.append({
+                            "article_id": item.get("article_id", ""),
+                            "title": item.get("title", ""),
+                            "sentiment_analysis": media_data.get("sentiment_analysis", {}),
+                            "tone_framing": media_data.get("tone_framing", {}),
+                            "media_metadata": media_data.get("media_metadata", {}),
+                            "named_entities": media_data.get("named_entities", {}),
+                            "analyzed_at": item.get("analyzed_at", "")
+                        })
+                        
+                        # Aggregate media summary
+                        sentiment = media_data.get("sentiment_analysis", {}).get("overall_sentiment", "")
+                        if sentiment:
+                            media_summary["sentiment_distribution"][sentiment] = media_summary["sentiment_distribution"].get(sentiment, 0) + 1
+                        
+                        tone = media_data.get("tone_framing", {}).get("tone", "")
+                        if tone:
+                            media_summary["tone_distribution"][tone] = media_summary["tone_distribution"].get(tone, 0) + 1
+                        
+                        framing = media_data.get("tone_framing", {}).get("framing", "")
+                        if framing:
+                            media_summary["framing_distribution"][framing] = media_summary["framing_distribution"].get(framing, 0) + 1
+                        
+                        source = media_data.get("media_metadata", {}).get("source", "")
+                        if source:
+                            media_summary["sources"][source] = media_summary["sources"].get(source, 0) + 1
+                        
+                        category = media_data.get("media_metadata", {}).get("category", "")
+                        if category:
+                            media_summary["categories"][category] = media_summary["categories"].get(category, 0) + 1
+        except Exception as e:
+            logging.warning(f"Could not fetch specialized metrics: {e}")
+        
+        # Clean up aggregated data (remove duplicates, limit lists)
+        ministers_summary["key_achievements"] = list(set(ministers_summary["key_achievements"][:10]))
+        ministers_summary["policies_endorsed"] = list(set(ministers_summary["policies_endorsed"][:10]))
+        ministers_summary["budgets_announced"] = list(set(ministers_summary["budgets_announced"][:10]))
+        
+        policies_summary["financial_commitments"] = list(set(policies_summary["financial_commitments"][:10]))
+        policies_summary["expected_outcomes"] = list(set(policies_summary["expected_outcomes"][:10]))
+        
+        dashboard_data = {
+            "dashboard_title": "DBD News Analytics Dashboard",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "period": "Last 7 days",
+            
+            "summary_metrics": {
+                "total_articles_analyzed": volume.get("volume_trends", {}).get("total_articles", 0),
+                "companies_extracted": len(companies_data),
+                "trending_topics_count": len(trending.get("trending_topics", [])),
+                "regulatory_signals": bi_report.get("report", {}).get("risk_indicators", {}).get("high_risk_articles", 0),
+                "minister_mentions": len([m for m in minister_metrics if m.get("minister_mentions", {}).get("minister_name_count", 0) > 0]),
+                "policy_projects": len([p for p in policy_metrics if p.get("policy_identification", {}).get("initiative_name")]),
+                "media_sentiment_articles": len(media_sentiment_metrics)
+            },
+            
+            "trending_topics": trending.get("trending_topics", []),
+            "volume_trends": volume.get("volume_trends", {}),
+            "topic_distribution": volume.get("topic_distribution", {}),
+            "recent_companies": companies_data[:5],
+            "key_insights": bi_report.get("report", {}).get("top_insights", []),
+            "recommendations": bi_report.get("report", {}).get("recommendations", []),
+            
+            # New specialized metrics
+            "ministers_summary": ministers_summary,
+            "policies_summary": policies_summary,
+            "media_summary": media_summary,
+            "minister_metrics": minister_metrics[:10],  # Last 10 articles with minister mentions
+            "policy_metrics": policy_metrics[:10],      # Last 10 articles with policy data
+            "media_sentiment_metrics": media_sentiment_metrics[:10]  # Last 10 articles with media analysis
+        }
+        
+        return create_response({
+            "success": True,
+            "dashboard": dashboard_data
+        })
+        
+    except Exception as e:
+        logging.error(f"Error generating dashboard: {e}")
+        return create_response({"error": "Internal server error"}, 500)
