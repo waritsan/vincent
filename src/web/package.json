@@ -9,10 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@tailwindcss/typography": "^0.5.19",
     "@types/leaflet": "^1.9.21",
     "@types/react-syntax-highlighter": "^15.5.13",
     "leaflet": "^1.9.4",
+    "lucide-react": "^0.555.0",
     "next": "15.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
