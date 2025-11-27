@@ -24,7 +24,7 @@ import {
   PolarRadiusAxis,
   Radar
 } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, Download, Filter, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Download, Filter, RefreshCw, Eye, X, ExternalLink } from 'lucide-react';
 
 interface AnalyticsDashboard {
   dashboard_title: string;
@@ -276,6 +276,8 @@ export default function BIDashboard() {
     sentiment: 'all',
     region: 'all'
   });
+  const [selectedArticle, setSelectedArticle] = useState<AnalyticsDashboard['primary_metrics'][0] | null>(null);
+  const [showArticleModal, setShowArticleModal] = useState(false);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -897,6 +899,197 @@ export default function BIDashboard() {
                     </div>
                   ))}
                 </div>
+
+                {/* Individual Articles with Primary Metrics */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                  <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+                    Articles with Primary Metrics ({dashboard.primary_metrics.length})
+                  </h3>
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {dashboard.primary_metrics.map((article) => (
+                      <div key={article.article_id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+                              {article.title}
+                            </h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Analyzed: {new Date(article.analyzed_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setSelectedArticle(article);
+                              setShowArticleModal(true);
+                            }}
+                            className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors text-sm"
+                          >
+                            <Eye className="w-4 h-4" />
+                            View Article
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {/* Economic Growth */}
+                          {(article.economic_growth_indicators.investment_projects.length > 0 ||
+                            article.economic_growth_indicators.export_promotion.length > 0 ||
+                            article.economic_growth_indicators.foreign_investment.length > 0) && (
+                            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                              <h5 className="font-medium text-green-800 dark:text-green-200 mb-2">Economic Growth</h5>
+                              <div className="space-y-1 text-sm">
+                                {article.economic_growth_indicators.investment_projects.length > 0 && (
+                                  <p className="text-green-700 dark:text-green-300">
+                                    💰 {article.economic_growth_indicators.investment_projects.length} investment projects
+                                  </p>
+                                )}
+                                {article.economic_growth_indicators.export_promotion.length > 0 && (
+                                  <p className="text-green-700 dark:text-green-300">
+                                    📈 {article.economic_growth_indicators.export_promotion.length} export promotions
+                                  </p>
+                                )}
+                                {article.economic_growth_indicators.foreign_investment.length > 0 && (
+                                  <p className="text-green-700 dark:text-green-300">
+                                    🌍 {article.economic_growth_indicators.foreign_investment.length} foreign investments
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Productivity & Innovation */}
+                          {(article.productivity_innovation_indicators.innovation_policies.length > 0 ||
+                            article.productivity_innovation_indicators.startup_support.length > 0 ||
+                            article.productivity_innovation_indicators.digital_transformation.length > 0) && (
+                            <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
+                              <h5 className="font-medium text-purple-800 dark:text-purple-200 mb-2">Productivity & Innovation</h5>
+                              <div className="space-y-1 text-sm">
+                                {article.productivity_innovation_indicators.innovation_policies.length > 0 && (
+                                  <p className="text-purple-700 dark:text-purple-300">
+                                    💡 {article.productivity_innovation_indicators.innovation_policies.length} innovation policies
+                                  </p>
+                                )}
+                                {article.productivity_innovation_indicators.startup_support.length > 0 && (
+                                  <p className="text-purple-700 dark:text-purple-300">
+                                    🚀 {article.productivity_innovation_indicators.startup_support.length} startup supports
+                                  </p>
+                                )}
+                                {article.productivity_innovation_indicators.digital_transformation.length > 0 && (
+                                  <p className="text-purple-700 dark:text-purple-300">
+                                    💻 {article.productivity_innovation_indicators.digital_transformation.length} digital transformations
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Social Welfare */}
+                          {(article.social_welfare_inequality_indicators.poverty_reduction.length > 0 ||
+                            article.social_welfare_inequality_indicators.social_protection.length > 0 ||
+                            article.social_welfare_inequality_indicators.education_access.length > 0) && (
+                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                              <h5 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Social Welfare</h5>
+                              <div className="space-y-1 text-sm">
+                                {article.social_welfare_inequality_indicators.poverty_reduction.length > 0 && (
+                                  <p className="text-blue-700 dark:text-blue-300">
+                                    🤝 {article.social_welfare_inequality_indicators.poverty_reduction.length} poverty reductions
+                                  </p>
+                                )}
+                                {article.social_welfare_inequality_indicators.social_protection.length > 0 && (
+                                  <p className="text-blue-700 dark:text-blue-300">
+                                    🛡️ {article.social_welfare_inequality_indicators.social_protection.length} social protections
+                                  </p>
+                                )}
+                                {article.social_welfare_inequality_indicators.education_access.length > 0 && (
+                                  <p className="text-blue-700 dark:text-blue-300">
+                                    📚 {article.social_welfare_inequality_indicators.education_access.length} education accesses
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Environmental & Energy */}
+                          {(article.environmental_energy_indicators.renewable_energy.length > 0 ||
+                            article.environmental_energy_indicators.carbon_reduction.length > 0 ||
+                            article.environmental_energy_indicators.conservation_projects.length > 0) && (
+                            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg">
+                              <h5 className="font-medium text-emerald-800 dark:text-emerald-200 mb-2">Environmental & Energy</h5>
+                              <div className="space-y-1 text-sm">
+                                {article.environmental_energy_indicators.renewable_energy.length > 0 && (
+                                  <p className="text-emerald-700 dark:text-emerald-300">
+                                    🌱 {article.environmental_energy_indicators.renewable_energy.length} renewable energy initiatives
+                                  </p>
+                                )}
+                                {article.environmental_energy_indicators.carbon_reduction.length > 0 && (
+                                  <p className="text-emerald-700 dark:text-emerald-300">
+                                    🌍 {article.environmental_energy_indicators.carbon_reduction.length} carbon reductions
+                                  </p>
+                                )}
+                                {article.environmental_energy_indicators.conservation_projects.length > 0 && (
+                                  <p className="text-emerald-700 dark:text-emerald-300">
+                                    🏞️ {article.environmental_energy_indicators.conservation_projects.length} conservation projects
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Healthcare Capacity */}
+                          {(article.healthcare_capacity.hospital_construction.length > 0 ||
+                            article.healthcare_capacity.medical_personnel.length > 0 ||
+                            article.healthcare_capacity.health_insurance.length > 0) && (
+                            <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                              <h5 className="font-medium text-red-800 dark:text-red-200 mb-2">Healthcare Capacity</h5>
+                              <div className="space-y-1 text-sm">
+                                {article.healthcare_capacity.hospital_construction.length > 0 && (
+                                  <p className="text-red-700 dark:text-red-300">
+                                    🏥 {article.healthcare_capacity.hospital_construction.length} hospital constructions
+                                  </p>
+                                )}
+                                {article.healthcare_capacity.medical_personnel.length > 0 && (
+                                  <p className="text-red-700 dark:text-red-300">
+                                    👨‍⚕️ {article.healthcare_capacity.medical_personnel.length} medical personnel initiatives
+                                  </p>
+                                )}
+                                {article.healthcare_capacity.health_insurance.length > 0 && (
+                                  <p className="text-red-700 dark:text-red-300">
+                                    🩺 {article.healthcare_capacity.health_insurance.length} health insurance programs
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Governance & Digital */}
+                          {(article.governance_digital_government_indicators.e_governance.length > 0 ||
+                            article.governance_digital_government_indicators.transparency_measures.length > 0 ||
+                            article.governance_digital_government_indicators.anti_corruption.length > 0) && (
+                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg">
+                              <h5 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2">Governance & Digital</h5>
+                              <div className="space-y-1 text-sm">
+                                {article.governance_digital_government_indicators.e_governance.length > 0 && (
+                                  <p className="text-indigo-700 dark:text-indigo-300">
+                                    💻 {article.governance_digital_government_indicators.e_governance.length} e-governance initiatives
+                                  </p>
+                                )}
+                                {article.governance_digital_government_indicators.transparency_measures.length > 0 && (
+                                  <p className="text-indigo-700 dark:text-indigo-300">
+                                    👁️ {article.governance_digital_government_indicators.transparency_measures.length} transparency measures
+                                  </p>
+                                )}
+                                {article.governance_digital_government_indicators.anti_corruption.length > 0 && (
+                                  <p className="text-indigo-700 dark:text-indigo-300">
+                                    ⚖️ {article.governance_digital_government_indicators.anti_corruption.length} anti-corruption measures
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1154,6 +1347,340 @@ export default function BIDashboard() {
             )}
           </div>
         </div>
+
+        {/* Article Modal */}
+        {showArticleModal && selectedArticle && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+              <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-600">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Article Details
+                </h2>
+                <button
+                  onClick={() => setShowArticleModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    {selectedArticle.title}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Article ID: {selectedArticle.article_id} | Analyzed: {new Date(selectedArticle.analyzed_at).toLocaleString()}
+                  </p>
+                </div>
+
+                {/* Primary Metrics Details */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Primary Metrics Extracted
+                  </h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Economic Growth */}
+                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                      <h5 className="font-semibold text-green-800 dark:text-green-200 mb-3">Economic Growth Indicators</h5>
+                      <div className="space-y-2">
+                        {selectedArticle.economic_growth_indicators.gdp_growth && (
+                          <p className="text-sm text-green-700 dark:text-green-300">
+                            <strong>GDP Growth:</strong> {selectedArticle.economic_growth_indicators.gdp_growth}
+                          </p>
+                        )}
+                        {selectedArticle.economic_growth_indicators.investment_projects.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-green-700 dark:text-green-300 mb-1">Investment Projects:</p>
+                            <ul className="text-sm text-green-600 dark:text-green-400 list-disc list-inside space-y-1">
+                              {selectedArticle.economic_growth_indicators.investment_projects.map((project: string, idx: number) => (
+                                <li key={idx}>{project}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.economic_growth_indicators.export_promotion.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-green-700 dark:text-green-300 mb-1">Export Promotion:</p>
+                            <ul className="text-sm text-green-600 dark:text-green-400 list-disc list-inside space-y-1">
+                              {selectedArticle.economic_growth_indicators.export_promotion.map((promotion: string, idx: number) => (
+                                <li key={idx}>{promotion}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.economic_growth_indicators.foreign_investment.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-green-700 dark:text-green-300 mb-1">Foreign Investment:</p>
+                            <ul className="text-sm text-green-600 dark:text-green-400 list-disc list-inside space-y-1">
+                              {selectedArticle.economic_growth_indicators.foreign_investment.map((investment: string, idx: number) => (
+                                <li key={idx}>{investment}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Productivity & Innovation */}
+                    <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                      <h5 className="font-semibold text-purple-800 dark:text-purple-200 mb-3">Productivity & Innovation</h5>
+                      <div className="space-y-2">
+                        {selectedArticle.productivity_innovation_indicators.innovation_policies.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">Innovation Policies:</p>
+                            <ul className="text-sm text-purple-600 dark:text-purple-400 list-disc list-inside space-y-1">
+                              {selectedArticle.productivity_innovation_indicators.innovation_policies.map((policy: string, idx: number) => (
+                                <li key={idx}>{policy}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.productivity_innovation_indicators.startup_support.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">Startup Support:</p>
+                            <ul className="text-sm text-purple-600 dark:text-purple-400 list-disc list-inside space-y-1">
+                              {selectedArticle.productivity_innovation_indicators.startup_support.map((support: string, idx: number) => (
+                                <li key={idx}>{support}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.productivity_innovation_indicators.research_funding.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">Research Funding:</p>
+                            <ul className="text-sm text-purple-600 dark:text-purple-400 list-disc list-inside space-y-1">
+                              {selectedArticle.productivity_innovation_indicators.research_funding.map((funding: string, idx: number) => (
+                                <li key={idx}>{funding}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.productivity_innovation_indicators.digital_transformation.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">Digital Transformation:</p>
+                            <ul className="text-sm text-purple-600 dark:text-purple-400 list-disc list-inside space-y-1">
+                              {selectedArticle.productivity_innovation_indicators.digital_transformation.map((transformation: string, idx: number) => (
+                                <li key={idx}>{transformation}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Social Welfare */}
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                      <h5 className="font-semibold text-blue-800 dark:text-blue-200 mb-3">Social Welfare & Inequality</h5>
+                      <div className="space-y-2">
+                        {selectedArticle.social_welfare_inequality_indicators.poverty_reduction.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Poverty Reduction:</p>
+                            <ul className="text-sm text-blue-600 dark:text-blue-400 list-disc list-inside space-y-1">
+                              {selectedArticle.social_welfare_inequality_indicators.poverty_reduction.map((reduction: string, idx: number) => (
+                                <li key={idx}>{reduction}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.social_welfare_inequality_indicators.income_distribution.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Income Distribution:</p>
+                            <ul className="text-sm text-blue-600 dark:text-blue-400 list-disc list-inside space-y-1">
+                              {selectedArticle.social_welfare_inequality_indicators.income_distribution.map((distribution: string, idx: number) => (
+                                <li key={idx}>{distribution}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.social_welfare_inequality_indicators.social_protection.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Social Protection:</p>
+                            <ul className="text-sm text-blue-600 dark:text-blue-400 list-disc list-inside space-y-1">
+                              {selectedArticle.social_welfare_inequality_indicators.social_protection.map((protection: string, idx: number) => (
+                                <li key={idx}>{protection}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.social_welfare_inequality_indicators.education_access.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Education Access:</p>
+                            <ul className="text-sm text-blue-600 dark:text-blue-400 list-disc list-inside space-y-1">
+                              {selectedArticle.social_welfare_inequality_indicators.education_access.map((access: string, idx: number) => (
+                                <li key={idx}>{access}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Environmental & Energy */}
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg">
+                      <h5 className="font-semibold text-emerald-800 dark:text-emerald-200 mb-3">Environmental & Energy</h5>
+                      <div className="space-y-2">
+                        {selectedArticle.environmental_energy_indicators.renewable_energy.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-1">Renewable Energy:</p>
+                            <ul className="text-sm text-emerald-600 dark:text-emerald-400 list-disc list-inside space-y-1">
+                              {selectedArticle.environmental_energy_indicators.renewable_energy.map((energy: string, idx: number) => (
+                                <li key={idx}>{energy}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.environmental_energy_indicators.carbon_reduction.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-1">Carbon Reduction:</p>
+                            <ul className="text-sm text-emerald-600 dark:text-emerald-400 list-disc list-inside space-y-1">
+                              {selectedArticle.environmental_energy_indicators.carbon_reduction.map((reduction: string, idx: number) => (
+                                <li key={idx}>{reduction}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.environmental_energy_indicators.conservation_projects.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-1">Conservation Projects:</p>
+                            <ul className="text-sm text-emerald-600 dark:text-emerald-400 list-disc list-inside space-y-1">
+                              {selectedArticle.environmental_energy_indicators.conservation_projects.map((project: string, idx: number) => (
+                                <li key={idx}>{project}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.environmental_energy_indicators.climate_adaptation.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-1">Climate Adaptation:</p>
+                            <ul className="text-sm text-emerald-600 dark:text-emerald-400 list-disc list-inside space-y-1">
+                              {selectedArticle.environmental_energy_indicators.climate_adaptation.map((adaptation: string, idx: number) => (
+                                <li key={idx}>{adaptation}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Healthcare Capacity */}
+                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+                      <h5 className="font-semibold text-red-800 dark:text-red-200 mb-3">Healthcare Capacity</h5>
+                      <div className="space-y-2">
+                        {selectedArticle.healthcare_capacity.hospital_construction.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">Hospital Construction:</p>
+                            <ul className="text-sm text-red-600 dark:text-red-400 list-disc list-inside space-y-1">
+                              {selectedArticle.healthcare_capacity.hospital_construction.map((construction: string, idx: number) => (
+                                <li key={idx}>{construction}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.healthcare_capacity.medical_personnel.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">Medical Personnel:</p>
+                            <ul className="text-sm text-red-600 dark:text-red-400 list-disc list-inside space-y-1">
+                              {selectedArticle.healthcare_capacity.medical_personnel.map((personnel: string, idx: number) => (
+                                <li key={idx}>{personnel}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.healthcare_capacity.health_insurance.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">Health Insurance:</p>
+                            <ul className="text-sm text-red-600 dark:text-red-400 list-disc list-inside space-y-1">
+                              {selectedArticle.healthcare_capacity.health_insurance.map((insurance: string, idx: number) => (
+                                <li key={idx}>{insurance}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.healthcare_capacity.disease_prevention.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">Disease Prevention:</p>
+                            <ul className="text-sm text-red-600 dark:text-red-400 list-disc list-inside space-y-1">
+                              {selectedArticle.healthcare_capacity.disease_prevention.map((prevention: string, idx: number) => (
+                                <li key={idx}>{prevention}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Governance & Digital */}
+                    <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg">
+                      <h5 className="font-semibold text-indigo-800 dark:text-indigo-200 mb-3">Governance & Digital Government</h5>
+                      <div className="space-y-2">
+                        {selectedArticle.governance_digital_government_indicators.e_governance.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-1">E-Governance:</p>
+                            <ul className="text-sm text-indigo-600 dark:text-indigo-400 list-disc list-inside space-y-1">
+                              {selectedArticle.governance_digital_government_indicators.e_governance.map((governance: string, idx: number) => (
+                                <li key={idx}>{governance}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.governance_digital_government_indicators.transparency_measures.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-1">Transparency Measures:</p>
+                            <ul className="text-sm text-indigo-600 dark:text-indigo-400 list-disc list-inside space-y-1">
+                              {selectedArticle.governance_digital_government_indicators.transparency_measures.map((measure: string, idx: number) => (
+                                <li key={idx}>{measure}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.governance_digital_government_indicators.anti_corruption.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-1">Anti-Corruption:</p>
+                            <ul className="text-sm text-indigo-600 dark:text-indigo-400 list-disc list-inside space-y-1">
+                              {selectedArticle.governance_digital_government_indicators.anti_corruption.map((corruption: string, idx: number) => (
+                                <li key={idx}>{corruption}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.governance_digital_government_indicators.public_service_digitalization.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-1">Public Service Digitalization:</p>
+                            <ul className="text-sm text-indigo-600 dark:text-indigo-400 list-disc list-inside space-y-1">
+                              {selectedArticle.governance_digital_government_indicators.public_service_digitalization.map((digitalization: string, idx: number) => (
+                                <li key={idx}>{digitalization}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Original Article Content Placeholder */}
+                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Original Article Content
+                    </h4>
+                    <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                      <ExternalLink className="w-4 h-4" />
+                      View Full Article
+                    </button>
+                  </div>
+                  <div className="text-gray-600 dark:text-gray-400 italic">
+                    Note: The original article content would be displayed here. In a full implementation,
+                    this would fetch and display the complete article text from the source or database.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
