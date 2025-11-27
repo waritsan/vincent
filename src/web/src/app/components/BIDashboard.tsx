@@ -140,6 +140,8 @@ interface AnalyticsDashboard {
   primary_metrics: Array<{
     article_id: string;
     title: string;
+    source_url?: string;
+    full_content?: string;
     economic_growth_indicators: {
       gdp_growth: string | null;
       investment_projects: string[];
@@ -1666,14 +1668,37 @@ export default function BIDashboard() {
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                       Original Article Content
                     </h4>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                      <ExternalLink className="w-4 h-4" />
-                      View Full Article
-                    </button>
+                    {selectedArticle.source_url ? (
+                      <a
+                        href={selectedArticle.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        View Full Article
+                      </a>
+                    ) : (
+                      <button
+                        disabled
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Article URL Not Available
+                      </button>
+                    )}
                   </div>
                   <div className="text-gray-600 dark:text-gray-400 italic">
-                    Note: The original article content would be displayed here. In a full implementation,
-                    this would fetch and display the complete article text from the source or database.
+                    {selectedArticle.full_content ? (
+                      <div className="max-h-40 overflow-y-auto">
+                        {selectedArticle.full_content.length > 500 
+                          ? `${selectedArticle.full_content.substring(0, 500)}...`
+                          : selectedArticle.full_content
+                        }
+                      </div>
+                    ) : (
+                      "Click 'View Full Article' to read the original article on the source website."
+                    )}
                   </div>
                 </div>
               </div>

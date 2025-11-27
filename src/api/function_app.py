@@ -11,6 +11,7 @@ from azure.ai.projects import AIProjectClient
 from text_extraction import extract_companies_and_locations
 from news_scraper import get_content_from_blob
 from ai_utils import generate_ai_tags, get_ai_client, get_available_tags
+from scheduled_news_fetcher import get_cosmos_container
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -34,9 +35,8 @@ def create_response(body, status_code=200):
     )
 
 
-# Initialize Cosmos DB client
-def get_cosmos_container():
-    """Initialize and return Cosmos DB container client"""
+def get_posts_container():
+    """Initialize and return Cosmos DB posts container client"""
     connection_string = os.environ.get("AZURE_COSMOS_CONNECTION_STRING")
     endpoint = os.environ.get("AZURE_COSMOS_ENDPOINT")
     database_name = os.environ.get("AZURE_COSMOS_DATABASE_NAME", "blogdb")
@@ -44,7 +44,7 @@ def get_cosmos_container():
     
     # Prefer connection string for local development, endpoint for production
     if connection_string:
-        logging.info("Using Cosmos DB connection string")
+        logging.info("Using Cosmos DB connection string for posts")
         try:
             client = CosmosClient.from_connection_string(connection_string)
             database = client.get_database_client(database_name)
@@ -54,7 +54,7 @@ def get_cosmos_container():
             logging.error(f"Failed to create Cosmos DB client from connection string: {e}")
             return None
     elif endpoint:
-        logging.info("Using Cosmos DB endpoint with Managed Identity")
+        logging.info("Using Cosmos DB endpoint with Managed Identity for posts")
         try:
             # Use Managed Identity for authentication
             credential = DefaultAzureCredential()
@@ -2073,6 +2073,28 @@ def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
                 ))
                 
                 for item in recent_analytics:
+                    # Get original article data to include source URL
+                    article_url = None
+                    full_content = None
+                    try:
+                        # Try to get the original post data using article_id
+                        posts_container = get_posts_container()
+                        if posts_container and item.get("article_id"):
+                            post_query = f"SELECT c.source_url, c.content FROM c WHERE c.id = '{item['article_id']}'"
+                            post_results = list(posts_container.query_items(
+                                query=post_query,
+                                enable_cross_partition_query=True
+                            ))
+                            if post_results:
+                                article_url = post_results[0].get("source_url")
+                                full_content = post_results[0].get("content", "")
+                    except Exception as e:
+                        logging.warning(f"Could not fetch article URL for {item.get('article_id')}: {e}")
+                    
+                    # Add source URL and content to the analytics item
+                    item["source_url"] = article_url
+                    item["full_content"] = full_content
+                    
                     # Extract minister metrics
                     minister_data = item.get('minister_focused_metrics', {})
                     if minister_data:
@@ -2173,6 +2195,8 @@ def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
                         primary_metrics.append({
                             "article_id": item.get("article_id", ""),
                             "title": item.get("title", ""),
+                            "source_url": item.get("source_url", ""),
+                            "full_content": item.get("full_content", ""),
                             "economic_growth_indicators": primary_data.get("economic_growth_indicators", {}),
                             "productivity_innovation_indicators": primary_data.get("productivity_innovation_indicators", {}),
                             "social_welfare_inequality_indicators": primary_data.get("social_welfare_inequality_indicators", {}),
