@@ -139,28 +139,37 @@ class NewsAnalytics:
             # Multi-step analysis for comprehensive insights
             analysis_results = {}
 
-            # 1. Sentiment Analysis
+            # 1. Primary Metrics Analysis
+            analysis_results.update(self._extract_primary_metrics(title, content))
+
+            # 2. Operational Metrics Analysis
+            analysis_results.update(self._extract_operational_metrics(title, content))
+
+            # 3. AI Analytics Metadata
+            analysis_results.update(self._extract_ai_metadata(title, content))
+
+            # 4. Sentiment Analysis
             analysis_results.update(self._analyze_sentiment(full_text))
 
-            # 2. Named Entity Recognition (beyond companies)
+            # 5. Named Entity Recognition (beyond companies)
             analysis_results.update(self._extract_entities(full_text))
 
-            # 3. Topic Classification
+            # 6. Topic Classification
             analysis_results.update(self._classify_topics(title, content))
 
-            # 4. Content Quality Metrics
+            # 7. Content Quality Metrics
             analysis_results.update(self._analyze_content_quality(title, content))
 
-            # 5. Regulatory Compliance Indicators
+            # 8. Regulatory Compliance Indicators
             analysis_results.update(self._detect_regulatory_signals(content))
 
-            # 7. Minister-Focused Metrics
+            # 9. Minister-Focused Metrics
             analysis_results.update(self._extract_minister_metrics(title, content))
 
-            # 8. Policy/Program Metrics
+            # 10. Policy/Program Metrics
             analysis_results.update(self._extract_policy_metrics(title, content))
 
-            # 9. Media & Sentiment Metrics
+            # 11. Media & Sentiment Metrics
             analysis_results.update(self._extract_media_sentiment_metrics(title, content))
 
             # Add metadata
@@ -169,7 +178,7 @@ class NewsAnalytics:
                 "analyzed_at": datetime.now(timezone.utc).isoformat(),
                 "content_length": len(content),
                 "word_count": len(content.split()),
-                "analysis_version": "3.0"
+                "analysis_version": "4.0"
             })
 
             # Store in database if available
@@ -828,6 +837,269 @@ Return as JSON:
         except Exception as e:
             logging.error(f"Error generating BI report: {e}")
             return {"success": False, "error": str(e)}
+
+    def _extract_primary_metrics(self, title: str, content: str) -> Dict:
+        """
+        Extract Primary Metrics: Economic Growth, Productivity/Innovation,
+        Social Welfare/Inequality, Environmental/Energy, Healthcare Capacity,
+        Governance/Digital Government
+        """
+        prompt = f"""
+        Analyze this Thai government news article and extract PRIMARY METRICS related to government activities and policies.
+
+        Article Title: {title}
+        Article Content: {content}
+
+        Extract the following PRIMARY METRICS (return as JSON):
+
+        {{
+            "economic_growth_indicators": {{
+                "gdp_growth": "mentioned GDP growth rate or target (e.g., '3.5%') or null",
+                "investment_projects": ["list of specific investment projects mentioned"],
+                "export_promotion": ["list of export promotion initiatives"],
+                "foreign_investment": ["list of foreign investment attractions"]
+            }},
+            "productivity_innovation_indicators": {{
+                "innovation_policies": ["list of innovation or technology policies"],
+                "startup_support": ["list of startup or SME support programs"],
+                "research_funding": ["list of research and development funding"],
+                "digital_transformation": ["list of digital transformation initiatives"]
+            }},
+            "social_welfare_inequality_indicators": {{
+                "poverty_reduction": ["list of poverty reduction programs"],
+                "income_distribution": ["list of income inequality reduction measures"],
+                "social_protection": ["list of social protection programs"],
+                "education_access": ["list of education access improvement programs"]
+            }},
+            "environmental_energy_indicators": {{
+                "renewable_energy": ["list of renewable energy projects"],
+                "carbon_reduction": ["list of carbon emission reduction targets"],
+                "conservation_projects": ["list of environmental conservation projects"],
+                "climate_adaptation": ["list of climate change adaptation measures"]
+            }},
+            "healthcare_capacity": {{
+                "hospital_construction": ["list of new hospital or medical facility projects"],
+                "medical_personnel": ["list of healthcare workforce development programs"],
+                "health_insurance": ["list of universal healthcare expansion programs"],
+                "disease_prevention": ["list of disease prevention and control programs"]
+            }},
+            "governance_digital_government_indicators": {{
+                "e_governance": ["list of e-government or digital government initiatives"],
+                "transparency_measures": ["list of government transparency improvements"],
+                "anti_corruption": ["list of anti-corruption measures"],
+                "public_service_digitalization": ["list of public service digitalization projects"]
+            }}
+        }}
+
+        IMPORTANT:
+        - Only extract metrics that are explicitly mentioned or clearly implied in the article
+        - Use null for indicators not mentioned
+        - Use empty arrays [] for categories with no specific mentions
+        - Focus on concrete government actions, policies, or programs
+        - Return valid JSON only
+        """
+
+        try:
+            response = self.ai_client.chat.completions.create(
+                model=os.environ.get("AZURE_AI_DEPLOYMENT_NAME", "gpt-4o-mini"),
+                messages=[
+                    {"role": "system", "content": "You are an expert analyst specializing in Thai government policy analysis. Extract specific metrics from news articles and return them as structured JSON data."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.1,
+                max_tokens=2000
+            )
+
+            result_text = response.choices[0].message.content.strip()
+            # Clean up potential markdown formatting
+            if result_text.startswith("```json"):
+                result_text = result_text[7:]
+            if result_text.endswith("```"):
+                result_text = result_text[:-3]
+            result_text = result_text.strip()
+
+            return {"primary_metrics": json.loads(result_text)}
+
+        except Exception as e:
+            logging.error(f"Error extracting primary metrics: {e}")
+            return {"primary_metrics": {
+                "economic_growth_indicators": {"gdp_growth": None, "investment_projects": [], "export_promotion": [], "foreign_investment": []},
+                "productivity_innovation_indicators": {"innovation_policies": [], "startup_support": [], "research_funding": [], "digital_transformation": []},
+                "social_welfare_inequality_indicators": {"poverty_reduction": [], "income_distribution": [], "social_protection": [], "education_access": []},
+                "environmental_energy_indicators": {"renewable_energy": [], "carbon_reduction": [], "conservation_projects": [], "climate_adaptation": []},
+                "healthcare_capacity": {"hospital_construction": [], "medical_personnel": [], "health_insurance": [], "disease_prevention": []},
+                "governance_digital_government_indicators": {"e_governance": [], "transparency_measures": [], "anti_corruption": [], "public_service_digitalization": []}
+            }}
+
+    def _extract_operational_metrics(self, title: str, content: str) -> Dict:
+        """
+        Extract Operational Metrics: Project Status, Budget Indicators,
+        Impact Assessment, Geographic Coverage, Beneficiary Groups
+        """
+        prompt = f"""
+        Analyze this Thai government news article and extract OPERATIONAL METRICS related to project implementation and execution.
+
+        Article Title: {title}
+        Article Content: {content}
+
+        Extract the following OPERATIONAL METRICS (return as JSON):
+
+        {{
+            "project_status": {{
+                "announced_projects": ["list of newly announced projects"],
+                "in_progress_projects": ["list of projects currently in progress"],
+                "completed_projects": ["list of recently completed projects"],
+                "delayed_projects": ["list of projects facing delays"]
+            }},
+            "budget_indicators": {{
+                "allocated_budgets": ["list of budget allocations with amounts"],
+                "funding_sources": ["list of funding sources mentioned"],
+                "budget_utilization": ["list of budget utilization status"],
+                "cost_overruns": ["list of projects with cost overruns"]
+            }},
+            "impact_assessment": {{
+                "expected_benefits": ["list of expected benefits or outcomes"],
+                "performance_metrics": ["list of performance indicators mentioned"],
+                "success_measures": ["list of success criteria or KPIs"],
+                "evaluation_methods": ["list of evaluation or monitoring approaches"]
+            }},
+            "geographic_coverage": {{
+                "provinces_covered": ["list of provinces mentioned"],
+                "regions_affected": ["list of regions (North, South, Central, etc.)"],
+                "urban_rural_scope": "urban|rural|both|unspecified",
+                "cross_border_impacts": ["list of cross-border or international impacts"]
+            }},
+            "beneficiary_groups": {{
+                "target_population": ["list of target population groups"],
+                "vulnerable_groups": ["list of vulnerable or disadvantaged groups"],
+                "business_sectors": ["list of business sectors benefiting"],
+                "community_types": ["list of community types affected"]
+            }}
+        }}
+
+        IMPORTANT:
+        - Only extract metrics that are explicitly mentioned in the article
+        - Use empty arrays [] for categories with no mentions
+        - Focus on concrete operational details and implementation status
+        - Return valid JSON only
+        """
+
+        try:
+            response = self.ai_client.chat.completions.create(
+                model=os.environ.get("AZURE_AI_DEPLOYMENT_NAME", "gpt-4o-mini"),
+                messages=[
+                    {"role": "system", "content": "You are an expert analyst specializing in Thai government project implementation and operational metrics. Extract specific operational details from news articles and return them as structured JSON data."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.1,
+                max_tokens=2000
+            )
+
+            result_text = response.choices[0].message.content.strip()
+            # Clean up potential markdown formatting
+            if result_text.startswith("```json"):
+                result_text = result_text[7:]
+            if result_text.endswith("```"):
+                result_text = result_text[:-3]
+            result_text = result_text.strip()
+
+            return {"operational_metrics": json.loads(result_text)}
+
+        except Exception as e:
+            logging.error(f"Error extracting operational metrics: {e}")
+            return {"operational_metrics": {
+                "project_status": {"announced_projects": [], "in_progress_projects": [], "completed_projects": [], "delayed_projects": []},
+                "budget_indicators": {"allocated_budgets": [], "funding_sources": [], "budget_utilization": [], "cost_overruns": []},
+                "impact_assessment": {"expected_benefits": [], "performance_metrics": [], "success_measures": [], "evaluation_methods": []},
+                "geographic_coverage": {"provinces_covered": [], "regions_affected": [], "urban_rural_scope": "unspecified", "cross_border_impacts": []},
+                "beneficiary_groups": {"target_population": [], "vulnerable_groups": [], "business_sectors": [], "community_types": []}
+            }}
+
+    def _extract_ai_metadata(self, title: str, content: str) -> Dict:
+        """
+        Extract AI Analytics Metadata: Enhanced Entities, Topic Classification,
+        Policy Sentiment, Timeline markers, Risk tags
+        """
+        prompt = f"""
+        Analyze this Thai government news article and extract AI ANALYTICS METADATA for enhanced understanding and categorization.
+
+        Article Title: {title}
+        Article Content: {content}
+
+        Extract the following AI ANALYTICS METADATA (return as JSON):
+
+        {{
+            "enhanced_entities": {{
+                "government_agencies": ["list of specific government agencies mentioned"],
+                "provinces_municipalities": ["list of provinces, cities, or municipalities mentioned"],
+                "people_groups": ["list of specific people groups or demographics mentioned"],
+                "international_entities": ["list of international organizations or foreign entities"]
+            }},
+            "topic_classification": {{
+                "primary_category": "economy|social|environment|health|governance|security|infrastructure|education|technology|other",
+                "secondary_categories": ["list of secondary topic categories"],
+                "policy_domains": ["list of specific policy areas affected"],
+                "sector_impacts": ["list of economic sectors impacted"]
+            }},
+            "policy_sentiment": {{
+                "policy_effectiveness": "highly_effective|effective|neutral|ineffective|highly_ineffective|unclear",
+                "public_opinion": "strongly_supportive|supportive|neutral|opposed|strongly_opposed|unclear",
+                "stakeholder_sentiment": "positive|negative|mixed|unclear",
+                "implementation_challenges": ["list of implementation challenges mentioned"]
+            }},
+            "timeline_markers": {{
+                "immediate_actions": ["list of immediate or short-term actions"],
+                "medium_term_goals": ["list of medium-term objectives (6-24 months)"],
+                "long_term_vision": ["list of long-term goals (2+ years)"],
+                "deadline_dates": ["list of specific deadlines or target dates mentioned"]
+            }},
+            "risk_tags": {{
+                "regulatory_risks": ["list of regulatory compliance risks"],
+                "financial_risks": ["list of financial or budgetary risks"],
+                "operational_risks": ["list of operational implementation risks"],
+                "political_risks": ["list of political or stakeholder risks"],
+                "external_risks": ["list of external factors or dependencies"]
+            }}
+        }}
+
+        IMPORTANT:
+        - Only extract information that is explicitly mentioned or clearly implied
+        - Use empty arrays [] for categories with no mentions
+        - Use "unclear" for sentiment categories that cannot be determined
+        - Focus on concrete details and avoid speculation
+        - Return valid JSON only
+        """
+
+        try:
+            response = self.ai_client.chat.completions.create(
+                model=os.environ.get("AZURE_AI_DEPLOYMENT_NAME", "gpt-4o-mini"),
+                messages=[
+                    {"role": "system", "content": "You are an expert AI analyst specializing in government policy analysis and risk assessment. Extract comprehensive metadata from news articles and return them as structured JSON data."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.1,
+                max_tokens=2000
+            )
+
+            result_text = response.choices[0].message.content.strip()
+            # Clean up potential markdown formatting
+            if result_text.startswith("```json"):
+                result_text = result_text[7:]
+            if result_text.endswith("```"):
+                result_text = result_text[:-3]
+            result_text = result_text.strip()
+
+            return {"ai_metadata": json.loads(result_text)}
+
+        except Exception as e:
+            logging.error(f"Error extracting AI metadata: {e}")
+            return {"ai_metadata": {
+                "enhanced_entities": {"government_agencies": [], "provinces_municipalities": [], "people_groups": [], "international_entities": []},
+                "topic_classification": {"primary_category": "other", "secondary_categories": [], "policy_domains": [], "sector_impacts": []},
+                "policy_sentiment": {"policy_effectiveness": "unclear", "public_opinion": "unclear", "stakeholder_sentiment": "unclear", "implementation_challenges": []},
+                "timeline_markers": {"immediate_actions": [], "medium_term_goals": [], "long_term_vision": [], "deadline_dates": []},
+                "risk_tags": {"regulatory_risks": [], "financial_risks": [], "operational_risks": [], "political_risks": [], "external_risks": []}
+            }}
 
 
 # Convenience functions for external use

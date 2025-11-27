@@ -2007,6 +2007,9 @@ def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
         minister_metrics = []
         policy_metrics = []
         media_sentiment_metrics = []
+        primary_metrics = []
+        operational_metrics = []
+        ai_metadata = []
         
         # Initialize summary aggregations
         ministers_summary = {
@@ -2032,6 +2035,31 @@ def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
             "framing_distribution": {},
             "sources": {},
             "categories": {}
+        }
+        
+        primary_summary = {
+            "economic_growth_articles": 0,
+            "productivity_innovation_articles": 0,
+            "social_welfare_articles": 0,
+            "environmental_energy_articles": 0,
+            "healthcare_capacity_articles": 0,
+            "governance_digital_articles": 0
+        }
+        
+        operational_summary = {
+            "project_status_articles": 0,
+            "budget_indicators_articles": 0,
+            "impact_assessment_articles": 0,
+            "geographic_coverage_articles": 0,
+            "beneficiary_groups_articles": 0
+        }
+        
+        ai_metadata_summary = {
+            "enhanced_entities_articles": 0,
+            "topic_classification_articles": 0,
+            "policy_sentiment_articles": 0,
+            "timeline_markers_articles": 0,
+            "risk_tags_articles": 0
         }
         
         try:
@@ -2138,6 +2166,87 @@ def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
                         category = media_data.get("media_metadata", {}).get("category", "")
                         if category:
                             media_summary["categories"][category] = media_summary["categories"].get(category, 0) + 1
+                    
+                    # Extract primary metrics
+                    primary_data = item.get('primary_metrics', {})
+                    if primary_data:
+                        primary_metrics.append({
+                            "article_id": item.get("article_id", ""),
+                            "title": item.get("title", ""),
+                            "economic_growth_indicators": primary_data.get("economic_growth_indicators", {}),
+                            "productivity_innovation_indicators": primary_data.get("productivity_innovation_indicators", {}),
+                            "social_welfare_inequality_indicators": primary_data.get("social_welfare_inequality_indicators", {}),
+                            "environmental_energy_indicators": primary_data.get("environmental_energy_indicators", {}),
+                            "healthcare_capacity": primary_data.get("healthcare_capacity", {}),
+                            "governance_digital_government_indicators": primary_data.get("governance_digital_government_indicators", {}),
+                            "analyzed_at": item.get("analyzed_at", "")
+                        })
+                        
+                        # Aggregate primary summary
+                        if any(primary_data.get("economic_growth_indicators", {}).values()):
+                            primary_summary["economic_growth_articles"] += 1
+                        if any(primary_data.get("productivity_innovation_indicators", {}).values()):
+                            primary_summary["productivity_innovation_articles"] += 1
+                        if any(primary_data.get("social_welfare_inequality_indicators", {}).values()):
+                            primary_summary["social_welfare_articles"] += 1
+                        if any(primary_data.get("environmental_energy_indicators", {}).values()):
+                            primary_summary["environmental_energy_articles"] += 1
+                        if any(primary_data.get("healthcare_capacity", {}).values()):
+                            primary_summary["healthcare_capacity_articles"] += 1
+                        if any(primary_data.get("governance_digital_government_indicators", {}).values()):
+                            primary_summary["governance_digital_articles"] += 1
+                    
+                    # Extract operational metrics
+                    operational_data = item.get('operational_metrics', {})
+                    if operational_data:
+                        operational_metrics.append({
+                            "article_id": item.get("article_id", ""),
+                            "title": item.get("title", ""),
+                            "project_status": operational_data.get("project_status", {}),
+                            "budget_indicators": operational_data.get("budget_indicators", {}),
+                            "impact_assessment": operational_data.get("impact_assessment", {}),
+                            "geographic_coverage": operational_data.get("geographic_coverage", {}),
+                            "beneficiary_groups": operational_data.get("beneficiary_groups", {}),
+                            "analyzed_at": item.get("analyzed_at", "")
+                        })
+                        
+                        # Aggregate operational summary
+                        if any(operational_data.get("project_status", {}).values()):
+                            operational_summary["project_status_articles"] += 1
+                        if any(operational_data.get("budget_indicators", {}).values()):
+                            operational_summary["budget_indicators_articles"] += 1
+                        if any(operational_data.get("impact_assessment", {}).values()):
+                            operational_summary["impact_assessment_articles"] += 1
+                        if any(operational_data.get("geographic_coverage", {}).values()):
+                            operational_summary["geographic_coverage_articles"] += 1
+                        if any(operational_data.get("beneficiary_groups", {}).values()):
+                            operational_summary["beneficiary_groups_articles"] += 1
+                    
+                    # Extract AI metadata
+                    ai_data = item.get('ai_metadata', {})
+                    if ai_data:
+                        ai_metadata.append({
+                            "article_id": item.get("article_id", ""),
+                            "title": item.get("title", ""),
+                            "enhanced_entities": ai_data.get("enhanced_entities", {}),
+                            "topic_classification": ai_data.get("topic_classification", {}),
+                            "policy_sentiment": ai_data.get("policy_sentiment", {}),
+                            "timeline_markers": ai_data.get("timeline_markers", {}),
+                            "risk_tags": ai_data.get("risk_tags", {}),
+                            "analyzed_at": item.get("analyzed_at", "")
+                        })
+                        
+                        # Aggregate AI metadata summary
+                        if any(ai_data.get("enhanced_entities", {}).values()):
+                            ai_metadata_summary["enhanced_entities_articles"] += 1
+                        if any(ai_data.get("topic_classification", {}).values()):
+                            ai_metadata_summary["topic_classification_articles"] += 1
+                        if any(ai_data.get("policy_sentiment", {}).values()):
+                            ai_metadata_summary["policy_sentiment_articles"] += 1
+                        if any(ai_data.get("timeline_markers", {}).values()):
+                            ai_metadata_summary["timeline_markers_articles"] += 1
+                        if any(ai_data.get("risk_tags", {}).values()):
+                            ai_metadata_summary["risk_tags_articles"] += 1
         except Exception as e:
             logging.warning(f"Could not fetch specialized metrics: {e}")
         
@@ -2161,7 +2270,10 @@ def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
                 "regulatory_signals": bi_report.get("report", {}).get("risk_indicators", {}).get("high_risk_articles", 0),
                 "minister_mentions": len([m for m in minister_metrics if m.get("minister_mentions", {}).get("minister_name_count", 0) > 0]),
                 "policy_projects": len([p for p in policy_metrics if p.get("policy_identification", {}).get("initiative_name")]),
-                "media_sentiment_articles": len(media_sentiment_metrics)
+                "media_sentiment_articles": len(media_sentiment_metrics),
+                "primary_metrics_articles": len(primary_metrics),
+                "operational_metrics_articles": len(operational_metrics),
+                "ai_metadata_articles": len(ai_metadata)
             },
             
             "trending_topics": trending.get("trending_topics", []),
@@ -2177,7 +2289,10 @@ def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
             "media_summary": media_summary,
             "minister_metrics": minister_metrics[:10],  # Last 10 articles with minister mentions
             "policy_metrics": policy_metrics[:10],      # Last 10 articles with policy data
-            "media_sentiment_metrics": media_sentiment_metrics[:10]  # Last 10 articles with media analysis
+            "media_sentiment_metrics": media_sentiment_metrics[:10],  # Last 10 articles with media analysis
+            "primary_metrics": primary_metrics[:10],    # Last 10 articles with primary metrics
+            "operational_metrics": operational_metrics[:10],  # Last 10 articles with operational metrics
+            "ai_metadata": ai_metadata[:10]             # Last 10 articles with AI metadata
         }
         
         return create_response({

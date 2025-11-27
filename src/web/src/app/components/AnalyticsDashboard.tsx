@@ -15,6 +15,9 @@ interface AnalyticsDashboard {
     minister_mentions: number;
     policy_projects: number;
     media_sentiment_articles: number;
+    primary_metrics_articles: number;
+    operational_metrics_articles: number;
+    ai_metadata_articles: number;
   };
   trending_topics: Array<{
     topic: string;
@@ -111,6 +114,118 @@ interface AnalyticsDashboard {
     };
     analyzed_at: string;
   }>;
+  primary_metrics: Array<{
+    article_id: string;
+    title: string;
+    economic_growth_indicators: {
+      gdp_growth: string | null;
+      investment_projects: string[];
+      export_promotion: string[];
+      foreign_investment: string[];
+    };
+    productivity_innovation_indicators: {
+      innovation_policies: string[];
+      startup_support: string[];
+      research_funding: string[];
+      digital_transformation: string[];
+    };
+    social_welfare_inequality_indicators: {
+      poverty_reduction: string[];
+      income_distribution: string[];
+      social_protection: string[];
+      education_access: string[];
+    };
+    environmental_energy_indicators: {
+      renewable_energy: string[];
+      carbon_reduction: string[];
+      conservation_projects: string[];
+      climate_adaptation: string[];
+    };
+    healthcare_capacity: {
+      hospital_construction: string[];
+      medical_personnel: string[];
+      health_insurance: string[];
+      disease_prevention: string[];
+    };
+    governance_digital_government_indicators: {
+      e_governance: string[];
+      transparency_measures: string[];
+      anti_corruption: string[];
+      public_service_digitalization: string[];
+    };
+    analyzed_at: string;
+  }>;
+  operational_metrics: Array<{
+    article_id: string;
+    title: string;
+    project_status: {
+      announced_projects: string[];
+      in_progress_projects: string[];
+      completed_projects: string[];
+      delayed_projects: string[];
+    };
+    budget_indicators: {
+      allocated_budgets: string[];
+      funding_sources: string[];
+      budget_utilization: string[];
+      cost_overruns: string[];
+    };
+    impact_assessment: {
+      expected_benefits: string[];
+      performance_metrics: string[];
+      success_measures: string[];
+      evaluation_methods: string[];
+    };
+    geographic_coverage: {
+      provinces_covered: string[];
+      regions_affected: string[];
+      urban_rural_scope: string;
+      cross_border_impacts: string[];
+    };
+    beneficiary_groups: {
+      target_population: string[];
+      vulnerable_groups: string[];
+      business_sectors: string[];
+      community_types: string[];
+    };
+    analyzed_at: string;
+  }>;
+  ai_metadata: Array<{
+    article_id: string;
+    title: string;
+    enhanced_entities: {
+      government_agencies: string[];
+      provinces_municipalities: string[];
+      people_groups: string[];
+      international_entities: string[];
+    };
+    topic_classification: {
+      primary_category: string;
+      secondary_categories: string[];
+      policy_domains: string[];
+      sector_impacts: string[];
+    };
+    policy_sentiment: {
+      policy_effectiveness: string;
+      public_opinion: string;
+      stakeholder_sentiment: string;
+      implementation_challenges: string[];
+    };
+    timeline_markers: {
+      immediate_actions: string[];
+      medium_term_goals: string[];
+      long_term_vision: string[];
+      deadline_dates: string[];
+    };
+    risk_tags: {
+      regulatory_risks: string[];
+      financial_risks: string[];
+      operational_risks: string[];
+      political_risks: string[];
+      external_risks: string[];
+    };
+    analyzed_at: string;
+  }>;
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
@@ -193,6 +308,9 @@ export default function AnalyticsDashboard() {
     { id: 'ministers', label: 'Ministers' },
     { id: 'policies', label: 'Policies' },
     { id: 'media', label: 'Media' },
+    { id: 'primary', label: 'Primary Metrics' },
+    { id: 'operational', label: 'Operational' },
+    { id: 'ai-metadata', label: 'AI Metadata' },
     { id: 'insights', label: 'Insights' }
   ];
 
@@ -214,7 +332,7 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* Summary Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-10 gap-4">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
           <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Articles Analyzed</div>
           <div className="text-2xl font-bold text-blue-600 mt-1">
@@ -261,6 +379,27 @@ export default function AnalyticsDashboard() {
           <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Media Analysis</div>
           <div className="text-2xl font-bold text-orange-600 mt-1">
             {dashboard.summary_metrics.media_sentiment_articles}
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+          <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Primary Metrics</div>
+          <div className="text-2xl font-bold text-cyan-600 mt-1">
+            {dashboard.summary_metrics.primary_metrics_articles}
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+          <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Operational Metrics</div>
+          <div className="text-2xl font-bold text-pink-600 mt-1">
+            {dashboard.summary_metrics.operational_metrics_articles}
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+          <div className="text-sm font-medium text-gray-600 dark:text-gray-400">AI Metadata</div>
+          <div className="text-2xl font-bold text-emerald-600 mt-1">
+            {dashboard.summary_metrics.ai_metadata_articles}
           </div>
         </div>
       </div>
@@ -645,6 +784,353 @@ export default function AnalyticsDashboard() {
                   )) : (
                     <div className="text-center text-gray-500 dark:text-gray-400 py-8">
                       No media sentiment analytics available yet. Articles with media analysis will appear here.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'primary' && (
+            <div className="space-y-6">
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Primary Metrics Analytics</h3>
+                <div className="space-y-4">
+                  {dashboard.primary_metrics.length > 0 ? dashboard.primary_metrics.map((metric, index) => (
+                    <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                      <div className="flex justify-between items-start mb-3">
+                        <h4 className="font-semibold text-gray-900 dark:text-white line-clamp-2">{metric.title}</h4>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(metric.analyzed_at).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* Economic Growth */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-green-600 dark:text-green-400">Economic Growth</h5>
+                          <div className="text-xs space-y-1">
+                            {metric.economic_growth_indicators.gdp_growth && (
+                              <div><strong>GDP Growth:</strong> {metric.economic_growth_indicators.gdp_growth}</div>
+                            )}
+                            {metric.economic_growth_indicators.investment_projects.length > 0 && (
+                              <div><strong>Investments:</strong> {metric.economic_growth_indicators.investment_projects.length} projects</div>
+                            )}
+                            {metric.economic_growth_indicators.export_promotion.length > 0 && (
+                              <div><strong>Export Promotion:</strong> {metric.economic_growth_indicators.export_promotion.length} initiatives</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Productivity & Innovation */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-blue-600 dark:text-blue-400">Productivity & Innovation</h5>
+                          <div className="text-xs space-y-1">
+                            {metric.productivity_innovation_indicators.innovation_policies.length > 0 && (
+                              <div><strong>Innovation Policies:</strong> {metric.productivity_innovation_indicators.innovation_policies.length}</div>
+                            )}
+                            {metric.productivity_innovation_indicators.startup_support.length > 0 && (
+                              <div><strong>Startup Support:</strong> {metric.productivity_innovation_indicators.startup_support.length} programs</div>
+                            )}
+                            {metric.productivity_innovation_indicators.digital_transformation.length > 0 && (
+                              <div><strong>Digital Transformation:</strong> {metric.productivity_innovation_indicators.digital_transformation.length} initiatives</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Social Welfare */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-purple-600 dark:text-purple-400">Social Welfare</h5>
+                          <div className="text-xs space-y-1">
+                            {metric.social_welfare_inequality_indicators.poverty_reduction.length > 0 && (
+                              <div><strong>Poverty Reduction:</strong> {metric.social_welfare_inequality_indicators.poverty_reduction.length} programs</div>
+                            )}
+                            {metric.social_welfare_inequality_indicators.social_protection.length > 0 && (
+                              <div><strong>Social Protection:</strong> {metric.social_welfare_inequality_indicators.social_protection.length} programs</div>
+                            )}
+                            {metric.social_welfare_inequality_indicators.education_access.length > 0 && (
+                              <div><strong>Education Access:</strong> {metric.social_welfare_inequality_indicators.education_access.length} programs</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Environmental & Energy */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Environmental & Energy</h5>
+                          <div className="text-xs space-y-1">
+                            {metric.environmental_energy_indicators.renewable_energy.length > 0 && (
+                              <div><strong>Renewable Energy:</strong> {metric.environmental_energy_indicators.renewable_energy.length} projects</div>
+                            )}
+                            {metric.environmental_energy_indicators.carbon_reduction.length > 0 && (
+                              <div><strong>Carbon Reduction:</strong> {metric.environmental_energy_indicators.carbon_reduction.length} targets</div>
+                            )}
+                            {metric.environmental_energy_indicators.conservation_projects.length > 0 && (
+                              <div><strong>Conservation:</strong> {metric.environmental_energy_indicators.conservation_projects.length} projects</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Healthcare Capacity */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-red-600 dark:text-red-400">Healthcare Capacity</h5>
+                          <div className="text-xs space-y-1">
+                            {metric.healthcare_capacity.hospital_construction.length > 0 && (
+                              <div><strong>Hospital Construction:</strong> {metric.healthcare_capacity.hospital_construction.length} projects</div>
+                            )}
+                            {metric.healthcare_capacity.medical_personnel.length > 0 && (
+                              <div><strong>Medical Personnel:</strong> {metric.healthcare_capacity.medical_personnel.length} programs</div>
+                            )}
+                            {metric.healthcare_capacity.health_insurance.length > 0 && (
+                              <div><strong>Health Insurance:</strong> {metric.healthcare_capacity.health_insurance.length} programs</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Governance & Digital Government */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Governance & Digital</h5>
+                          <div className="text-xs space-y-1">
+                            {metric.governance_digital_government_indicators.e_governance.length > 0 && (
+                              <div><strong>E-Governance:</strong> {metric.governance_digital_government_indicators.e_governance.length} initiatives</div>
+                            )}
+                            {metric.governance_digital_government_indicators.transparency_measures.length > 0 && (
+                              <div><strong>Transparency:</strong> {metric.governance_digital_government_indicators.transparency_measures.length} measures</div>
+                            )}
+                            {metric.governance_digital_government_indicators.anti_corruption.length > 0 && (
+                              <div><strong>Anti-Corruption:</strong> {metric.governance_digital_government_indicators.anti_corruption.length} measures</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                      No primary metrics analytics available yet. Articles with government policy information will appear here.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'operational' && (
+            <div className="space-y-6">
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Operational Metrics Analytics</h3>
+                <div className="space-y-4">
+                  {dashboard.operational_metrics.length > 0 ? dashboard.operational_metrics.map((metric, index) => (
+                    <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                      <div className="flex justify-between items-start mb-3">
+                        <h4 className="font-semibold text-gray-900 dark:text-white line-clamp-2">{metric.title}</h4>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(metric.analyzed_at).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* Project Status */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-cyan-600 dark:text-cyan-400">Project Status</h5>
+                          <div className="text-xs space-y-1">
+                            {metric.project_status.announced_projects.length > 0 && (
+                              <div><strong>Announced:</strong> {metric.project_status.announced_projects.length} projects</div>
+                            )}
+                            {metric.project_status.in_progress_projects.length > 0 && (
+                              <div><strong>In Progress:</strong> {metric.project_status.in_progress_projects.length} projects</div>
+                            )}
+                            {metric.project_status.completed_projects.length > 0 && (
+                              <div><strong>Completed:</strong> {metric.project_status.completed_projects.length} projects</div>
+                            )}
+                            {metric.project_status.delayed_projects.length > 0 && (
+                              <div><strong>Delayed:</strong> {metric.project_status.delayed_projects.length} projects</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Budget Indicators */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-green-600 dark:text-green-400">Budget Indicators</h5>
+                          <div className="text-xs space-y-1">
+                            {metric.budget_indicators.allocated_budgets.length > 0 && (
+                              <div><strong>Allocated Budgets:</strong> {metric.budget_indicators.allocated_budgets.length}</div>
+                            )}
+                            {metric.budget_indicators.funding_sources.length > 0 && (
+                              <div><strong>Funding Sources:</strong> {metric.budget_indicators.funding_sources.length}</div>
+                            )}
+                            {metric.budget_indicators.budget_utilization.length > 0 && (
+                              <div><strong>Utilization:</strong> {metric.budget_indicators.budget_utilization.length} reports</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Impact Assessment */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-blue-600 dark:text-blue-400">Impact Assessment</h5>
+                          <div className="text-xs space-y-1">
+                            {metric.impact_assessment.expected_benefits.length > 0 && (
+                              <div><strong>Expected Benefits:</strong> {metric.impact_assessment.expected_benefits.length}</div>
+                            )}
+                            {metric.impact_assessment.performance_metrics.length > 0 && (
+                              <div><strong>Performance Metrics:</strong> {metric.impact_assessment.performance_metrics.length}</div>
+                            )}
+                            {metric.impact_assessment.success_measures.length > 0 && (
+                              <div><strong>Success Measures:</strong> {metric.impact_assessment.success_measures.length}</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Geographic Coverage */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-purple-600 dark:text-purple-400">Geographic Coverage</h5>
+                          <div className="text-xs space-y-1">
+                            {metric.geographic_coverage.provinces_covered.length > 0 && (
+                              <div><strong>Provinces:</strong> {metric.geographic_coverage.provinces_covered.slice(0, 3).join(', ')}</div>
+                            )}
+                            {metric.geographic_coverage.regions_affected.length > 0 && (
+                              <div><strong>Regions:</strong> {metric.geographic_coverage.regions_affected.join(', ')}</div>
+                            )}
+                            {metric.geographic_coverage.urban_rural_scope !== 'unspecified' && (
+                              <div><strong>Scope:</strong> {metric.geographic_coverage.urban_rural_scope}</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Beneficiary Groups */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-orange-600 dark:text-orange-400">Beneficiary Groups</h5>
+                          <div className="text-xs space-y-1">
+                            {metric.beneficiary_groups.target_population.length > 0 && (
+                              <div><strong>Target Population:</strong> {metric.beneficiary_groups.target_population.slice(0, 2).join(', ')}</div>
+                            )}
+                            {metric.beneficiary_groups.vulnerable_groups.length > 0 && (
+                              <div><strong>Vulnerable Groups:</strong> {metric.beneficiary_groups.vulnerable_groups.slice(0, 2).join(', ')}</div>
+                            )}
+                            {metric.beneficiary_groups.business_sectors.length > 0 && (
+                              <div><strong>Business Sectors:</strong> {metric.beneficiary_groups.business_sectors.slice(0, 2).join(', ')}</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                      No operational metrics analytics available yet. Articles with project implementation details will appear here.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'ai-metadata' && (
+            <div className="space-y-6">
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">AI Analytics Metadata</h3>
+                <div className="space-y-4">
+                  {dashboard.ai_metadata.length > 0 ? dashboard.ai_metadata.map((metric, index) => (
+                    <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                      <div className="flex justify-between items-start mb-3">
+                        <h4 className="font-semibold text-gray-900 dark:text-white line-clamp-2">{metric.title}</h4>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(metric.analyzed_at).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* Enhanced Entities */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Enhanced Entities</h5>
+                          <div className="text-xs space-y-1">
+                            {metric.enhanced_entities.government_agencies.length > 0 && (
+                              <div><strong>Government Agencies:</strong> {metric.enhanced_entities.government_agencies.slice(0, 2).join(', ')}</div>
+                            )}
+                            {metric.enhanced_entities.provinces_municipalities.length > 0 && (
+                              <div><strong>Provinces:</strong> {metric.enhanced_entities.provinces_municipalities.slice(0, 2).join(', ')}</div>
+                            )}
+                            {metric.enhanced_entities.people_groups.length > 0 && (
+                              <div><strong>People Groups:</strong> {metric.enhanced_entities.people_groups.slice(0, 2).join(', ')}</div>
+                            )}
+                            {metric.enhanced_entities.international_entities.length > 0 && (
+                              <div><strong>International:</strong> {metric.enhanced_entities.international_entities.slice(0, 2).join(', ')}</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Topic Classification */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-blue-600 dark:text-blue-400">Topic Classification</h5>
+                          <div className="text-xs space-y-1">
+                            <div><strong>Primary Category:</strong> {metric.topic_classification.primary_category}</div>
+                            {metric.topic_classification.secondary_categories.length > 0 && (
+                              <div><strong>Secondary:</strong> {metric.topic_classification.secondary_categories.slice(0, 2).join(', ')}</div>
+                            )}
+                            {metric.topic_classification.policy_domains.length > 0 && (
+                              <div><strong>Policy Domains:</strong> {metric.topic_classification.policy_domains.slice(0, 2).join(', ')}</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Policy Sentiment */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-orange-600 dark:text-orange-400">Policy Sentiment</h5>
+                          <div className="text-xs space-y-1">
+                            <div><strong>Policy Effectiveness:</strong>
+                              <span className={`ml-1 px-2 py-1 rounded text-xs ${
+                                metric.policy_sentiment.policy_effectiveness === 'highly_effective' ? 'bg-green-100 text-green-800' :
+                                metric.policy_sentiment.policy_effectiveness === 'effective' ? 'bg-green-100 text-green-800' :
+                                metric.policy_sentiment.policy_effectiveness === 'ineffective' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {metric.policy_sentiment.policy_effectiveness.replace('_', ' ')}
+                              </span>
+                            </div>
+                            <div><strong>Public Opinion:</strong> {metric.policy_sentiment.public_opinion.replace('_', ' ')}</div>
+                            <div><strong>Stakeholder Sentiment:</strong> {metric.policy_sentiment.stakeholder_sentiment}</div>
+                          </div>
+                        </div>
+
+                        {/* Timeline Markers */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-purple-600 dark:text-purple-400">Timeline Markers</h5>
+                          <div className="text-xs space-y-1">
+                            {metric.timeline_markers.immediate_actions.length > 0 && (
+                              <div><strong>Immediate Actions:</strong> {metric.timeline_markers.immediate_actions.length}</div>
+                            )}
+                            {metric.timeline_markers.medium_term_goals.length > 0 && (
+                              <div><strong>Medium-term Goals:</strong> {metric.timeline_markers.medium_term_goals.length}</div>
+                            )}
+                            {metric.timeline_markers.long_term_vision.length > 0 && (
+                              <div><strong>Long-term Vision:</strong> {metric.timeline_markers.long_term_vision.length}</div>
+                            )}
+                            {metric.timeline_markers.deadline_dates.length > 0 && (
+                              <div><strong>Deadlines:</strong> {metric.timeline_markers.deadline_dates.slice(0, 2).join(', ')}</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Risk Tags */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-red-600 dark:text-red-400">Risk Tags</h5>
+                          <div className="text-xs space-y-1">
+                            {metric.risk_tags.regulatory_risks.length > 0 && (
+                              <div><strong>Regulatory:</strong> {metric.risk_tags.regulatory_risks.length} risks</div>
+                            )}
+                            {metric.risk_tags.financial_risks.length > 0 && (
+                              <div><strong>Financial:</strong> {metric.risk_tags.financial_risks.length} risks</div>
+                            )}
+                            {metric.risk_tags.operational_risks.length > 0 && (
+                              <div><strong>Operational:</strong> {metric.risk_tags.operational_risks.length} risks</div>
+                            )}
+                            {metric.risk_tags.political_risks.length > 0 && (
+                              <div><strong>Political:</strong> {metric.risk_tags.political_risks.length} risks</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                      No AI metadata analytics available yet. Articles with enhanced entity and metadata analysis will appear here.
                     </div>
                   )}
                 </div>
