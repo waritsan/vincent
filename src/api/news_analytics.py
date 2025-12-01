@@ -840,54 +840,267 @@ Return as JSON:
 
     def _extract_primary_metrics(self, title: str, content: str) -> Dict:
         """
-        Extract Primary Metrics: Economic Growth, Productivity/Innovation,
-        Social Welfare/Inequality, Environmental/Energy, Healthcare Capacity,
-        Governance/Digital Government
+        Extract Primary Metrics focusing on 6 key areas and determine PRIMARY SOCIOECONOMIC CATEGORY:
+        A. เศรษฐกิจและศักยภาพการแข่งขัน (Economic Growth and Competitiveness)
+        B. พัฒนาทรัพยากรมนุษย์ / การศึกษา / ทักษะ (Human Resource Development / Education / Skills)
+        C. การลดความเหลื่อมล้ำ / สวัสดิการประชาชน (Reducing Inequality / Social Welfare)
+        D. ความมั่นคงด้านสุขภาพ / ระบบสาธารณสุข (Health Security / Public Health System)
+        E. ความมั่นคงด้านอาหาร พลังงาน และสิ่งแวดล้อม (Food, Energy and Environmental Security)
+        F. การบริหารภาครัฐ / ธรรมาภิบาล / ดิจิทัลภาครัฐ (Public Administration / Governance / Digital Government)
         """
-        prompt = f"""
-        Analyze this Thai government news article and extract PRIMARY METRICS related to government activities and policies.
+        # First, determine the primary socioeconomic category
+        category_prompt = f"""
+        Analyze this Thai government news article and determine which ONE of the 6 socioeconomic areas is the PRIMARY focus.
 
         Article Title: {title}
         Article Content: {content}
 
-        Extract the following PRIMARY METRICS (return as JSON):
+        The 6 socioeconomic areas are:
+
+        A. ECONOMIC_GROWTH_COMPETITIVENESS - Economic growth, investment, exports, innovation, SME development, digital economy, productivity
+        B. HUMAN_RESOURCE_DEVELOPMENT - Education, skills training, workforce development, STEM education, employment, labor market
+        C. SOCIAL_WELFARE_INEQUALITY_REDUCTION - Poverty reduction, social welfare, income inequality, healthcare access, social security, vulnerable groups
+        D. HEALTH_SECURITY_PUBLIC_HEALTH - Hospitals, healthcare system, disease prevention, vaccination, public health capacity, telemedicine
+        E. FOOD_ENERGY_ENVIRONMENTAL_SECURITY - Renewable energy, environmental protection, climate change, water management, food security, pollution control
+        F. PUBLIC_ADMINISTRATION_GOVERNANCE - E-government, digital government, anti-corruption, public sector modernization, transparency, administrative efficiency
+
+        IMPORTANT: Choose EXACTLY ONE primary category that best represents the main focus of this article.
+
+        Return ONLY a JSON object:
+        {{
+            "primary_socioeconomic_category": "ECONOMIC_GROWTH_COMPETITIVENESS|HUMAN_RESOURCE_DEVELOPMENT|SOCIAL_WELFARE_INEQUALITY_REDUCTION|HEALTH_SECURITY_PUBLIC_HEALTH|FOOD_ENERGY_ENVIRONMENTAL_SECURITY|PUBLIC_ADMINISTRATION_GOVERNANCE",
+            "category_confidence": 0.0-1.0,
+            "category_reasoning": "brief explanation in Thai of why this category was chosen"
+        }}
+        """
+
+        primary_category = "PUBLIC_ADMINISTRATION_GOVERNANCE"  # Default fallback
+        category_confidence = 0.5
+        category_reasoning = "Default classification - regulatory/governance focus"
+
+        try:
+            category_response = self.ai_client.chat.completions.create(
+                model=os.environ.get("AZURE_AI_DEPLOYMENT_NAME", "gpt-4o-mini"),
+                messages=[
+                    {"role": "system", "content": "You are an expert in Thai government policy classification. Analyze the article and determine which ONE socioeconomic area is the primary focus. Provide the category_reasoning explanation in Thai language."},
+                    {"role": "user", "content": category_prompt}
+                ],
+                temperature=0.1,
+                max_tokens=300
+            )
+
+            category_result_text = category_response.choices[0].message.content.strip()
+            if category_result_text.startswith("```json"):
+                category_result_text = category_result_text[7:]
+            if category_result_text.endswith("```"):
+                category_result_text = category_result_text[:-3]
+            category_result_text = category_result_text.strip()
+
+            category_result = json.loads(category_result_text)
+            primary_category = category_result.get("primary_socioeconomic_category", primary_category)
+            category_confidence = category_result.get("category_confidence", category_confidence)
+            category_reasoning = category_result.get("category_reasoning", category_reasoning)
+
+        except Exception as e:
+            logging.error(f"Error determining primary socioeconomic category: {e}")
+            # Continue with default category
+
+        # Now extract detailed metrics for all areas
+        prompt = f"""
+        Analyze this Thai government news article and extract PRIMARY METRICS from the following 6 key areas:
+
+        Article Title: {title}
+        Article Content: {content}
+
+        Extract metrics for each area (return as JSON):
 
         {{
-            "economic_growth_indicators": {{
-                "gdp_growth": "mentioned GDP growth rate or target (e.g., '3.5%') or null",
-                "investment_projects": ["list of specific investment projects mentioned"],
-                "export_promotion": ["list of export promotion initiatives"],
-                "foreign_investment": ["list of foreign investment attractions"]
+            "primary_socioeconomic_category": "{primary_category}",
+            "category_confidence": {category_confidence},
+            "category_reasoning": "{category_reasoning}",
+            "economic_growth_competitiveness": {{
+                "gdp_growth_rate": "GDP growth rate mentioned (e.g., '3.5%') or null",
+                "productivity_indicators": {{
+                    "tfp_total_factor_productivity": "TFP growth rate or null",
+                    "labor_productivity": "labor productivity growth rate or null"
+                }},
+                "investment_volume": {{
+                    "fdi_foreign_direct_investment": "FDI amount or growth mentioned",
+                    "domestic_investment": "domestic investment amount or growth mentioned"
+                }},
+                "innovation_economy": {{
+                    "innovation_index": "innovation index score or ranking mentioned",
+                    "patent_filings": "number of patent filings or growth mentioned"
+                }},
+                "digital_economy_share": "digital economy share of GDP mentioned",
+                "export_value": {{
+                    "overall_export_value": "total export value mentioned",
+                    "key_sector_exports": ["list of key export sectors with values"]
+                }},
+                "sme_performance": {{
+                    "sme_contribution_gdp": "SME contribution to GDP mentioned",
+                    "sme_growth_rate": "SME growth rate mentioned",
+                    "sme_employment_share": "SME employment share mentioned"
+                }},
+                "digital_technology_adoption": {{
+                    "ai_adoption_rate": "AI adoption metrics mentioned",
+                    "cloud_computing_usage": "cloud computing adoption mentioned",
+                    "automation_implementation": "automation/digital tech implementation mentioned"
+                }},
+                "news_signals_economic": ["list of economic policy signals like 'นโยบายภาษี', 'มาตรการส่งเสริมการลงทุน', 'ศูนย์นวัตกรรม', 'เขตเศรษฐกิจพิเศษ', 'ความคืบหน้าโครงสร้างพื้นฐาน'"]
             }},
-            "productivity_innovation_indicators": {{
-                "innovation_policies": ["list of innovation or technology policies"],
-                "startup_support": ["list of startup or SME support programs"],
-                "research_funding": ["list of research and development funding"],
-                "digital_transformation": ["list of digital transformation initiatives"]
+            "human_resource_development": {{
+                "education_quality": {{
+                    "pisa_scores": "PISA scores mentioned",
+                    "literacy_rate": "literacy rate mentioned",
+                    "education_index": "education index score mentioned"
+                }},
+                "stem_graduates": {{
+                    "stem_graduate_numbers": "number of STEM graduates mentioned",
+                    "stem_graduate_growth": "STEM graduate growth rate mentioned"
+                }},
+                "skill_upgrading": {{
+                    "reskilling_programs": ["list of reskilling programs"],
+                    "upskilling_initiatives": ["list of upskilling initiatives"],
+                    "skill_gap_reduction": "skill gap reduction metrics mentioned"
+                }},
+                "digital_economy_workforce_readiness": {{
+                    "digital_skills_training": ["list of digital skills training programs"],
+                    "ict_competency_levels": "ICT competency levels mentioned",
+                    "digital_workforce_readiness_index": "digital workforce readiness index mentioned"
+                }},
+                "employment_indicators": {{
+                    "unemployment_rate": "unemployment rate mentioned",
+                    "employment_rate": "employment rate mentioned",
+                    "youth_unemployment": "youth unemployment rate mentioned"
+                }},
+                "labor_market_wages": {{
+                    "average_wage_growth": "average wage growth mentioned",
+                    "minimum_wage_adjustments": "minimum wage adjustments mentioned",
+                    "wage_inequality_metrics": "wage inequality metrics mentioned"
+                }},
+                "news_signals_hr": ["list of HR signals like 'การยกระดับแรงงาน', 'หลักสูตรใหม่ด้านดิจิทัล', 'โครงการสมัครงาน', 'นโยบายลดว่างงาน'"]
             }},
-            "social_welfare_inequality_indicators": {{
-                "poverty_reduction": ["list of poverty reduction programs"],
-                "income_distribution": ["list of income inequality reduction measures"],
-                "social_protection": ["list of social protection programs"],
-                "education_access": ["list of education access improvement programs"]
+            "social_welfare_inequality_reduction": {{
+                "income_inequality": {{
+                    "gini_coefficient": "Gini coefficient mentioned",
+                    "income_inequality_trend": "income inequality trend mentioned"
+                }},
+                "household_debt": {{
+                    "household_debt_gdp_ratio": "household debt to GDP ratio mentioned",
+                    "debt_reduction_programs": ["list of debt reduction programs"]
+                }},
+                "poverty_indicators": {{
+                    "poverty_rate": "poverty rate mentioned",
+                    "poverty_reduction_target": "poverty reduction target mentioned",
+                    "extreme_poverty_rate": "extreme poverty rate mentioned"
+                }},
+                "cost_of_living": {{
+                    "inflation_rate": "inflation rate mentioned",
+                    "cost_of_living_index": "cost of living index mentioned",
+                    "basic_needs_cost": "cost of basic needs mentioned"
+                }},
+                "social_welfare_coverage": {{
+                    "social_security_coverage": "social security coverage rate mentioned",
+                    "welfare_recipients": "number of welfare recipients mentioned",
+                    "welfare_benefits_expansion": ["list of welfare benefits expansions"]
+                }},
+                "healthcare_access": {{
+                    "universal_healthcare_coverage": "universal healthcare coverage rate mentioned",
+                    "healthcare_access_improvements": ["list of healthcare access improvements"]
+                }},
+                "government_benefits_access": {{
+                    "benefits_digital_access": "digital access to government benefits mentioned",
+                    "benefits_application_simplification": ["list of benefits application simplifications"]
+                }},
+                "news_signals_social": ["list of social signals like 'สิทธิประโยชน์ใหม่', 'เบี้ยยังชีพ', 'บัตรสวัสดิการแห่งรัฐ', 'มาตรการลดหนี้', 'การเข้าถึงสวัสดิการของกลุ่มเปราะบาง'"]
             }},
-            "environmental_energy_indicators": {{
-                "renewable_energy": ["list of renewable energy projects"],
-                "carbon_reduction": ["list of carbon emission reduction targets"],
-                "conservation_projects": ["list of environmental conservation projects"],
-                "climate_adaptation": ["list of climate change adaptation measures"]
+            "health_security_public_health": {{
+                "hospital_capacity_upgrades": {{
+                    "hospitals_upgraded": "number of hospitals upgraded mentioned",
+                    "new_hospital_construction": "new hospital construction mentioned",
+                    "bed_capacity_expansion": "bed capacity expansion mentioned"
+                }},
+                "healthcare_coverage_metrics": {{
+                    "healthcare_coverage_rate": "healthcare coverage rate mentioned",
+                    "insurance_coverage_expansion": "insurance coverage expansion mentioned"
+                }},
+                "public_health_capacity": {{
+                    "beds_per_population": "beds per population ratio mentioned",
+                    "healthcare_workers_per_population": "healthcare workers per population mentioned",
+                    "medical_equipment_availability": "medical equipment availability mentioned"
+                }},
+                "digital_health_adoption": {{
+                    "telemedicine_implementation": "telemedicine implementation mentioned",
+                    "digital_health_records": "digital health records adoption mentioned",
+                    "health_apps_utilization": "health apps utilization mentioned"
+                }},
+                "communicable_disease_trends": {{
+                    "disease_surveillance_systems": ["list of disease surveillance systems"],
+                    "vaccination_coverage": "vaccination coverage rates mentioned",
+                    "pandemic_preparedness": ["list of pandemic preparedness measures"]
+                }},
+                "news_signals_health": ["list of health signals like 'การลงทุนในโรงพยาบาล', 'การเตรียมพร้อมโรคระบาด', 'Telemedicine', 'digital health announcements'"]
             }},
-            "healthcare_capacity": {{
-                "hospital_construction": ["list of new hospital or medical facility projects"],
-                "medical_personnel": ["list of healthcare workforce development programs"],
-                "health_insurance": ["list of universal healthcare expansion programs"],
-                "disease_prevention": ["list of disease prevention and control programs"]
+            "food_energy_environmental_security": {{
+                "renewable_energy_share": {{
+                    "renewable_energy_percentage": "renewable energy share of total energy mentioned",
+                    "renewable_energy_targets": "renewable energy targets mentioned",
+                    "solar_wind_capacity": "solar/wind capacity mentioned"
+                }},
+                "carbon_emission_reduction": {{
+                    "carbon_reduction_targets": "carbon reduction targets mentioned",
+                    "emission_reduction_achievements": "emission reduction achievements mentioned",
+                    "climate_commitments": ["list of climate commitments"]
+                }},
+                "air_quality_indicators": {{
+                    "pm25_levels": "PM2.5 levels mentioned",
+                    "air_quality_improvements": "air quality improvements mentioned",
+                    "pollution_reduction_measures": ["list of pollution reduction measures"]
+                }},
+                "water_resource_management": {{
+                    "water_resource_index": "water resource index mentioned",
+                    "water_security_measures": ["list of water security measures"],
+                    "drought_flood_management": ["list of drought/flood management programs"]
+                }},
+                "waste_management_performance": {{
+                    "waste_recycling_rate": "waste recycling rate mentioned",
+                    "waste_management_infrastructure": ["list of waste management infrastructure"],
+                    "circular_economy_initiatives": ["list of circular economy initiatives"]
+                }},
+                "food_security_indicators": {{
+                    "food_security_index": "food security index mentioned",
+                    "agricultural_productivity": "agricultural productivity mentioned",
+                    "food_supply_chain_resilience": ["list of food supply chain improvements"]
+                }},
+                "news_signals_environment": ["list of environmental signals like 'พลังงานทดแทน', 'มาตรการลดโลกร้อน', 'น้ำท่วม', 'ภัยแล้ง', 'นโยบายสิ่งแวดล้อม'"]
             }},
-            "governance_digital_government_indicators": {{
-                "e_governance": ["list of e-government or digital government initiatives"],
-                "transparency_measures": ["list of government transparency improvements"],
-                "anti_corruption": ["list of anti-corruption measures"],
-                "public_service_digitalization": ["list of public service digitalization projects"]
+            "public_administration_governance": {{
+                "e_government_adoption": {{
+                    "e_gov_services_coverage": "e-government services coverage mentioned",
+                    "digital_service_utilization": "digital service utilization rate mentioned",
+                    "online_transaction_volume": "online transaction volume mentioned"
+                }},
+                "g_cloud_usage": {{
+                    "government_cloud_migration": "government cloud migration progress mentioned",
+                    "cloud_service_adoption": "cloud service adoption rate mentioned"
+                }},
+                "open_data_metrics": {{
+                    "open_data_portals": "number of open data portals mentioned",
+                    "data_availability_index": "data availability index mentioned",
+                    "public_data_utilization": "public data utilization mentioned"
+                }},
+                "public_sector_modernization": {{
+                    "digital_transformation_initiatives": ["list of digital transformation initiatives"],
+                    "process_automation": ["list of process automation projects"],
+                    "service_delivery_improvements": ["list of service delivery improvements"]
+                }},
+                "anti_corruption_performance": {{
+                    "corruption_perception_index": "corruption perception index mentioned",
+                    "anti_corruption_measures": ["list of anti-corruption measures"],
+                    "transparency_improvements": ["list of transparency improvements"]
+                }},
+                "news_signals_governance": ["list of governance signals like 'โครงการดิจิทัลภาครัฐ', 'ระบบบริการออนไลน์', 'ปราบปรามทุจริต', 'การลดขั้นตอนราชการ'"]
             }}
         }}
 
@@ -903,11 +1116,11 @@ Return as JSON:
             response = self.ai_client.chat.completions.create(
                 model=os.environ.get("AZURE_AI_DEPLOYMENT_NAME", "gpt-4o-mini"),
                 messages=[
-                    {"role": "system", "content": "You are an expert analyst specializing in Thai government policy analysis. Extract specific metrics from news articles and return them as structured JSON data."},
+                    {"role": "system", "content": "You are an expert analyst specializing in Thai government policy analysis and socioeconomic indicators. Extract specific metrics from the 6 key areas mentioned and return them as structured JSON data."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.1,
-                max_tokens=2000
+                max_tokens=3000
             )
 
             result_text = response.choices[0].message.content.strip()
@@ -923,12 +1136,64 @@ Return as JSON:
         except Exception as e:
             logging.error(f"Error extracting primary metrics: {e}")
             return {"primary_metrics": {
-                "economic_growth_indicators": {"gdp_growth": None, "investment_projects": [], "export_promotion": [], "foreign_investment": []},
-                "productivity_innovation_indicators": {"innovation_policies": [], "startup_support": [], "research_funding": [], "digital_transformation": []},
-                "social_welfare_inequality_indicators": {"poverty_reduction": [], "income_distribution": [], "social_protection": [], "education_access": []},
-                "environmental_energy_indicators": {"renewable_energy": [], "carbon_reduction": [], "conservation_projects": [], "climate_adaptation": []},
-                "healthcare_capacity": {"hospital_construction": [], "medical_personnel": [], "health_insurance": [], "disease_prevention": []},
-                "governance_digital_government_indicators": {"e_governance": [], "transparency_measures": [], "anti_corruption": [], "public_service_digitalization": []}
+                "primary_socioeconomic_category": "PUBLIC_ADMINISTRATION_GOVERNANCE",
+                "category_confidence": 0.5,
+                "category_reasoning": "Fallback classification due to analysis error",
+                "economic_growth_competitiveness": {
+                    "gdp_growth_rate": None,
+                    "productivity_indicators": {"tfp_total_factor_productivity": None, "labor_productivity": None},
+                    "investment_volume": {"fdi_foreign_direct_investment": None, "domestic_investment": None},
+                    "innovation_economy": {"innovation_index": None, "patent_filings": None},
+                    "digital_economy_share": None,
+                    "export_value": {"overall_export_value": None, "key_sector_exports": []},
+                    "sme_performance": {"sme_contribution_gdp": None, "sme_growth_rate": None, "sme_employment_share": None},
+                    "digital_technology_adoption": {"ai_adoption_rate": None, "cloud_computing_usage": None, "automation_implementation": None},
+                    "news_signals_economic": []
+                },
+                "human_resource_development": {
+                    "education_quality": {"pisa_scores": None, "literacy_rate": None, "education_index": None},
+                    "stem_graduates": {"stem_graduate_numbers": None, "stem_graduate_growth": None},
+                    "skill_upgrading": {"reskilling_programs": [], "upskilling_initiatives": [], "skill_gap_reduction": None},
+                    "digital_economy_workforce_readiness": {"digital_skills_training": [], "ict_competency_levels": None, "digital_workforce_readiness_index": None},
+                    "employment_indicators": {"unemployment_rate": None, "employment_rate": None, "youth_unemployment": None},
+                    "labor_market_wages": {"average_wage_growth": None, "minimum_wage_adjustments": None, "wage_inequality_metrics": None},
+                    "news_signals_hr": []
+                },
+                "social_welfare_inequality_reduction": {
+                    "income_inequality": {"gini_coefficient": None, "income_inequality_trend": None},
+                    "household_debt": {"household_debt_gdp_ratio": None, "debt_reduction_programs": []},
+                    "poverty_indicators": {"poverty_rate": None, "poverty_reduction_target": None, "extreme_poverty_rate": None},
+                    "cost_of_living": {"inflation_rate": None, "cost_of_living_index": None, "basic_needs_cost": None},
+                    "social_welfare_coverage": {"social_security_coverage": None, "welfare_recipients": None, "welfare_benefits_expansion": []},
+                    "healthcare_access": {"universal_healthcare_coverage": None, "healthcare_access_improvements": []},
+                    "government_benefits_access": {"benefits_digital_access": None, "benefits_application_simplification": []},
+                    "news_signals_social": []
+                },
+                "health_security_public_health": {
+                    "hospital_capacity_upgrades": {"hospitals_upgraded": None, "new_hospital_construction": None, "bed_capacity_expansion": None},
+                    "healthcare_coverage_metrics": {"healthcare_coverage_rate": None, "insurance_coverage_expansion": None},
+                    "public_health_capacity": {"beds_per_population": None, "healthcare_workers_per_population": None, "medical_equipment_availability": None},
+                    "digital_health_adoption": {"telemedicine_implementation": None, "digital_health_records": None, "health_apps_utilization": None},
+                    "communicable_disease_trends": {"disease_surveillance_systems": [], "vaccination_coverage": None, "pandemic_preparedness": []},
+                    "news_signals_health": []
+                },
+                "food_energy_environmental_security": {
+                    "renewable_energy_share": {"renewable_energy_percentage": None, "renewable_energy_targets": None, "solar_wind_capacity": None},
+                    "carbon_emission_reduction": {"carbon_reduction_targets": None, "emission_reduction_achievements": None, "climate_commitments": []},
+                    "air_quality_indicators": {"pm25_levels": None, "air_quality_improvements": None, "pollution_reduction_measures": []},
+                    "water_resource_management": {"water_resource_index": None, "water_security_measures": [], "drought_flood_management": []},
+                    "waste_management_performance": {"waste_recycling_rate": None, "waste_management_infrastructure": [], "circular_economy_initiatives": []},
+                    "food_security_indicators": {"food_security_index": None, "agricultural_productivity": None, "food_supply_chain_resilience": []},
+                    "news_signals_environment": []
+                },
+                "public_administration_governance": {
+                    "e_government_adoption": {"e_gov_services_coverage": None, "digital_service_utilization": None, "online_transaction_volume": None},
+                    "g_cloud_usage": {"government_cloud_migration": None, "cloud_service_adoption": None},
+                    "open_data_metrics": {"open_data_portals": None, "data_availability_index": None, "public_data_utilization": None},
+                    "public_sector_modernization": {"digital_transformation_initiatives": [], "process_automation": [], "service_delivery_improvements": []},
+                    "anti_corruption_performance": {"corruption_perception_index": None, "anti_corruption_measures": [], "transparency_improvements": []},
+                    "news_signals_governance": []
+                }
             }}
 
     def _extract_operational_metrics(self, title: str, content: str) -> Dict:

@@ -204,6 +204,19 @@ def save_articles_to_db(articles: List[Dict], tags: List[str] = None) -> Dict:
             logger.info(f"✅ Saved article: {article['title'][:50]}...")
             stats['saved'] += 1
             
+            # Automatically analyze the article for BI metrics
+            try:
+                from news_analytics import analyze_article
+                full_content = full_content if 'full_content' in locals() else content_preview
+                analysis_result = analyze_article(article['title'], full_content, post_id)
+                if analysis_result.get('success'):
+                    logger.info(f"✅ Analyzed article for BI metrics: {article['title'][:30]}...")
+                else:
+                    logger.warning(f"⚠️ Failed to analyze article: {article['title'][:30]}...")
+            except Exception as analysis_error:
+                logger.warning(f"⚠️ Error analyzing article '{article['title'][:30]}...': {analysis_error}")
+                # Don't fail the entire fetch if analysis fails
+            
         except Exception as e:
             logger.error(f"Error saving article '{article.get('title', 'Unknown')}': {e}")
             stats['errors'] += 1

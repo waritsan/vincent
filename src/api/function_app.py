@@ -2043,7 +2043,15 @@ def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
             "social_welfare_articles": 0,
             "environmental_energy_articles": 0,
             "healthcare_capacity_articles": 0,
-            "governance_digital_articles": 0
+            "governance_digital_articles": 0,
+            "socioeconomic_category_distribution": {
+                "ECONOMIC_GROWTH_COMPETITIVENESS": 0,
+                "HUMAN_RESOURCE_DEVELOPMENT": 0,
+                "SOCIAL_WELFARE_INEQUALITY_REDUCTION": 0,
+                "FOOD_ENERGY_ENVIRONMENTAL_SECURITY": 0,
+                "HEALTH_SECURITY_PUBLIC_HEALTH": 0,
+                "PUBLIC_ADMINISTRATION_GOVERNANCE": 0
+            }
         }
         
         operational_summary = {
@@ -2197,28 +2205,35 @@ def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
                             "title": item.get("title", ""),
                             "source_url": item.get("source_url", ""),
                             "full_content": item.get("full_content", ""),
-                            "economic_growth_indicators": primary_data.get("economic_growth_indicators", {}),
-                            "productivity_innovation_indicators": primary_data.get("productivity_innovation_indicators", {}),
-                            "social_welfare_inequality_indicators": primary_data.get("social_welfare_inequality_indicators", {}),
-                            "environmental_energy_indicators": primary_data.get("environmental_energy_indicators", {}),
-                            "healthcare_capacity": primary_data.get("healthcare_capacity", {}),
-                            "governance_digital_government_indicators": primary_data.get("governance_digital_government_indicators", {}),
+                            "primary_socioeconomic_category": primary_data.get("primary_socioeconomic_category", "PUBLIC_ADMINISTRATION_GOVERNANCE"),
+                            "category_confidence": primary_data.get("category_confidence", 0.5),
+                            "category_reasoning": primary_data.get("category_reasoning", ""),
+                            "economic_growth_indicators": primary_data.get("economic_growth_competitiveness", {}),
+                            "productivity_innovation_indicators": primary_data.get("human_resource_development", {}),
+                            "social_welfare_inequality_indicators": primary_data.get("social_welfare_inequality_reduction", {}),
+                            "environmental_energy_indicators": primary_data.get("food_energy_environmental_security", {}),
+                            "healthcare_capacity": primary_data.get("health_security_public_health", {}),
+                            "governance_digital_government_indicators": primary_data.get("public_administration_governance", {}),
                             "analyzed_at": item.get("analyzed_at", "")
                         })
                         
-                        # Aggregate primary summary
-                        if any(primary_data.get("economic_growth_indicators", {}).values()):
+                        # Aggregate primary summary by category
+                        category = primary_data.get("primary_socioeconomic_category", "PUBLIC_ADMINISTRATION_GOVERNANCE")
+                        if category == "ECONOMIC_GROWTH_COMPETITIVENESS":
                             primary_summary["economic_growth_articles"] += 1
-                        if any(primary_data.get("productivity_innovation_indicators", {}).values()):
+                        elif category == "HUMAN_RESOURCE_DEVELOPMENT":
                             primary_summary["productivity_innovation_articles"] += 1
-                        if any(primary_data.get("social_welfare_inequality_indicators", {}).values()):
+                        elif category == "SOCIAL_WELFARE_INEQUALITY_REDUCTION":
                             primary_summary["social_welfare_articles"] += 1
-                        if any(primary_data.get("environmental_energy_indicators", {}).values()):
+                        elif category == "FOOD_ENERGY_ENVIRONMENTAL_SECURITY":
                             primary_summary["environmental_energy_articles"] += 1
-                        if any(primary_data.get("healthcare_capacity", {}).values()):
+                        elif category == "HEALTH_SECURITY_PUBLIC_HEALTH":
                             primary_summary["healthcare_capacity_articles"] += 1
-                        if any(primary_data.get("governance_digital_government_indicators", {}).values()):
+                        elif category == "PUBLIC_ADMINISTRATION_GOVERNANCE":
                             primary_summary["governance_digital_articles"] += 1
+                        
+                        # Count socioeconomic category distribution
+                        primary_summary["socioeconomic_category_distribution"][category] = primary_summary["socioeconomic_category_distribution"].get(category, 0) + 1
                     
                     # Extract operational metrics
                     operational_data = item.get('operational_metrics', {})
@@ -2311,6 +2326,7 @@ def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
             "ministers_summary": ministers_summary,
             "policies_summary": policies_summary,
             "media_summary": media_summary,
+            "primary_summary": primary_summary,
             "minister_metrics": minister_metrics[:10],  # Last 10 articles with minister mentions
             "policy_metrics": policy_metrics[:10],      # Last 10 articles with policy data
             "media_sentiment_metrics": media_sentiment_metrics[:10],  # Last 10 articles with media analysis
