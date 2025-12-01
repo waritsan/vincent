@@ -2193,6 +2193,9 @@ def get_minimal_dashboard_data():
                 }
             }
         }
+
+
+def process_chart_data(chart_config, companies):
     """
     Process and validate chart data based on the AI-generated configuration
     Apply filters to the data before generating chart data points
