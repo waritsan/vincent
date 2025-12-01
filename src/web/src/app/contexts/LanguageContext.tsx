@@ -218,6 +218,14 @@ const translations: Record<Language, Record<string, string>> = {
         'bi.modal.govCloudMigration': 'Gov Cloud Migration',
         'bi.modal.digitalTransformationInitiatives': 'Digital Transformation Initiatives',
         'bi.modal.antiCorruptionMeasures': 'Anti-Corruption Measures',
+
+        // Dynamic Chart Generation
+        'bi.askForCustomCharts': 'ขอกราฟแบบกำหนดเอง',
+        'bi.generateChart': 'สร้างกราฟ',
+        'bi.chartPromptPlaceholder': 'ลอง: "แสดงบทความเกี่ยวกับเศรษฐกิจในกรุงเทพ"',
+        'bi.chartExamples': 'ตัวอย่าง: "แสดงบทความเกี่ยวกับเศรษฐกิจในกรุงเทพ", "แผนภูมิวงกลมของหมวดหมู่หลัก", "บทความที่มีความเชื่อมั่นสูงกว่า 80%", "การกระจายความรู้สึกสื่อ"',
+        'bi.aiAnalysis': 'การวิเคราะห์ AI:',
+        'bi.sorryCouldNotGenerateChart': 'ขออภัย ฉันไม่สามารถสร้างกราฟได้ ข้อผิดพลาด',
     },
     en: {
         // Navigation
@@ -426,6 +434,14 @@ const translations: Record<Language, Record<string, string>> = {
         'bi.modal.govCloudMigration': 'Gov Cloud Migration',
         'bi.modal.digitalTransformationInitiatives': 'Digital Transformation Initiatives',
         'bi.modal.antiCorruptionMeasures': 'Anti-Corruption Measures',
+
+        // Dynamic Chart Generation
+        'bi.askForCustomCharts': 'Ask for Custom Charts',
+        'bi.generateChart': 'Generate Chart',
+        'bi.chartPromptPlaceholder': 'Try: "show articles about economy in Bangkok"',
+        'bi.chartExamples': 'Examples: "show articles about economy in Bangkok", "pie chart of primary categories", "articles with confidence over 80%", "media sentiment distribution"',
+        'bi.aiAnalysis': 'AI Analysis:',
+        'bi.sorryCouldNotGenerateChart': 'Sorry, I couldn\'t generate that chart. Error',
     }
 };
 

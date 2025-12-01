@@ -22,7 +22,8 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-  Radar
+  Radar,
+  LineChart
 } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Download, Filter, RefreshCw, Eye, X, ExternalLink } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -419,11 +420,21 @@ const METRIC_COLORS = {
   media: '#06B6D4'
 };
 
+// Dynamic chart generation interface
+interface DynamicChart {
+  type: 'bar' | 'area' | 'pie' | 'line' | 'scatter';
+  title: string;
+  data: (Record<string, string | number>)[];
+  dataKey: string;
+  xAxisKey?: string;
+  yAxisKey?: string;
+}
+
 export default function BIDashboard() {
   const [dashboard, setDashboard] = useState<AnalyticsDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState('overview');
+  const [activeView, setActiveView] = useState('primary-metrics');
   const [dateRange, setDateRange] = useState<string>('7d');
   const [filters, setFilters] = useState({
     category: 'all',
@@ -433,6 +444,12 @@ export default function BIDashboard() {
   const [selectedArticle, setSelectedArticle] = useState<AnalyticsDashboard['primary_metrics'][0] | null>(null);
   const [showArticleModal, setShowArticleModal] = useState(false);
   const [selectedPrimaryCategory, setSelectedPrimaryCategory] = useState<string | null>(null);
+
+  // Dynamic chart generation
+  const [prompt, setPrompt] = useState('');
+  const [dynamicChart, setDynamicChart] = useState<DynamicChart | null>(null);
+  const [showDynamicChart, setShowDynamicChart] = useState(false);
+  const [aiResponse, setAiResponse] = useState<string>('');
 
   // Language hook
   const { t } = useLanguage();
@@ -710,6 +727,64 @@ export default function BIDashboard() {
     return dashboard.primary_metrics.filter(article => article.primary_socioeconomic_category === apiCategory);
   }, [dashboard, selectedPrimaryCategory]);
 
+  // Dynamic chart generation functions
+  const handlePromptSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Form submitted with prompt:', prompt);
+
+    try {
+      setLoading(true);
+
+      // Call the AI-powered chart generation endpoint
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7071';
+      const response = await fetch(`${backendUrl}/api/charts/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate chart');
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.chart) {
+        // Convert the AI response to our DynamicChart format
+        const aiChart = result.chart;
+        const dynamicChart: DynamicChart = {
+          type: aiChart.type as DynamicChart['type'],
+          title: aiChart.title,
+          data: aiChart.data,
+          dataKey: aiChart.dataKey,
+          xAxisKey: aiChart.xAxisKey,
+          yAxisKey: aiChart.yAxisKey,
+        };
+
+        setDynamicChart(dynamicChart);
+        setAiResponse(result.ai_response || '');
+        setShowDynamicChart(true);
+        setPrompt(''); // Clear the prompt after successful generation
+      } else {
+        throw new Error(result.error || 'Failed to generate chart');
+      }
+    } catch (error) {
+      console.error('Chart generation error:', error);
+      alert(`${t('bi.sorryCouldNotGenerateChart')}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const closeDynamicChart = () => {
+    setShowDynamicChart(false);
+    setDynamicChart(null);
+    setAiResponse('');
+    setPrompt('');
+  };
+
   // Risk analysis data
   const riskAnalysisData = useMemo(() => {
     if (!dashboard || !dashboard.ai_metadata.length) return [];
@@ -799,6 +874,31 @@ export default function BIDashboard() {
           </div>
         </div>
 
+        {/* Dynamic Chart Prompt */}
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+            {t('bi.askForCustomCharts')}
+          </h3>
+          <form onSubmit={handlePromptSubmit} className="flex gap-2">
+            <input
+              type="text"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder={t('bi.chartPromptPlaceholder')}
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors"
+            >
+              {t('bi.generateChart')}
+            </button>
+          </form>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            {t('bi.chartExamples')}
+          </p>
+        </div>
+
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           {kpis.map((kpi, index) => (
@@ -823,6 +923,107 @@ export default function BIDashboard() {
             </div>
           ))}
         </div>
+
+        {/* Dynamic Chart - Show at top when generated */}
+        {showDynamicChart && dynamicChart && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {dynamicChart.title}
+              </h3>
+              <button
+                onClick={closeDynamicChart}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* AI Response Text */}
+            {aiResponse && (
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <div className="text-sm text-blue-800 dark:text-blue-200">
+                    <p className="font-medium mb-1">{t('bi.aiAnalysis')}</p>
+                    <p className="whitespace-pre-wrap">{aiResponse}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <ResponsiveContainer width="100%" height={400}>
+              {dynamicChart.type === 'bar' && (
+                <BarChart data={dynamicChart.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey={dynamicChart.xAxisKey}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    fontSize={11}
+                  />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey={dynamicChart.dataKey}>
+                    {dynamicChart.data.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              )}
+              {dynamicChart.type === 'area' && (
+                <AreaChart data={dynamicChart.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey={dynamicChart.xAxisKey} fontSize={12} />
+                  <YAxis />
+                  <Tooltip />
+                  <Area type="monotone" dataKey={dynamicChart.dataKey} stroke="#FFBB28" fill="#FFBB28" fillOpacity={0.6} />
+                </AreaChart>
+              )}
+              {dynamicChart.type === 'line' && (
+                <LineChart data={dynamicChart.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey={dynamicChart.xAxisKey} fontSize={12} />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey={dynamicChart.dataKey} stroke="#8884d8" strokeWidth={2} />
+                </LineChart>
+              )}
+              {dynamicChart.type === 'pie' && (
+                <PieChart>
+                  <Pie
+                    data={dynamicChart.data}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey={dynamicChart.dataKey}
+                  >
+                    {dynamicChart.data.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              )}
+              {dynamicChart.type === 'scatter' && (
+                <ScatterChart data={dynamicChart.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey={dynamicChart.xAxisKey} fontSize={12} />
+                  <YAxis dataKey={dynamicChart.yAxisKey} />
+                  <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                  <Scatter name="Data Points" dataKey={dynamicChart.dataKey} fill="#8884d8" />
+                </ScatterChart>
+              )}
+            </ResponsiveContainer>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
