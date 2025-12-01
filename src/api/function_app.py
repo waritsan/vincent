@@ -12,6 +12,7 @@ from text_extraction import extract_companies_and_locations
 from news_scraper import get_content_from_blob
 from ai_utils import generate_ai_tags, get_ai_client, get_available_tags
 from scheduled_news_fetcher import get_cosmos_container
+from news_analytics import get_analytics_container, NewsAnalytics
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -1445,7 +1446,753 @@ Generate the appropriate chart configuration.
         return create_response({"error": "Internal server error"}, 500)
 
 
-def process_chart_data(chart_config, companies):
+@app.route(route="bi/charts/generate", methods=["POST"])
+def generate_bi_chart(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Generate chart configuration from natural language prompts for BI dashboard data using Azure OpenAI
+    POST /api/bi/charts/generate
+    Body: { "prompt": "show me sentiment distribution", "dashboard_data": {...} }
+    """
+    logging.info('Processing BI chart generation request')
+
+    try:
+        # Parse request body
+        req_body = req.get_json()
+        prompt = req_body.get('prompt')
+        dashboard_data = req_body.get('dashboard_data')
+
+        if not prompt:
+            return create_response({"error": "Prompt is required"}, 400)
+
+        # Get Azure OpenAI client
+        ai_client = get_ai_client()
+        use_ai = ai_client is not None
+        
+        if not use_ai:
+            logging.info("🤖 Azure OpenAI not configured, will use fallback logic")
+
+        # If dashboard_data is not provided, try to fetch it from the analytics/dashboard endpoint
+        if not dashboard_data:
+            try:
+                if not use_ai:
+                    # For fallback scenarios, use minimal dashboard data
+                    logging.info("🔄 Using minimal dashboard data for fallback chart generation")
+                    dashboard_data = get_minimal_dashboard_data()
+                else:
+                    # For AI scenarios, use full dashboard data computation
+                    logging.info("🔄 Computing full dashboard data for AI chart generation")
+
+                    # Import the dashboard function to get the data
+                    from news_analytics import NewsAnalytics
+                    analytics = NewsAnalytics()
+
+                    # Get multiple analytics in parallel
+                    trending = analytics.generate_trending_topics(7)
+                    volume = analytics.analyze_news_volume_trends(3)
+                    bi_report = analytics.generate_business_intelligence_report()
+
+                    # Get recent company extractions
+                    companies_data = []
+                    try:
+                        from text_extraction import get_companies_container
+                        container = get_companies_container()
+                        if container:
+                            query = "SELECT * FROM c ORDER BY c.created_at DESC OFFSET 0 LIMIT 10"
+                            companies_data = list(container.query_items(
+                                query=query,
+                                enable_cross_partition_query=True
+                            ))
+                    except Exception as e:
+                        logging.warning(f"Could not fetch companies data: {e}")
+
+                    # Get recent analytics data to extract minister/policy/media metrics
+                    minister_metrics = []
+                    policy_metrics = []
+                    media_sentiment_metrics = []
+                    primary_metrics = []
+                    operational_metrics = []
+                    ai_metadata = []
+
+                    # Initialize summary aggregations
+                    ministers_summary = {
+                        "total_minister_mentions": 0,
+                        "total_ministry_mentions": 0,
+                        "responsibility_areas": {},
+                        "key_achievements": [],
+                        "policies_endorsed": [],
+                        "budgets_announced": []
+                    }
+
+                    policies_summary = {
+                        "total_projects": 0,
+                        "agencies_involved": {},
+                        "target_groups": {},
+                        "financial_commitments": [],
+                        "expected_outcomes": []
+                    }
+
+                    media_summary = {
+                        "sentiment_distribution": {"positive": 0, "negative": 0, "neutral": 0},
+                        "tone_distribution": {},
+                        "framing_distribution": {},
+                        "sources": {},
+                        "categories": {}
+                    }
+
+                    primary_summary = {
+                        "economic_growth_articles": 0,
+                        "productivity_innovation_articles": 0,
+                        "social_welfare_articles": 0,
+                        "environmental_energy_articles": 0,
+                        "healthcare_capacity_articles": 0,
+                        "governance_digital_articles": 0,
+                        "socioeconomic_category_distribution": {
+                            "ECONOMIC_GROWTH_COMPETITIVENESS": 0,
+                            "HUMAN_RESOURCE_DEVELOPMENT": 0,
+                            "SOCIAL_WELFARE_INEQUALITY_REDUCTION": 0,
+                            "FOOD_ENERGY_ENVIRONMENTAL_SECURITY": 0,
+                            "HEALTH_SECURITY_PUBLIC_HEALTH": 0,
+                            "PUBLIC_ADMINISTRATION_GOVERNANCE": 0
+                        }
+                    }
+
+                    operational_summary = {
+                        "project_status_articles": 0,
+                        "budget_indicators_articles": 0,
+                        "impact_assessment_articles": 0,
+                        "geographic_coverage_articles": 0,
+                        "beneficiary_groups_articles": 0
+                    }
+
+                    ai_metadata_summary = {
+                        "enhanced_entities_articles": 0,
+                        "topic_classification_articles": 0,
+                        "policy_sentiment_articles": 0,
+                        "timeline_markers_articles": 0,
+                        "risk_tags_articles": 0
+                    }
+
+                    try:
+                        analytics_container = get_analytics_container()
+                        if analytics_container:
+                            # Get recent article analytics (last 50 for better aggregation)
+                            query = "SELECT * FROM c WHERE c.analytics_type = 'article_analysis' ORDER BY c.analyzed_at DESC OFFSET 0 LIMIT 50"
+                            recent_analytics = list(analytics_container.query_items(
+                                query=query,
+                                enable_cross_partition_query=True
+                            ))
+
+                            for item in recent_analytics:
+                                # Get original article data to include source URL
+                                article_url = None
+                                full_content = None
+                                try:
+                                    # Try to get the original post data using article_id
+                                    posts_container = get_posts_container()
+                                    if posts_container and item.get("article_id"):
+                                        post_query = f"SELECT c.source_url, c.content FROM c WHERE c.id = '{item['article_id']}'"
+                                        post_results = list(posts_container.query_items(
+                                            query=post_query,
+                                            enable_cross_partition_query=True
+                                        ))
+                                        if post_results:
+                                            article_url = post_results[0].get("source_url")
+                                            full_content = post_results[0].get("content", "")
+                                except Exception as e:
+                                    logging.warning(f"Could not fetch article URL for {item.get('article_id')}: {e}")
+
+                                # Add source URL and content to the analytics item
+                                item["source_url"] = article_url
+                                item["full_content"] = full_content
+
+                                # Extract minister metrics
+                                minister_data = item.get('minister_focused_metrics', {})
+                                if minister_data:
+                                    minister_metrics.append({
+                                        "article_id": item.get("article_id", ""),
+                                        "title": item.get("title", ""),
+                                        "minister_mentions": minister_data.get("minister_mentions", {}),
+                                        "achievements_actions": minister_data.get("achievements_actions", {}),
+                                        "responsibility_areas": minister_data.get("responsibility_areas", []),
+                                        "analyzed_at": item.get("analyzed_at", "")
+                                    })
+
+                                    # Aggregate minister summary
+                                    mentions = minister_data.get("minister_mentions", {})
+                                    ministers_summary["total_minister_mentions"] += mentions.get("minister_name_count", 0)
+                                    ministers_summary["total_ministry_mentions"] += mentions.get("ministry_name_count", 0)
+
+                                    # Aggregate responsibility areas
+                                    for area in minister_data.get("responsibility_areas", []):
+                                        ministers_summary["responsibility_areas"][area] = ministers_summary["responsibility_areas"].get(area, 0) + 1
+
+                                    # Aggregate achievements and policies
+                                    achievements = minister_data.get("achievements_actions", {})
+                                    ministers_summary["key_achievements"].extend(achievements.get("key_achievements", []))
+                                    ministers_summary["policies_endorsed"].extend(achievements.get("policies_endorsed", []))
+                                    ministers_summary["budgets_announced"].extend(achievements.get("budgets_announced", []))
+
+                                # Extract policy metrics
+                                policy_data = item.get('policy_program_metrics', {})
+                                if policy_data:
+                                    policy_metrics.append({
+                                        "article_id": item.get("article_id", ""),
+                                        "title": item.get("title", ""),
+                                        "policy_identification": policy_data.get("policy_identification", {}),
+                                        "public_impact": policy_data.get("public_impact", {}),
+                                        "financial_info": policy_data.get("financial_info", {}),
+                                        "risks_issues": policy_data.get("risks_issues", {}),
+                                        "analyzed_at": item.get("analyzed_at", "")
+                                    })
+
+                                    # Aggregate policy summary
+                                    policies_summary["total_projects"] += 1
+
+                                    # Aggregate agencies
+                                    agency = policy_data.get("policy_identification", {}).get("agency_involved", "")
+                                    if agency:
+                                        policies_summary["agencies_involved"][agency] = policies_summary["agencies_involved"].get(agency, 0) + 1
+
+                                    # Aggregate target groups
+                                    for group in policy_data.get("public_impact", {}).get("target_group", []):
+                                        policies_summary["target_groups"][group] = policies_summary["target_groups"].get(group, 0) + 1
+
+                                    # Aggregate financial info
+                                    budget = policy_data.get("financial_info", {}).get("budget_amount", "")
+                                    if budget:
+                                        policies_summary["financial_commitments"].append(budget)
+
+                                    # Aggregate outcomes
+                                    policies_summary["expected_outcomes"].extend(policy_data.get("public_impact", {}).get("expected_outcomes", []))
+
+                                # Extract media sentiment metrics
+                                media_data = item.get('media_sentiment_metrics', {})
+                                if media_data:
+                                    media_sentiment_metrics.append({
+                                        "article_id": item.get("article_id", ""),
+                                        "title": item.get("title", ""),
+                                        "sentiment_analysis": media_data.get("sentiment_analysis", {}),
+                                        "tone_framing": media_data.get("tone_framing", {}),
+                                        "media_metadata": media_data.get("media_metadata", {}),
+                                        "named_entities": media_data.get("named_entities", {}),
+                                        "analyzed_at": item.get("analyzed_at", "")
+                                    })
+
+                                    # Aggregate media summary
+                                    sentiment = media_data.get("sentiment_analysis", {}).get("overall_sentiment", "")
+                                    if sentiment:
+                                        media_summary["sentiment_distribution"][sentiment] = media_summary["sentiment_distribution"].get(sentiment, 0) + 1
+
+                                    tone = media_data.get("tone_framing", {}).get("tone", "")
+                                    if tone:
+                                        media_summary["tone_distribution"][tone] = media_summary["tone_distribution"].get(tone, 0) + 1
+
+                                    framing = media_data.get("tone_framing", {}).get("framing", "")
+                                    if framing:
+                                        media_summary["framing_distribution"][framing] = media_summary["framing_distribution"].get(framing, 0) + 1
+
+                                    source = media_data.get("media_metadata", {}).get("source", "")
+                                    if source:
+                                        media_summary["sources"][source] = media_summary["sources"].get(source, 0) + 1
+
+                                    category = media_data.get("media_metadata", {}).get("category", "")
+                                    if category:
+                                        media_summary["categories"][category] = media_summary["categories"].get(category, 0) + 1
+
+                                # Extract primary metrics
+                                primary_data = item.get('primary_metrics', {})
+                                if primary_data:
+                                    primary_metrics.append({
+                                        "article_id": item.get("article_id", ""),
+                                        "title": item.get("title", ""),
+                                        "source_url": item.get("source_url", ""),
+                                        "full_content": item.get("full_content", ""),
+                                        "primary_socioeconomic_category": primary_data.get("primary_socioeconomic_category", "PUBLIC_ADMINISTRATION_GOVERNANCE"),
+                                        "category_confidence": primary_data.get("category_confidence", 0.5),
+                                        "category_reasoning": primary_data.get("category_reasoning", ""),
+                                        "economic_growth_indicators": primary_data.get("economic_growth_competitiveness", {}),
+                                        "productivity_innovation_indicators": primary_data.get("human_resource_development", {}),
+                                        "social_welfare_inequality_indicators": primary_data.get("social_welfare_inequality_reduction", {}),
+                                        "environmental_energy_indicators": primary_data.get("food_energy_environmental_security", {}),
+                                        "healthcare_capacity": primary_data.get("health_security_public_health", {}),
+                                        "governance_digital_government_indicators": primary_data.get("public_administration_governance", {}),
+                                        "analyzed_at": item.get("analyzed_at", "")
+                                    })
+
+                                    # Aggregate primary summary by category
+                                    category = primary_data.get("primary_socioeconomic_category", "PUBLIC_ADMINISTRATION_GOVERNANCE")
+                                    if category == "ECONOMIC_GROWTH_COMPETITIVENESS":
+                                        primary_summary["economic_growth_articles"] += 1
+                                    elif category == "HUMAN_RESOURCE_DEVELOPMENT":
+                                        primary_summary["productivity_innovation_articles"] += 1
+                                    elif category == "SOCIAL_WELFARE_INEQUALITY_REDUCTION":
+                                        primary_summary["social_welfare_articles"] += 1
+                                    elif category == "FOOD_ENERGY_ENVIRONMENTAL_SECURITY":
+                                        primary_summary["environmental_energy_articles"] += 1
+                                    elif category == "HEALTH_SECURITY_PUBLIC_HEALTH":
+                                        primary_summary["healthcare_capacity_articles"] += 1
+                                    elif category == "PUBLIC_ADMINISTRATION_GOVERNANCE":
+                                        primary_summary["governance_digital_articles"] += 1
+
+                                    # Count socioeconomic category distribution
+                                    primary_summary["socioeconomic_category_distribution"][category] = primary_summary["socioeconomic_category_distribution"].get(category, 0) + 1
+
+                                # Extract operational metrics
+                                operational_data = item.get('operational_metrics', {})
+                                if operational_data:
+                                    operational_metrics.append({
+                                        "article_id": item.get("article_id", ""),
+                                        "title": item.get("title", ""),
+                                        "project_status": operational_data.get("project_status", {}),
+                                        "budget_indicators": operational_data.get("budget_indicators", {}),
+                                        "impact_assessment": operational_data.get("impact_assessment", {}),
+                                        "geographic_coverage": operational_data.get("geographic_coverage", {}),
+                                        "beneficiary_groups": operational_data.get("beneficiary_groups", {}),
+                                        "analyzed_at": item.get("analyzed_at", "")
+                                    })
+
+                                    # Aggregate operational summary
+                                    if any(operational_data.get("project_status", {}).values()):
+                                        operational_summary["project_status_articles"] += 1
+                                    if any(operational_data.get("budget_indicators", {}).values()):
+                                        operational_summary["budget_indicators_articles"] += 1
+                                    if any(operational_data.get("impact_assessment", {}).values()):
+                                        operational_summary["impact_assessment_articles"] += 1
+                                    if any(operational_data.get("geographic_coverage", {}).values()):
+                                        operational_summary["geographic_coverage_articles"] += 1
+                                    if any(operational_data.get("beneficiary_groups", {}).values()):
+                                        operational_summary["beneficiary_groups_articles"] += 1
+
+                                # Extract AI metadata
+                                ai_data = item.get('ai_metadata', {})
+                                if ai_data:
+                                    ai_metadata.append({
+                                        "article_id": item.get("article_id", ""),
+                                        "title": item.get("title", ""),
+                                        "enhanced_entities": ai_data.get("enhanced_entities", {}),
+                                        "topic_classification": ai_data.get("topic_classification", {}),
+                                        "policy_sentiment": ai_data.get("policy_sentiment", {}),
+                                        "timeline_markers": ai_data.get("timeline_markers", {}),
+                                        "risk_tags": ai_data.get("risk_tags", {}),
+                                        "analyzed_at": item.get("analyzed_at", "")
+                                    })
+
+                                    # Aggregate AI metadata summary
+                                    if any(ai_data.get("enhanced_entities", {}).values()):
+                                        ai_metadata_summary["enhanced_entities_articles"] += 1
+                                    if any(ai_data.get("topic_classification", {}).values()):
+                                        ai_metadata_summary["topic_classification_articles"] += 1
+                                    if any(ai_data.get("policy_sentiment", {}).values()):
+                                        ai_metadata_summary["policy_sentiment_articles"] += 1
+                                    if any(ai_data.get("timeline_markers", {}).values()):
+                                        ai_metadata_summary["timeline_markers_articles"] += 1
+                                    if any(ai_data.get("risk_tags", {}).values()):
+                                        ai_metadata_summary["risk_tags_articles"] += 1
+                    except Exception as e:
+                        logging.warning(f"Could not fetch specialized metrics: {e}")
+
+                    # Clean up aggregated data (remove duplicates, limit lists)
+                    ministers_summary["key_achievements"] = list(set(ministers_summary["key_achievements"][:10]))
+                    ministers_summary["policies_endorsed"] = list(set(ministers_summary["policies_endorsed"][:10]))
+                    ministers_summary["budgets_announced"] = list(set(ministers_summary["budgets_announced"][:10]))
+
+                    policies_summary["financial_commitments"] = list(set(policies_summary["financial_commitments"][:10]))
+                    policies_summary["expected_outcomes"] = list(set(policies_summary["expected_outcomes"][:10]))
+
+                    dashboard_data = {
+                        "dashboard_title": "DBD News Analytics Dashboard",
+                        "generated_at": datetime.now(timezone.utc).isoformat(),
+                        "period": "Last 7 days",
+
+                        "summary_metrics": {
+                            "total_articles_analyzed": volume.get("volume_trends", {}).get("total_articles", 0),
+                            "companies_extracted": len(companies_data),
+                            "trending_topics_count": len(trending.get("trending_topics", [])),
+                            "regulatory_signals": bi_report.get("report", {}).get("risk_indicators", {}).get("high_risk_articles", 0),
+                            "minister_mentions": len([m for m in minister_metrics if m.get("minister_mentions", {}).get("minister_name_count", 0) > 0]),
+                            "policy_projects": len([p for p in policy_metrics if p.get("policy_identification", {}).get("initiative_name")]),
+                            "media_sentiment_articles": len(media_sentiment_metrics),
+                            "primary_metrics_articles": len(primary_metrics),
+                            "operational_metrics_articles": len(operational_metrics),
+                            "ai_metadata_articles": len(ai_metadata)
+                        },
+
+                        "trending_topics": trending.get("trending_topics", []),
+                        "volume_trends": volume.get("volume_trends", {}),
+                        "topic_distribution": volume.get("topic_distribution", {}),
+                        "recent_companies": companies_data[:5],
+                        "key_insights": bi_report.get("report", {}).get("top_insights", []),
+                        "recommendations": bi_report.get("report", {}).get("recommendations", []),
+
+                        # New specialized metrics
+                        "ministers_summary": ministers_summary,
+                        "policies_summary": policies_summary,
+                        "media_summary": media_summary,
+                        "primary_summary": primary_summary,
+                        "minister_metrics": minister_metrics[:10],  # Last 10 articles with minister mentions
+                        "policy_metrics": policy_metrics[:10],      # Last 10 articles with policy data
+                        "media_sentiment_metrics": media_sentiment_metrics[:10],  # Last 10 articles with media analysis
+                        "primary_metrics": primary_metrics[:10],    # Last 10 articles with primary metrics
+                        "operational_metrics": operational_metrics[:10],  # Last 10 articles with operational metrics
+                        "ai_metadata": ai_metadata[:10]             # Last 10 articles with AI metadata
+                    }
+            except Exception as e:
+                logging.error(f"Error fetching dashboard data: {e}")
+                return create_response({"error": "Could not fetch dashboard data"}, 500)
+
+        # Prepare context for AI from BI dashboard data
+        bi_context = {
+            "summary_metrics": dashboard_data.get("summary_metrics", {}),
+            "trending_topics": dashboard_data.get("trending_topics", []),
+            "volume_trends": dashboard_data.get("volume_trends", {}),
+            "topic_distribution": dashboard_data.get("topic_distribution", {}),
+            "ministers_summary": dashboard_data.get("ministers_summary", {}),
+            "policies_summary": dashboard_data.get("policies_summary", {}),
+            "media_summary": dashboard_data.get("media_summary", {}),
+            "primary_summary": dashboard_data.get("primary_summary", {}),
+            "minister_metrics": dashboard_data.get("minister_metrics", [])[:5],  # Limit for context
+            "policy_metrics": dashboard_data.get("policy_metrics", [])[:5],
+            "media_sentiment_metrics": dashboard_data.get("media_sentiment_metrics", [])[:5],
+            "primary_metrics": dashboard_data.get("primary_metrics", [])[:5],
+            "operational_metrics": dashboard_data.get("operational_metrics", [])[:5],
+            "ai_metadata": dashboard_data.get("ai_metadata", [])[:5]
+        }
+
+        # Create AI prompt for BI chart generation
+        system_prompt = """
+You are an expert data analyst specializing in creating chart configurations from natural language requests for Business Intelligence (BI) dashboard data.
+Given a user's request and BI dashboard data, generate BOTH a natural language summary AND a chart configuration in JSON format.
+
+CRITICAL LANGUAGE RULE: Determine the response language BASED SOLELY ON THE USER'S QUERY TEXT, NOT the data content.
+- If the user's query contains ANY Thai characters (ก-ฮ, ฯ, ะ-์, ั, ิ, ี, ึ, ื, ุ, ู, ่, ้, ๊, ๋, ์), respond in Thai
+- If the user's query contains ONLY English/Latin characters and NO Thai characters, respond in English
+- IGNORE the language of data content
+
+First, provide a brief, informative summary of the data insights (1-2 sentences) in the detected language.
+Then, provide the chart configuration in JSON format.
+
+Available BI data categories:
+- summary_metrics: total_articles_analyzed, companies_extracted, trending_topics_count, regulatory_signals, minister_mentions, policy_projects, media_sentiment_articles, primary_metrics_articles, operational_metrics_articles, ai_metadata_articles
+- trending_topics: topic names with frequency counts
+- volume_trends: article counts over time periods
+- topic_distribution: distribution of topics across articles
+- ministers_summary: minister mentions, ministry mentions, responsibility areas, achievements, policies, budgets
+- policies_summary: total projects, agencies involved, target groups, financial commitments, expected outcomes
+- media_summary: sentiment_distribution (positive/negative/neutral), tone_distribution, framing_distribution, sources, categories
+- primary_summary: socioeconomic category distribution (ECONOMIC_GROWTH_COMPETITIVENESS, HUMAN_RESOURCE_DEVELOPMENT, SOCIAL_WELFARE_INEQUALITY_REDUCTION, FOOD_ENERGY_ENVIRONMENTAL_SECURITY, HEALTH_SECURITY_PUBLIC_HEALTH, PUBLIC_ADMINISTRATION_GOVERNANCE)
+- minister_metrics: individual articles with minister-focused data
+- policy_metrics: individual articles with policy/program data
+- media_sentiment_metrics: individual articles with sentiment analysis
+- primary_metrics: individual articles with socioeconomic categorization
+- operational_metrics: individual articles with project status and budget data
+- ai_metadata: individual articles with enhanced entities and topic classification
+
+Available chart types: bar, line, area, pie, scatter, heatmap
+
+Response format:
+SUMMARY: [Your brief summary here, 1-2 sentences about key insights in the detected language]
+
+JSON_CONFIG:
+{
+  "type": "chart_type",
+  "title": "Chart Title",
+  "data": [array of data points],
+  "dataKey": "field_for_values",
+  "xAxisKey": "field_for_x_axis" (optional),
+  "yAxisKey": "field_for_y_axis" (optional),
+  "filters": {},
+  "aggregations": {}
+}
+
+Examples:
+English request: "show sentiment distribution" -> "Media sentiment analysis shows 45% positive, 30% neutral, and 25% negative coverage across recent articles." + pie chart config
+Thai request: "แสดงการกระจายความรู้สึก" -> "การวิเคราะห์ความรู้สึกสื่อแสดงให้เห็น 45% เป็นบวก 30% เป็นกลาง และ 25% เป็นลบ ในบทความล่าสุด" + pie chart config
+English request: "show socioeconomic categories" -> "Economic growth and governance topics dominate with 35% and 28% respectively, followed by social welfare at 20%." + bar chart config
+Thai request: "แสดงหมวดเศรษฐกิจสังคม" -> "หัวข้อการเติบโตทางเศรษฐกิจและการบริหารราชการครอบงำด้วย 35% และ 28% ตามลำดับ รองลงมาคือสวัสดิการสังคมที่ 20%" + bar chart config
+English request: "show minister mentions over time" -> "Minister mentions have increased steadily from 5 to 15 per week over the past month." + line chart config
+Thai request: "แสดงการกล่าวถึงรัฐมนตรีตามเวลา" -> "การกล่าวถึงรัฐมนตรีเพิ่มขึ้นอย่างต่อเนื่องจาก 5 เป็น 15 ครั้งต่อสัปดาห์ในช่วงเดือนที่ผ่านมา" + line chart config
+
+Always include both SUMMARY and JSON_CONFIG sections.
+"""
+
+        user_prompt = f"""
+User request: {prompt}
+
+LANGUAGE ANALYSIS: This request {"contains Thai characters" if any(ord(c) >= 0x0E00 and ord(c) <= 0x0E7F for c in prompt) else "contains only English/Latin characters"}.
+
+Available BI dashboard data:
+{json.dumps(bi_context, indent=2, ensure_ascii=False)}
+
+Generate the appropriate chart configuration for BI dashboard data.
+"""
+
+        # Call Azure OpenAI if available
+        if use_ai:
+            try:
+                logging.info(f"🤖 Calling Azure OpenAI for BI chart generation with prompt: {prompt[:100]}...")
+                response = ai_client.chat.completions.create(
+                    model="gpt-4o",  # or your deployed model
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    max_tokens=1000,
+                    temperature=0.1  # Low temperature for consistent results
+                )
+                logging.info("✅ Azure OpenAI call successful")
+            except Exception as ai_error:
+                logging.error(f"❌ Azure OpenAI API error: {ai_error}")
+                # Fallback: Generate a simple chart without AI
+                logging.info("🔄 Falling back to simple chart generation without AI")
+                use_ai = False  # Force fallback logic
+        else:
+            logging.info("🔄 Skipping AI call, using fallback chart generation")
+
+        # If AI was not used or failed, use fallback logic
+        if not use_ai:
+
+            # Simple fallback logic based on common requests
+            prompt_lower = prompt.lower()
+            fallback_config = None
+
+            if "sentiment" in prompt_lower:
+                sentiment_dist = dashboard_data.get("media_summary", {}).get("sentiment_distribution", {})
+                if sentiment_dist:
+                    fallback_config = {
+                        "type": "pie",
+                        "title": "Media Sentiment Distribution",
+                        "data": [
+                            {"sentiment": sentiment.title(), "count": count}
+                            for sentiment, count in sentiment_dist.items() if count > 0
+                        ],
+                        "dataKey": "count",
+                        "xAxisKey": "sentiment"
+                    }
+                else:
+                    # Create empty data structure
+                    fallback_config = {
+                        "type": "pie",
+                        "title": "Media Sentiment Distribution",
+                        "data": [
+                            {"sentiment": "Positive", "count": 0},
+                            {"sentiment": "Negative", "count": 0},
+                            {"sentiment": "Neutral", "count": 0}
+                        ],
+                        "dataKey": "count",
+                        "xAxisKey": "sentiment"
+                    }
+
+            elif "category" in prompt_lower or "socioeconomic" in prompt_lower:
+                category_dist = dashboard_data.get("primary_summary", {}).get("socioeconomic_category_distribution", {})
+                if category_dist:
+                    fallback_config = {
+                        "type": "bar",
+                        "title": "Socioeconomic Category Distribution",
+                        "data": [
+                            {"category": cat.replace("_", " ").title(), "count": count}
+                            for cat, count in category_dist.items() if count > 0
+                        ],
+                        "dataKey": "count",
+                        "xAxisKey": "category"
+                    }
+                else:
+                    fallback_config = {
+                        "type": "bar",
+                        "title": "Socioeconomic Category Distribution",
+                        "data": [
+                            {"category": "Economic Growth", "count": 0},
+                            {"category": "Human Resources", "count": 0},
+                            {"category": "Social Welfare", "count": 0}
+                        ],
+                        "dataKey": "count",
+                        "xAxisKey": "category"
+                    }
+
+            elif "topic" in prompt_lower or "trending" in prompt_lower:
+                trending_topics = dashboard_data.get("trending_topics", [])
+                if trending_topics:
+                    fallback_config = {
+                        "type": "bar",
+                        "title": "Trending Topics",
+                        "data": [
+                            {"topic": topic.get("topic", "")[:30] + "..." if len(topic.get("topic", "")) > 30 else topic.get("topic", ""),
+                             "frequency": topic.get("frequency", 0)}
+                            for topic in trending_topics[:10]
+                        ],
+                        "dataKey": "frequency",
+                        "xAxisKey": "topic"
+                    }
+                else:
+                    fallback_config = {
+                        "type": "bar",
+                        "title": "Trending Topics",
+                        "data": [{"topic": "No topics available", "frequency": 0}],
+                        "dataKey": "frequency",
+                        "xAxisKey": "topic"
+                    }
+
+            if fallback_config:
+                processed_config = process_bi_chart_data(fallback_config, dashboard_data)
+                return create_response({
+                    "success": True,
+                    "chart": processed_config,
+                    "ai_response": "Chart generated using fallback logic (AI service temporarily unavailable)",
+                    "prompt": prompt,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+            else:
+                return create_response({"error": "Unable to generate chart: AI service unavailable and no suitable fallback found"}, 500)
+
+        # Parse the response - extract summary and JSON config
+        full_response = response.choices[0].message.content.strip()
+        logging.info(f"📄 AI Response received (length: {len(full_response)})")
+
+        # Extract summary and JSON config
+        summary = ""
+        chart_config_str = ""
+
+        if "SUMMARY:" in full_response and "JSON_CONFIG:" in full_response:
+            # Split by sections
+            parts = full_response.split("JSON_CONFIG:")
+            if len(parts) >= 2:
+                summary_part = parts[0].replace("SUMMARY:", "").strip()
+                summary = summary_part
+                chart_config_str = parts[1].strip()
+            else:
+                # Fallback: treat whole response as JSON
+                chart_config_str = full_response
+        else:
+            # Fallback: treat whole response as JSON
+            chart_config_str = full_response
+
+        # Clean up the chart config string (remove markdown code blocks if present)
+        if chart_config_str.startswith("```json"):
+            chart_config_str = chart_config_str[7:]
+        if chart_config_str.endswith("```"):
+            chart_config_str = chart_config_str[:-3]
+
+        chart_config_str = chart_config_str.strip()
+        logging.info(f"📊 Chart config string extracted (length: {len(chart_config_str)})")
+
+        try:
+            chart_config = json.loads(chart_config_str)
+            logging.info("✅ Chart config JSON parsed successfully")
+
+            # Validate the chart configuration
+            required_fields = ["type", "title", "data"]
+            for field in required_fields:
+                if field not in chart_config:
+                    raise ValueError(f"Missing required field: {field}")
+
+            logging.info(f"📈 Processing chart data for type: {chart_config.get('type')}")
+            # Process the data based on the configuration for BI data
+            processed_config = process_bi_chart_data(chart_config, dashboard_data)
+            
+            # Additional safety check for the processed config
+            if not processed_config.get("data") or len(processed_config.get("data", [])) == 0:
+                logging.error("❌ Processed chart config has empty data array")
+                return create_response({"error": "Unable to generate chart data"}, 500)
+
+            return create_response({
+                "success": True,
+                "chart": processed_config,
+                "ai_response": summary if summary else "Chart generated successfully",
+                "prompt": prompt,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+
+        except json.JSONDecodeError as e:
+            logging.error(f"❌ Invalid JSON from AI: {chart_config_str}")
+            logging.error(f"❌ JSON Error details: {str(e)}")
+            return create_response({"error": f"Invalid chart configuration: {str(e)}"}, 500)
+        except ValueError as e:
+            logging.error(f"❌ Invalid chart config: {str(e)}")
+            return create_response({"error": f"Invalid chart configuration: {str(e)}"}, 400)
+        except Exception as e:
+            logging.error(f"❌ Error processing chart data: {str(e)}")
+            logging.error(f"❌ Chart config that caused error: {chart_config_str[:500]}...")
+            return create_response({"error": f"Error processing chart data: {str(e)}"}, 500)
+
+    except ValueError as e:
+        logging.error(f"Invalid JSON in request: {e}")
+        return create_response({"error": "Invalid JSON in request body"}, 400)
+    except Exception as e:
+        logging.error(f"Error processing BI chart generation request: {e}")
+        return create_response({"error": "Internal server error"}, 500)
+
+
+def get_minimal_dashboard_data():
+    """
+    Get minimal dashboard data needed for BI chart fallback logic
+    Only fetches the specific data needed for sentiment, category, and trending topics charts
+    Uses cached/static data for ultra-fast fallback
+    """
+    try:
+        logging.info("🔄 Fetching minimal dashboard data for fallback charts")
+
+        # For ultra-fast fallback, use static/cached data instead of expensive queries
+        # This provides instant response for fallback scenarios
+        
+        # Static trending topics (can be updated periodically)
+        trending_topics = [
+            {"topic": "Economic Policy", "frequency": 15},
+            {"topic": "Digital Government", "frequency": 12},
+            {"topic": "SME Support", "frequency": 10},
+            {"topic": "Infrastructure", "frequency": 8},
+            {"topic": "Healthcare", "frequency": 6}
+        ]
+
+        # Static sentiment distribution (can be updated periodically)
+        media_summary = {
+            "sentiment_distribution": {
+                "positive": 9,
+                "neutral": 7,
+                "negative": 2
+            }
+        }
+
+        # Static category distribution (can be updated periodically)
+        primary_summary = {
+            "socioeconomic_category_distribution": {
+                "ECONOMIC_GROWTH_COMPETITIVENESS": 8,
+                "PUBLIC_ADMINISTRATION_GOVERNANCE": 6,
+                "SOCIAL_WELFARE_INEQUALITY_REDUCTION": 4,
+                "HUMAN_RESOURCE_DEVELOPMENT": 3,
+                "HEALTH_SECURITY_PUBLIC_HEALTH": 2,
+                "FOOD_ENERGY_ENVIRONMENTAL_SECURITY": 1
+            }
+        }
+
+        logging.info("✅ Using cached minimal dashboard data for instant fallback")
+
+        return {
+            "trending_topics": trending_topics,
+            "media_summary": media_summary,
+            "primary_summary": primary_summary
+        }
+
+    except Exception as e:
+        logging.error(f"Error in get_minimal_dashboard_data: {e}")
+        # Return minimal static fallback data
+        return {
+            "trending_topics": [
+                {"topic": "Economic Policy", "frequency": 10},
+                {"topic": "Digital Government", "frequency": 8}
+            ],
+            "media_summary": {
+                "sentiment_distribution": {
+                    "positive": 5,
+                    "neutral": 3,
+                    "negative": 1
+                }
+            },
+            "primary_summary": {
+                "socioeconomic_category_distribution": {
+                    "ECONOMIC_GROWTH_COMPETITIVENESS": 5,
+                    "PUBLIC_ADMINISTRATION_GOVERNANCE": 4
+                }
+            }
+        }
     """
     Process and validate chart data based on the AI-generated configuration
     Apply filters to the data before generating chart data points
@@ -1666,6 +2413,248 @@ def _company_matches_date_filter(company, date_from, date_to):
         return True
     except (ValueError, TypeError):
         return False
+
+
+def process_bi_chart_data(chart_config, dashboard_data):
+    """
+    Process and validate chart data based on the AI-generated configuration for BI dashboard data
+    """
+    try:
+        chart_type = chart_config["type"]
+        data_key = chart_config.get("dataKey", "")
+        x_axis_key = chart_config.get("xAxisKey", "")
+        y_axis_key = chart_config.get("yAxisKey", "")
+
+        logging.info(f"🔧 Processing BI chart data for type: {chart_type}")
+
+        # If AI provided data, use it; otherwise generate based on type and BI data
+        if "data" in chart_config and chart_config["data"] and len(chart_config["data"]) > 0:
+            # Validate and clean the AI-provided data
+            processed_data = []
+            for item in chart_config["data"]:
+                if isinstance(item, dict):
+                    processed_data.append(item)
+            chart_config["data"] = processed_data
+            logging.info(f"✅ Using AI-provided data with {len(processed_data)} items")
+        else:
+            logging.info("🔄 Generating data based on chart type and BI data")
+            # Generate data based on chart type and available BI data
+            if chart_type == "bar":
+                # Handle different types of bar charts for BI data
+                if "sentiment" in chart_config["title"].lower() or "sentiment" in data_key.lower():
+                    # Sentiment distribution bar chart
+                    sentiment_dist = dashboard_data.get("media_summary", {}).get("sentiment_distribution", {})
+                    if sentiment_dist:
+                        chart_config["data"] = [
+                            {"sentiment": sentiment.title(), "count": count}
+                            for sentiment, count in sentiment_dist.items() if count > 0
+                        ]
+                        chart_config["dataKey"] = "count"
+                        chart_config["xAxisKey"] = "sentiment"
+                        logging.info(f"📊 Generated sentiment bar chart with {len(chart_config['data'])} data points")
+                    else:
+                        logging.warning("⚠️ No sentiment data available for bar chart")
+                        chart_config["data"] = [{"sentiment": "No Data", "count": 0}]
+                        chart_config["dataKey"] = "count"
+                        chart_config["xAxisKey"] = "sentiment"
+
+                elif "category" in chart_config["title"].lower() or "socioeconomic" in chart_config["title"].lower():
+                    # Socioeconomic category distribution
+                    category_dist = dashboard_data.get("primary_summary", {}).get("socioeconomic_category_distribution", {})
+                    if category_dist:
+                        chart_config["data"] = [
+                            {"category": cat.replace("_", " ").title(), "count": count}
+                            for cat, count in category_dist.items() if count > 0
+                        ]
+                        chart_config["dataKey"] = "count"
+                        chart_config["xAxisKey"] = "category"
+                        logging.info(f"📊 Generated category bar chart with {len(chart_config['data'])} data points")
+                    else:
+                        logging.warning("⚠️ No category data available for bar chart")
+                        chart_config["data"] = [{"category": "No Data", "count": 0}]
+                        chart_config["dataKey"] = "count"
+                        chart_config["xAxisKey"] = "category"
+
+                elif "minister" in chart_config["title"].lower() or "ministry" in chart_config["title"].lower():
+                    # Minister mentions summary
+                    minister_summary = dashboard_data.get("ministers_summary", {})
+                    chart_config["data"] = [
+                        {"type": "Minister Mentions", "count": minister_summary.get("total_minister_mentions", 0)},
+                        {"type": "Ministry Mentions", "count": minister_summary.get("total_ministry_mentions", 0)}
+                    ]
+                    chart_config["dataKey"] = "count"
+                    chart_config["xAxisKey"] = "type"
+                    logging.info(f"📊 Generated minister bar chart with {len(chart_config['data'])} data points")
+
+                elif "policy" in chart_config["title"].lower() or "project" in chart_config["title"].lower():
+                    # Policy projects summary
+                    policy_summary = dashboard_data.get("policies_summary", {})
+                    chart_config["data"] = [
+                        {"type": "Total Projects", "count": policy_summary.get("total_projects", 0)}
+                    ]
+                    # Add agency involvement if available
+                    agencies = policy_summary.get("agencies_involved", {})
+                    for agency, count in list(agencies.items())[:5]:  # Top 5 agencies
+                        chart_config["data"].append({"type": f"{agency[:20]}...", "count": count})
+                    chart_config["dataKey"] = "count"
+                    chart_config["xAxisKey"] = "type"
+                    logging.info(f"📊 Generated policy bar chart with {len(chart_config['data'])} data points")
+
+                elif "topic" in chart_config["title"].lower() or "trending" in chart_config["title"].lower():
+                    # Trending topics
+                    trending_topics = dashboard_data.get("trending_topics", [])
+                    if trending_topics:
+                        chart_config["data"] = [
+                            {"topic": topic.get("topic", "")[:30] + "..." if len(topic.get("topic", "")) > 30 else topic.get("topic", ""),
+                             "frequency": topic.get("frequency", 0)}
+                            for topic in trending_topics[:10]  # Top 10 topics
+                        ]
+                        chart_config["dataKey"] = "frequency"
+                        chart_config["xAxisKey"] = "topic"
+                        logging.info(f"📊 Generated trending topics bar chart with {len(chart_config['data'])} data points")
+                    else:
+                        logging.warning("⚠️ No trending topics data available for bar chart")
+                        chart_config["data"] = [{"topic": "No Topics", "frequency": 0}]
+                        chart_config["dataKey"] = "frequency"
+                        chart_config["xAxisKey"] = "topic"
+
+                else:
+                    # Default bar chart data
+                    logging.warning("⚠️ No specific bar chart type matched, using default")
+                    chart_config["data"] = [{"label": "No specific bar chart type matched", "value": 0}]
+                    chart_config["dataKey"] = "value"
+                    chart_config["xAxisKey"] = "label"
+
+            elif chart_type in ["area", "line"]:
+                if "volume" in chart_config["title"].lower() or "trend" in chart_config["title"].lower():
+                    # Volume trends over time
+                    volume_trends = dashboard_data.get("volume_trends", {})
+                    if "daily_counts" in volume_trends:
+                        chart_config["data"] = [
+                            {"date": date, "articles": count}
+                            for date, count in volume_trends["daily_counts"].items()
+                        ]
+                        chart_config["dataKey"] = "articles"
+                        chart_config["xAxisKey"] = "date"
+                        logging.info(f"📊 Generated volume trend chart with {len(chart_config['data'])} data points")
+                    else:
+                        # Fallback to summary metrics
+                        summary = dashboard_data.get("summary_metrics", {})
+                        chart_config["data"] = [
+                            {"metric": "Articles Analyzed", "value": summary.get("total_articles_analyzed", 0)},
+                            {"metric": "Companies Extracted", "value": summary.get("companies_extracted", 0)},
+                            {"metric": "Minister Mentions", "value": summary.get("minister_mentions", 0)},
+                            {"metric": "Policy Projects", "value": summary.get("policy_projects", 0)}
+                        ]
+                        chart_config["dataKey"] = "value"
+                        chart_config["xAxisKey"] = "metric"
+                        logging.info(f"📊 Generated fallback metrics chart with {len(chart_config['data'])} data points")
+
+            elif chart_type == "pie":
+                # Pie charts work well for distributions
+                if "sentiment" in chart_config["title"].lower():
+                    # Sentiment distribution pie chart
+                    sentiment_dist = dashboard_data.get("media_summary", {}).get("sentiment_distribution", {})
+                    if sentiment_dist:
+                        chart_config["data"] = [
+                            {"sentiment": sentiment.title(), "count": count}
+                            for sentiment, count in sentiment_dist.items() if count > 0
+                        ]
+                        chart_config["dataKey"] = "count"
+                        chart_config["xAxisKey"] = "sentiment"
+                        logging.info(f"📊 Generated sentiment pie chart with {len(chart_config['data'])} data points")
+                    else:
+                        logging.warning("⚠️ No sentiment data available for pie chart")
+                        chart_config["data"] = [
+                            {"sentiment": "Positive", "count": 0},
+                            {"sentiment": "Negative", "count": 0},
+                            {"sentiment": "Neutral", "count": 0}
+                        ]
+                        chart_config["dataKey"] = "count"
+                        chart_config["xAxisKey"] = "sentiment"
+
+                elif "category" in chart_config["title"].lower() or "socioeconomic" in chart_config["title"].lower():
+                    # Socioeconomic category distribution
+                    category_dist = dashboard_data.get("primary_summary", {}).get("socioeconomic_category_distribution", {})
+                    if category_dist:
+                        chart_config["data"] = [
+                            {"category": cat.replace("_", " ").title(), "count": count}
+                            for cat, count in category_dist.items() if count > 0
+                        ]
+                        chart_config["dataKey"] = "count"
+                        chart_config["xAxisKey"] = "category"
+                        logging.info(f"📊 Generated category pie chart with {len(chart_config['data'])} data points")
+                    else:
+                        logging.warning("⚠️ No category data available for pie chart")
+                        chart_config["data"] = [{"category": "No Data", "count": 0}]
+                        chart_config["dataKey"] = "count"
+                        chart_config["xAxisKey"] = "category"
+
+                elif "tone" in chart_config["title"].lower():
+                    # Media tone distribution
+                    tone_dist = dashboard_data.get("media_summary", {}).get("tone_distribution", {})
+                    if tone_dist:
+                        chart_config["data"] = [
+                            {"tone": tone.title(), "count": count}
+                            for tone, count in tone_dist.items() if count > 0
+                        ]
+                        chart_config["dataKey"] = "count"
+                        chart_config["xAxisKey"] = "tone"
+                        logging.info(f"📊 Generated tone pie chart with {len(chart_config['data'])} data points")
+                    else:
+                        logging.warning("⚠️ No tone data available for pie chart")
+                        chart_config["data"] = [{"tone": "Neutral", "count": 0}]
+                        chart_config["dataKey"] = "count"
+                        chart_config["xAxisKey"] = "tone"
+
+            elif chart_type == "scatter":
+                # Scatter plot for relationships
+                if "sentiment" in chart_config["title"].lower() and "time" in chart_config["title"].lower():
+                    # Could plot sentiment over time if we had time-series sentiment data
+                    # For now, use a simple scatter of different metrics
+                    summary = dashboard_data.get("summary_metrics", {})
+                    chart_config["data"] = [
+                        {"x": summary.get("total_articles_analyzed", 0), "y": summary.get("minister_mentions", 0), "label": "Articles vs Minister Mentions"},
+                        {"x": summary.get("companies_extracted", 0), "y": summary.get("policy_projects", 0), "label": "Companies vs Policy Projects"}
+                    ]
+                    chart_config["dataKey"] = "y"
+                    chart_config["xAxisKey"] = "x"
+                    chart_config["yAxisKey"] = "y"
+                    logging.info(f"📊 Generated scatter plot with {len(chart_config['data'])} data points")
+
+            else:
+                # Unknown chart type - provide fallback
+                logging.warning(f"⚠️ Unknown chart type: {chart_type}, providing fallback data")
+                chart_config["data"] = [{"label": f"Unsupported chart type: {chart_type}", "value": 0}]
+                chart_config["dataKey"] = "value"
+                chart_config["xAxisKey"] = "label"
+
+        logging.info(f"✅ Chart processing completed for {chart_type} chart")
+        
+        # Final safety check: ensure data array is never empty
+        if not chart_config.get("data") or len(chart_config.get("data", [])) == 0:
+            logging.warning("⚠️ Chart data is empty, providing fallback data")
+            chart_config["data"] = [{"label": "No data available", "value": 0, "count": 0}]
+            if chart_config.get("type") == "pie":
+                chart_config["dataKey"] = "value"
+                chart_config["xAxisKey"] = "label"
+            else:
+                chart_config["dataKey"] = "count"
+                chart_config["xAxisKey"] = "label"
+        
+        return chart_config
+
+    except Exception as e:
+        logging.error(f"❌ Error in process_bi_chart_data: {str(e)}")
+        logging.error(f"❌ Chart config: {chart_config}")
+        # Return a safe fallback configuration
+        return {
+            "type": "bar",
+            "title": "Error: Unable to Process Chart",
+            "data": [{"error": "Data processing failed", "count": 0}],
+            "dataKey": "count",
+            "xAxisKey": "error"
+        }
 
 
 # Scheduled timer function to auto-fetch DBD news
@@ -1977,16 +2966,56 @@ def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
     """
     Get comprehensive analytics dashboard data
     GET /api/analytics/dashboard
+    Query parameters:
+    - refresh: Force refresh cached data (default: false)
     """
     logging.info('Processing analytics dashboard request')
     
     try:
         from news_analytics import NewsAnalytics
+        import json
+        from datetime import datetime, timezone, timedelta
+
+        refresh = req.params.get('refresh', 'false').lower() == 'true'
+
+        # Check cache first (unless refresh is requested)
+        if not refresh:
+            try:
+                # Try to get cached dashboard data (cache for 5 minutes)
+                cache_container = get_analytics_container()
+                if cache_container:
+                    cache_query = "SELECT * FROM c WHERE c.type = 'dashboard_cache' ORDER BY c.created_at DESC OFFSET 0 LIMIT 1"
+                    cache_results = list(cache_container.query_items(
+                        query=cache_query,
+                        enable_cross_partition_query=True
+                    ))
+
+                    if cache_results:
+                        cached_data = cache_results[0]
+                        cached_time = datetime.fromisoformat(cached_data.get('created_at', '2020-01-01T00:00:00'))
+                        cache_age = datetime.now(timezone.utc) - cached_time
+
+                        # Use cache if less than 5 minutes old
+                        if cache_age < timedelta(minutes=5):
+                            logging.info(f'📊 Using cached dashboard data (age: {cache_age.seconds}s)')
+                            return create_response({
+                                "success": True,
+                                "dashboard": cached_data.get('dashboard_data'),
+                                "cached": True,
+                                "cache_age_seconds": cache_age.seconds
+                            })
+            except Exception as e:
+                logging.warning(f"Could not check cache: {e}")
+
+        logging.info('🔄 Computing fresh dashboard data...')
+        start_time = datetime.now(timezone.utc)
+        
+        # Initialize analytics engine
         analytics = NewsAnalytics()
         
-        # Get multiple analytics in parallel
-        trending = analytics.generate_trending_topics(7)
-        volume = analytics.analyze_news_volume_trends(3)
+        # Get multiple analytics in parallel (optimize by reducing time ranges)
+        trending = analytics.generate_trending_topics(3)  # Reduced from 7 to 3 days
+        volume = analytics.analyze_news_volume_trends(1)  # Reduced from 3 to 1 month
         bi_report = analytics.generate_business_intelligence_report()
         
         # Get recent company extractions
@@ -1995,7 +3024,7 @@ def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
             from text_extraction import get_companies_container
             container = get_companies_container()
             if container:
-                query = "SELECT * FROM c ORDER BY c.created_at DESC OFFSET 0 LIMIT 10"
+                query = "SELECT * FROM c ORDER BY c.created_at DESC OFFSET 0 LIMIT 5"
                 companies_data = list(container.query_items(
                     query=query,
                     enable_cross_partition_query=True
@@ -2071,37 +3100,41 @@ def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
         }
         
         try:
-            analytics_container = analytics.container
+            analytics_container = get_analytics_container()
             if analytics_container:
-                # Get recent article analytics (last 50 for better aggregation)
-                query = "SELECT * FROM c WHERE c.analytics_type = 'article_analysis' ORDER BY c.analyzed_at DESC OFFSET 0 LIMIT 50"
+                # Get recent article analytics (reduced from 50 to 20 for better performance)
+                query = "SELECT * FROM c WHERE c.analytics_type = 'article_analysis' ORDER BY c.analyzed_at DESC OFFSET 0 LIMIT 20"
                 recent_analytics = list(analytics_container.query_items(
                     query=query,
                     enable_cross_partition_query=True
                 ))
                 
-                for item in recent_analytics:
-                    # Get original article data to include source URL
-                    article_url = None
-                    full_content = None
+                # Batch article URL lookups to reduce database calls
+                article_urls = {}
+                article_ids = [item.get("article_id") for item in recent_analytics if item.get("article_id")]
+                if article_ids:
                     try:
-                        # Try to get the original post data using article_id
                         posts_container = get_posts_container()
-                        if posts_container and item.get("article_id"):
-                            post_query = f"SELECT c.source_url, c.content FROM c WHERE c.id = '{item['article_id']}'"
-                            post_results = list(posts_container.query_items(
-                                query=post_query,
+                        if posts_container:
+                            # Single query to get all article URLs at once
+                            ids_string = "', '".join(article_ids)
+                            batch_query = f"SELECT c.id, c.source_url, c.content FROM c WHERE c.id IN ('{ids_string}')"
+                            batch_results = list(posts_container.query_items(
+                                query=batch_query,
                                 enable_cross_partition_query=True
                             ))
-                            if post_results:
-                                article_url = post_results[0].get("source_url")
-                                full_content = post_results[0].get("content", "")
+                            article_urls = {item['id']: {'url': item.get('source_url'), 'content': item.get('content', '')} for item in batch_results}
                     except Exception as e:
-                        logging.warning(f"Could not fetch article URL for {item.get('article_id')}: {e}")
-                    
+                        logging.warning(f"Could not batch fetch article URLs: {e}")
+
+                # Process analytics data
+                for item in recent_analytics:
+                    article_id = item.get("article_id", "")
+                    article_info = article_urls.get(article_id, {})
+
                     # Add source URL and content to the analytics item
-                    item["source_url"] = article_url
-                    item["full_content"] = full_content
+                    item["source_url"] = article_info.get('url')
+                    item["full_content"] = article_info.get('content', '')
                     
                     # Extract minister metrics
                     minister_data = item.get('minister_focused_metrics', {})
@@ -2335,9 +3368,30 @@ def get_analytics_dashboard(req: func.HttpRequest) -> func.HttpResponse:
             "ai_metadata": ai_metadata[:10]             # Last 10 articles with AI metadata
         }
         
+        end_time = datetime.now(timezone.utc)
+        computation_time = (end_time - start_time).total_seconds()
+        logging.info(f'✅ Dashboard computed in {computation_time:.2f} seconds')
+
+        # Cache the result
+        try:
+            cache_container = get_analytics_container()
+            if cache_container:
+                cache_data = {
+                    "id": f"dashboard_cache_{datetime.now(timezone.utc).isoformat()}",
+                    "type": "dashboard_cache",
+                    "dashboard_data": dashboard_data,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "computation_time_seconds": computation_time
+                }
+                cache_container.upsert_item(cache_data)
+                logging.info('💾 Dashboard data cached')
+        except Exception as e:
+            logging.warning(f"Could not cache dashboard data: {e}")
+
         return create_response({
             "success": True,
-            "dashboard": dashboard_data
+            "dashboard": dashboard_data,
+            "computation_time_seconds": computation_time
         })
         
     except Exception as e:

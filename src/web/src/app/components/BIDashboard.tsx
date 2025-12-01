@@ -732,17 +732,38 @@ export default function BIDashboard() {
     e.preventDefault();
     console.log('Form submitted with prompt:', prompt);
 
+    if (!dashboard) {
+      alert(t('bi.noDataAvailable'));
+      return;
+    }
+
     try {
       setLoading(true);
 
+      // Prepare minimal BI context data needed for chart generation
+      const biContext = {
+        summary_metrics: dashboard.summary_metrics,
+        trending_topics: dashboard.trending_topics.slice(0, 3),
+        volume_trends: dashboard.volume_trends,
+        topic_distribution: dashboard.topic_distribution,
+        sentiment_distribution: {
+          positive: dashboard.media_sentiment_metrics.filter(m => m.sentiment_analysis.overall_sentiment === 'positive').length,
+          neutral: dashboard.media_sentiment_metrics.filter(m => m.sentiment_analysis.overall_sentiment === 'neutral').length,
+          negative: dashboard.media_sentiment_metrics.filter(m => m.sentiment_analysis.overall_sentiment === 'negative').length
+        }
+      };
+
       // Call the AI-powered chart generation endpoint
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7071';
-      const response = await fetch(`${backendUrl}/api/charts/generate`, {
+      const response = await fetch(`${backendUrl}/api/bi/charts/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ 
+          prompt,
+          dashboard_data: biContext  // Send minimal BI context instead of full dashboard
+        }),
       });
 
       if (!response.ok) {
@@ -1001,6 +1022,7 @@ export default function BIDashboard() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
+                    label={({ [dynamicChart.xAxisKey || 'name']: name, [dynamicChart.dataKey]: value }) => `${name}: ${value}`}
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey={dynamicChart.dataKey}
