@@ -25,6 +25,7 @@ import {
   Radar
 } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Download, Filter, RefreshCw, Eye, X, ExternalLink } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface AnalyticsDashboard {
   dashboard_title: string;
@@ -142,41 +143,192 @@ interface AnalyticsDashboard {
     title: string;
     source_url?: string;
     full_content?: string;
-    economic_growth_indicators: {
-      gdp_growth: string | null;
-      investment_projects: string[];
-      export_promotion: string[];
-      foreign_investment: string[];
+    primary_socioeconomic_category: string;
+    category_confidence: number;
+    category_reasoning: string;
+    economic_growth_competitiveness: {
+      gdp_growth_rate: string | null;
+      productivity_indicators: {
+        tfp_total_factor_productivity: string | null;
+        labor_productivity: string | null;
+      };
+      investment_volume: {
+        fdi_foreign_direct_investment: string | null;
+        domestic_investment: string | null;
+      };
+      innovation_economy: {
+        innovation_index: string | null;
+        patent_filings: string | null;
+      };
+      digital_economy_share: string | null;
+      export_value: {
+        overall_export_value: string | null;
+        key_sector_exports: string[];
+      };
+      sme_performance: {
+        sme_contribution_gdp: string | null;
+        sme_growth_rate: string | null;
+        sme_employment_share: string | null;
+      };
+      digital_technology_adoption: {
+        ai_adoption_rate: string | null;
+        cloud_computing_usage: string | null;
+        automation_implementation: string | null;
+      };
+      news_signals_economic: string[];
     };
-    productivity_innovation_indicators: {
-      innovation_policies: string[];
-      startup_support: string[];
-      research_funding: string[];
-      digital_transformation: string[];
+    human_resource_development: {
+      education_quality: {
+        pisa_scores: string | null;
+        literacy_rate: string | null;
+        education_index: string | null;
+      };
+      stem_graduates: {
+        stem_graduate_numbers: string | null;
+        stem_graduate_growth: string | null;
+      };
+      skill_upgrading: {
+        reskilling_programs: string[];
+        upskilling_initiatives: string[];
+        skill_gap_reduction: string | null;
+      };
+      digital_economy_workforce_readiness: {
+        digital_skills_training: string[];
+        ict_competency_levels: string | null;
+        digital_workforce_readiness_index: string | null;
+      };
+      employment_indicators: {
+        unemployment_rate: string | null;
+        employment_rate: string | null;
+        youth_unemployment: string | null;
+      };
+      labor_market_wages: {
+        average_wage_growth: string | null;
+        minimum_wage_adjustments: string | null;
+        wage_inequality_metrics: string | null;
+      };
+      news_signals_hr: string[];
     };
-    social_welfare_inequality_indicators: {
-      poverty_reduction: string[];
-      income_distribution: string[];
-      social_protection: string[];
-      education_access: string[];
+    social_welfare_inequality_reduction: {
+      income_inequality: {
+        gini_coefficient: string | null;
+        income_inequality_trend: string | null;
+      };
+      household_debt: {
+        household_debt_gdp_ratio: string | null;
+        debt_reduction_programs: string[];
+      };
+      poverty_indicators: {
+        poverty_rate: string | null;
+        poverty_reduction_target: string | null;
+        extreme_poverty_rate: string | null;
+      };
+      cost_of_living: {
+        inflation_rate: string | null;
+        cost_of_living_index: string | null;
+        basic_needs_cost: string | null;
+      };
+      social_welfare_coverage: {
+        social_security_coverage: string | null;
+        welfare_recipients: string | null;
+        welfare_benefits_expansion: string[];
+      };
+      healthcare_access: {
+        universal_healthcare_coverage: string | null;
+        healthcare_access_improvements: string[];
+      };
+      government_benefits_access: {
+        benefits_digital_access: string | null;
+        benefits_application_simplification: string[];
+      };
+      news_signals_social: string[];
     };
-    environmental_energy_indicators: {
-      renewable_energy: string[];
-      carbon_reduction: string[];
-      conservation_projects: string[];
-      climate_adaptation: string[];
+    health_security_public_health: {
+      hospital_capacity_upgrades: {
+        hospitals_upgraded: string | null;
+        new_hospital_construction: string | null;
+        bed_capacity_expansion: string | null;
+      };
+      healthcare_coverage_metrics: {
+        healthcare_coverage_rate: string | null;
+        insurance_coverage_expansion: string | null;
+      };
+      public_health_capacity: {
+        beds_per_population: string | null;
+        healthcare_workers_per_population: string | null;
+        medical_equipment_availability: string | null;
+      };
+      digital_health_adoption: {
+        telemedicine_implementation: string | null;
+        digital_health_records: string | null;
+        health_apps_utilization: string | null;
+      };
+      communicable_disease_trends: {
+        disease_surveillance_systems: string[];
+        vaccination_coverage: string | null;
+        pandemic_preparedness: string[];
+      };
+      news_signals_health: string[];
     };
-    healthcare_capacity: {
-      hospital_construction: string[];
-      medical_personnel: string[];
-      health_insurance: string[];
-      disease_prevention: string[];
+    food_energy_environmental_security: {
+      renewable_energy_share: {
+        renewable_energy_percentage: string | null;
+        renewable_energy_targets: string | null;
+        solar_wind_capacity: string | null;
+      };
+      carbon_emission_reduction: {
+        carbon_reduction_targets: string | null;
+        emission_reduction_achievements: string | null;
+        climate_commitments: string[];
+      };
+      air_quality_indicators: {
+        pm25_levels: string | null;
+        air_quality_improvements: string | null;
+        pollution_reduction_measures: string[];
+      };
+      water_resource_management: {
+        water_resource_index: string | null;
+        water_security_measures: string[];
+        drought_flood_management: string[];
+      };
+      waste_management_performance: {
+        waste_recycling_rate: string | null;
+        waste_management_infrastructure: string[];
+        circular_economy_initiatives: string[];
+      };
+      food_security_indicators: {
+        food_security_index: string | null;
+        agricultural_productivity: string | null;
+        food_supply_chain_resilience: string[];
+      };
+      news_signals_environment: string[];
     };
-    governance_digital_government_indicators: {
-      e_governance: string[];
-      transparency_measures: string[];
-      anti_corruption: string[];
-      public_service_digitalization: string[];
+    public_administration_governance: {
+      e_government_adoption: {
+        e_gov_services_coverage: string | null;
+        digital_service_utilization: string | null;
+        online_transaction_volume: string | null;
+      };
+      g_cloud_usage: {
+        government_cloud_migration: string | null;
+        cloud_service_adoption: string | null;
+      };
+      open_data_metrics: {
+        open_data_portals: string | null;
+        data_availability_index: string | null;
+        public_data_utilization: string | null;
+      };
+      public_sector_modernization: {
+        digital_transformation_initiatives: string[];
+        process_automation: string[];
+        service_delivery_improvements: string[];
+      };
+      anti_corruption_performance: {
+        corruption_perception_index: string | null;
+        anti_corruption_measures: string[];
+        transparency_improvements: string[];
+      };
+      news_signals_governance: string[];
     };
     analyzed_at: string;
   }>;
@@ -280,6 +432,10 @@ export default function BIDashboard() {
   });
   const [selectedArticle, setSelectedArticle] = useState<AnalyticsDashboard['primary_metrics'][0] | null>(null);
   const [showArticleModal, setShowArticleModal] = useState(false);
+  const [selectedPrimaryCategory, setSelectedPrimaryCategory] = useState<string | null>(null);
+
+  // Language hook
+  const { t } = useLanguage();
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -318,7 +474,7 @@ export default function BIDashboard() {
 
     return [
       {
-        title: 'Total Articles Analyzed',
+        title: t('bi.totalArticlesAnalyzed'),
         value: totalArticles.toLocaleString(),
         change: '+12%',
         trend: 'up',
@@ -326,7 +482,7 @@ export default function BIDashboard() {
         color: 'blue'
       },
       {
-        title: 'Primary Metrics Coverage',
+        title: t('bi.primaryMetricsCoverage'),
         value: `${primaryArticles}`,
         change: `${((primaryArticles / Math.max(totalArticles, 1)) * 100).toFixed(1)}%`,
         trend: primaryArticles > 0 ? 'up' : 'neutral',
@@ -334,7 +490,7 @@ export default function BIDashboard() {
         color: 'green'
       },
       {
-        title: 'Operational Metrics',
+        title: t('bi.operationalMetrics'),
         value: `${operationalArticles}`,
         change: `${((operationalArticles / Math.max(totalArticles, 1)) * 100).toFixed(1)}%`,
         trend: operationalArticles > 0 ? 'up' : 'neutral',
@@ -342,7 +498,7 @@ export default function BIDashboard() {
         color: 'purple'
       },
       {
-        title: 'AI Metadata Insights',
+        title: t('bi.aiMetadataInsights'),
         value: `${aiArticles}`,
         change: `${((aiArticles / Math.max(totalArticles, 1)) * 100).toFixed(1)}%`,
         trend: aiArticles > 0 ? 'up' : 'neutral',
@@ -350,7 +506,7 @@ export default function BIDashboard() {
         color: 'orange'
       },
       {
-        title: 'Policy Projects',
+        title: t('bi.policyProjects'),
         value: dashboard.summary_metrics.policy_projects.toString(),
         change: '+8%',
         trend: 'up',
@@ -358,7 +514,7 @@ export default function BIDashboard() {
         color: 'red'
       },
       {
-        title: 'Minister Mentions',
+        title: t('bi.ministerMentions'),
         value: dashboard.summary_metrics.minister_mentions.toString(),
         change: '+15%',
         trend: 'up',
@@ -374,162 +530,147 @@ export default function BIDashboard() {
 
     return [
       {
-        name: 'Primary Metrics',
+        name: t('bi.primaryMetrics'),
         value: dashboard.summary_metrics.primary_metrics_articles,
         color: METRIC_COLORS.primary
       },
       {
-        name: 'Operational Metrics',
+        name: t('bi.operationalMetrics'),
         value: dashboard.summary_metrics.operational_metrics_articles,
         color: METRIC_COLORS.operational
       },
       {
-        name: 'AI Metadata',
+        name: t('bi.aiMetadata'),
         value: dashboard.summary_metrics.ai_metadata_articles,
         color: METRIC_COLORS.ai
       },
       {
-        name: 'Minister Analysis',
+        name: t('bi.ministerAnalysis'),
         value: dashboard.summary_metrics.minister_mentions,
         color: METRIC_COLORS.minister
       },
       {
-        name: 'Policy Analysis',
+        name: t('bi.policyAnalysis'),
         value: dashboard.summary_metrics.policy_projects,
         color: METRIC_COLORS.policy
       },
       {
-        name: 'Media Analysis',
+        name: t('bi.mediaAnalysis'),
         value: dashboard.summary_metrics.media_sentiment_articles,
         color: METRIC_COLORS.media
       }
     ];
-  }, [dashboard]);
+  }, [dashboard, t]);
 
   // Primary metrics breakdown
   const primaryMetricsBreakdown = useMemo(() => {
     if (!dashboard || !dashboard.primary_metrics.length) return [];
 
     const categories = {
-      'Economic Growth': 0,
-      'Productivity & Innovation': 0,
-      'Social Welfare': 0,
-      'Environmental & Energy': 0,
-      'Healthcare Capacity': 0,
-      'Governance & Digital': 0
+      [t('bi.category.economicGrowth')]: 0,
+      [t('bi.category.humanResource')]: 0,
+      [t('bi.category.socialWelfare')]: 0,
+      [t('bi.category.healthSecurity')]: 0,
+      [t('bi.category.environmentalSecurity')]: 0,
+      [t('bi.category.governance')]: 0
+    };
+
+    // Map the API category names to display names
+    const categoryMapping = {
+      'ECONOMIC_GROWTH_COMPETITIVENESS': t('bi.category.economicGrowth'),
+      'HUMAN_RESOURCE_DEVELOPMENT': t('bi.category.humanResource'),
+      'SOCIAL_WELFARE_INEQUALITY_REDUCTION': t('bi.category.socialWelfare'),
+      'HEALTH_SECURITY_PUBLIC_HEALTH': t('bi.category.healthSecurity'),
+      'FOOD_ENERGY_ENVIRONMENTAL_SECURITY': t('bi.category.environmentalSecurity'),
+      'PUBLIC_ADMINISTRATION_GOVERNANCE': t('bi.category.governance')
     };
 
     dashboard.primary_metrics.forEach(metric => {
-      if (metric.economic_growth_indicators.investment_projects.length ||
-          metric.economic_growth_indicators.export_promotion.length ||
-          metric.economic_growth_indicators.foreign_investment.length) {
-        categories['Economic Growth']++;
-      }
-      if (metric.productivity_innovation_indicators.innovation_policies.length ||
-          metric.productivity_innovation_indicators.startup_support.length ||
-          metric.productivity_innovation_indicators.digital_transformation.length) {
-        categories['Productivity & Innovation']++;
-      }
-      if (metric.social_welfare_inequality_indicators.poverty_reduction.length ||
-          metric.social_welfare_inequality_indicators.social_protection.length ||
-          metric.social_welfare_inequality_indicators.education_access.length) {
-        categories['Social Welfare']++;
-      }
-      if (metric.environmental_energy_indicators.renewable_energy.length ||
-          metric.environmental_energy_indicators.carbon_reduction.length ||
-          metric.environmental_energy_indicators.conservation_projects.length) {
-        categories['Environmental & Energy']++;
-      }
-      if (metric.healthcare_capacity.hospital_construction.length ||
-          metric.healthcare_capacity.medical_personnel.length ||
-          metric.healthcare_capacity.health_insurance.length) {
-        categories['Healthcare Capacity']++;
-      }
-      if (metric.governance_digital_government_indicators.e_governance.length ||
-          metric.governance_digital_government_indicators.transparency_measures.length ||
-          metric.governance_digital_government_indicators.anti_corruption.length) {
-        categories['Governance & Digital']++;
+      const category = metric.primary_socioeconomic_category;
+      if (category && categoryMapping[category as keyof typeof categoryMapping]) {
+        const displayName = categoryMapping[category as keyof typeof categoryMapping];
+        categories[displayName as keyof typeof categories]++;
       }
     });
 
     return Object.entries(categories).map(([name, value]) => ({ name, value }));
-  }, [dashboard]);
+  }, [dashboard, t]);
 
   // Operational metrics breakdown
   const operationalMetricsBreakdown = useMemo(() => {
     if (!dashboard || !dashboard.operational_metrics.length) return [];
 
     const categories = {
-      'Project Status': 0,
-      'Budget Indicators': 0,
-      'Impact Assessment': 0,
-      'Geographic Coverage': 0,
-      'Beneficiary Groups': 0
+      [t('bi.projectStatus')]: 0,
+      [t('bi.budgetIndicators')]: 0,
+      [t('bi.impactAssessment')]: 0,
+      [t('bi.geographicCoverage')]: 0,
+      [t('bi.beneficiaryGroups')]: 0
     };
 
     dashboard.operational_metrics.forEach(metric => {
       if (metric.project_status.announced_projects.length ||
           metric.project_status.in_progress_projects.length ||
           metric.project_status.completed_projects.length) {
-        categories['Project Status']++;
+        categories[t('bi.projectStatus')]++;
       }
       if (metric.budget_indicators.allocated_budgets.length ||
           metric.budget_indicators.funding_sources.length) {
-        categories['Budget Indicators']++;
+        categories[t('bi.budgetIndicators')]++;
       }
       if (metric.impact_assessment.expected_benefits.length ||
           metric.impact_assessment.performance_metrics.length) {
-        categories['Impact Assessment']++;
+        categories[t('bi.impactAssessment')]++;
       }
       if (metric.geographic_coverage.provinces_covered.length ||
           metric.geographic_coverage.regions_affected.length) {
-        categories['Geographic Coverage']++;
+        categories[t('bi.geographicCoverage')]++;
       }
       if (metric.beneficiary_groups.target_population.length ||
           metric.beneficiary_groups.business_sectors.length) {
-        categories['Beneficiary Groups']++;
+        categories[t('bi.beneficiaryGroups')]++;
       }
     });
 
     return Object.entries(categories).map(([name, value]) => ({ name, value }));
-  }, [dashboard]);
+  }, [dashboard, t]);
 
   // AI metadata breakdown
   const aiMetadataBreakdown = useMemo(() => {
     if (!dashboard || !dashboard.ai_metadata.length) return [];
 
     const categories = {
-      'Enhanced Entities': 0,
-      'Topic Classification': 0,
-      'Policy Sentiment': 0,
-      'Timeline Markers': 0,
-      'Risk Tags': 0
+      [t('bi.enhancedEntities')]: 0,
+      [t('bi.topicClassification')]: 0,
+      [t('bi.policySentiment')]: 0,
+      [t('bi.timelineMarkers')]: 0,
+      [t('bi.riskTags')]: 0
     };
 
     dashboard.ai_metadata.forEach(metric => {
       if (metric.enhanced_entities.government_agencies.length ||
           metric.enhanced_entities.provinces_municipalities.length) {
-        categories['Enhanced Entities']++;
+        categories[t('bi.enhancedEntities')]++;
       }
       if (metric.topic_classification.primary_category !== 'other') {
-        categories['Topic Classification']++;
+        categories[t('bi.topicClassification')]++;
       }
       if (metric.policy_sentiment.policy_effectiveness !== 'unclear') {
-        categories['Policy Sentiment']++;
+        categories[t('bi.policySentiment')]++;
       }
       if (metric.timeline_markers.immediate_actions.length ||
           metric.timeline_markers.medium_term_goals.length) {
-        categories['Timeline Markers']++;
+        categories[t('bi.timelineMarkers')]++;
       }
       if (metric.risk_tags.regulatory_risks.length ||
           metric.risk_tags.financial_risks.length ||
           metric.risk_tags.operational_risks.length) {
-        categories['Risk Tags']++;
+        categories[t('bi.riskTags')]++;
       }
     });
 
     return Object.entries(categories).map(([name, value]) => ({ name, value }));
-  }, [dashboard]);
+  }, [dashboard, t]);
 
   // Sentiment analysis data
   const sentimentData = useMemo(() => {
@@ -548,6 +689,26 @@ export default function BIDashboard() {
       value
     }));
   }, [dashboard]);
+
+  // Filtered articles based on selected category
+  const filteredPrimaryMetrics = useMemo(() => {
+    if (!dashboard || !dashboard.primary_metrics.length) return [];
+
+    if (!selectedPrimaryCategory) return dashboard.primary_metrics;
+
+    // Map display names back to API category names
+    const categoryMappingReverse = {
+      [t('bi.category.economicGrowth')]: 'ECONOMIC_GROWTH_COMPETITIVENESS',
+      [t('bi.category.humanResource')]: 'HUMAN_RESOURCE_DEVELOPMENT',
+      [t('bi.category.socialWelfare')]: 'SOCIAL_WELFARE_INEQUALITY_REDUCTION',
+      [t('bi.category.healthSecurity')]: 'HEALTH_SECURITY_PUBLIC_HEALTH',
+      [t('bi.category.environmentalSecurity')]: 'FOOD_ENERGY_ENVIRONMENTAL_SECURITY',
+      [t('bi.category.governance')]: 'PUBLIC_ADMINISTRATION_GOVERNANCE'
+    };
+
+    const apiCategory = categoryMappingReverse[selectedPrimaryCategory as keyof typeof categoryMappingReverse];
+    return dashboard.primary_metrics.filter(article => article.primary_socioeconomic_category === apiCategory);
+  }, [dashboard, selectedPrimaryCategory]);
 
   // Risk analysis data
   const riskAnalysisData = useMemo(() => {
@@ -570,10 +731,10 @@ export default function BIDashboard() {
     });
 
     return Object.entries(risks).map(([name, value]) => ({
-      risk: name.charAt(0).toUpperCase() + name.slice(1),
+      risk: t(`bi.${name}`),
       value
     }));
-  }, [dashboard]);
+  }, [dashboard, t]);
 
   if (loading) {
     return (
@@ -601,7 +762,7 @@ export default function BIDashboard() {
         <div className="max-w-7xl mx-auto">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
             <div className="text-center text-red-500">
-              {error || 'No BI dashboard data available'}
+              {error || t('bi.noDataAvailable')}
             </div>
           </div>
         </div>
@@ -616,24 +777,24 @@ export default function BIDashboard() {
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-              Business Intelligence Dashboard
+              {t('bi.title')}
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
-              Advanced analytics and metrics visualization for government news data mining
+              {t('bi.subtitle')}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-              Last updated: {new Date(dashboard.generated_at).toLocaleString()}
+              {t('bi.lastUpdated')}: {new Date(dashboard.generated_at).toLocaleString()}
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <RefreshCw className="w-4 h-4" />
-              Refresh
+              {t('bi.refresh')}
             </button>
             <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
               <Download className="w-4 h-4" />
-              Export
+              {t('bi.export')}
             </button>
           </div>
         </div>
@@ -668,7 +829,7 @@ export default function BIDashboard() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('bi.filters')}:</span>
             </div>
 
             <select
@@ -676,12 +837,12 @@ export default function BIDashboard() {
               onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
               className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700"
             >
-              <option value="all">All Categories</option>
-              <option value="primary">Primary Metrics</option>
-              <option value="operational">Operational Metrics</option>
-              <option value="ai">AI Metadata</option>
-              <option value="policy">Policy Analysis</option>
-              <option value="media">Media Analysis</option>
+              <option value="all">{t('bi.allCategories')}</option>
+              <option value="primary">{t('bi.primaryMetrics')}</option>
+              <option value="operational">{t('bi.operationalMetrics')}</option>
+              <option value="ai">{t('bi.aiMetadata')}</option>
+              <option value="policy">{t('bi.policyProjects')}</option>
+              <option value="media">{t('bi.sentimentAnalysis')}</option>
             </select>
 
             <select
@@ -689,10 +850,10 @@ export default function BIDashboard() {
               onChange={(e) => setFilters(prev => ({ ...prev, sentiment: e.target.value }))}
               className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700"
             >
-              <option value="all">All Sentiments</option>
-              <option value="positive">Positive</option>
-              <option value="negative">Negative</option>
-              <option value="neutral">Neutral</option>
+              <option value="all">{t('bi.allSentiments')}</option>
+              <option value="positive">{t('bi.positive')}</option>
+              <option value="negative">{t('bi.negative')}</option>
+              <option value="neutral">{t('bi.neutral')}</option>
             </select>
 
             <select
@@ -700,10 +861,10 @@ export default function BIDashboard() {
               onChange={(e) => setDateRange(e.target.value)}
               className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700"
             >
-              <option value="7d">Last 7 days</option>
-              <option value="30d">Last 30 days</option>
-              <option value="90d">Last 90 days</option>
-              <option value="1y">Last year</option>
+              <option value="7d">{t('bi.last7Days')}</option>
+              <option value="30d">{t('bi.last30Days')}</option>
+              <option value="90d">{t('bi.last90Days')}</option>
+              <option value="1y">{t('bi.lastYear')}</option>
             </select>
           </div>
         </div>
@@ -713,17 +874,17 @@ export default function BIDashboard() {
           {/* Navigation Sidebar */}
           <div className="xl:col-span-1">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">BI Views</h3>
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">{t('bi.views')}</h3>
               <nav className="space-y-2">
                 {[
-                  { id: 'overview', label: 'Overview', icon: '📊' },
-                  { id: 'metrics-distribution', label: 'Metrics Distribution', icon: '📈' },
-                  { id: 'primary-metrics', label: 'Primary Metrics', icon: '🎯' },
-                  { id: 'operational-metrics', label: 'Operational Metrics', icon: '⚙️' },
-                  { id: 'ai-metadata', label: 'AI Metadata', icon: '🤖' },
-                  { id: 'sentiment-analysis', label: 'Sentiment Analysis', icon: '😊' },
-                  { id: 'risk-analysis', label: 'Risk Analysis', icon: '⚠️' },
-                  { id: 'comparative', label: 'Comparative Analysis', icon: '⚖️' }
+                  { id: 'overview', label: t('bi.overview'), icon: '📊' },
+                  { id: 'metrics-distribution', label: t('bi.metricsDistribution'), icon: '📈' },
+                  { id: 'primary-metrics', label: t('bi.primaryMetrics'), icon: '🎯' },
+                  { id: 'operational-metrics', label: t('bi.operationalMetrics'), icon: '⚙️' },
+                  { id: 'ai-metadata', label: t('bi.aiMetadata'), icon: '🤖' },
+                  { id: 'sentiment-analysis', label: t('bi.sentimentAnalysis'), icon: '😊' },
+                  { id: 'risk-analysis', label: t('bi.riskAnalysis'), icon: '⚠️' },
+                  { id: 'comparative', label: t('bi.comparativeAnalysis'), icon: '⚖️' }
                 ].map((view) => (
                   <button
                     key={view.id}
@@ -749,7 +910,7 @@ export default function BIDashboard() {
                 {/* Metrics Distribution Overview */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
                   <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                    Metrics Coverage Overview
+                    {t('bi.metricsCoverageOverview')}
                   </h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <ComposedChart data={metricsDistribution}>
@@ -766,7 +927,7 @@ export default function BIDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
                     <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                      Topic Distribution
+                      {t('bi.topicDistribution')}
                     </h3>
                     <ResponsiveContainer width="100%" height={250}>
                       <PieChart>
@@ -792,7 +953,7 @@ export default function BIDashboard() {
 
                   <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
                     <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                      Trending Topics Performance
+                      {t('bi.trendingTopicsPerformance')}
                     </h3>
                     <ResponsiveContainer width="100%" height={250}>
                       <BarChart data={dashboard.trending_topics.slice(0, 5)}>
@@ -801,8 +962,8 @@ export default function BIDashboard() {
                         <YAxis />
                         <Tooltip
                           formatter={(value, name) => [
-                            name === 'frequency' ? `${value} mentions` : `${value}% growth`,
-                            name === 'frequency' ? 'Frequency' : 'Growth Rate'
+                            name === 'frequency' ? `${value} ${t('bi.mentions')}` : `${value}% ${t('bi.growth')}`,
+                            name === 'frequency' ? t('bi.frequency') : t('bi.growthRate')
                           ]}
                         />
                         <Bar dataKey="frequency" fill="#82ca9d" />
@@ -817,7 +978,7 @@ export default function BIDashboard() {
               <div className="space-y-6">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
                   <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                    Comprehensive Metrics Distribution
+                    {t('bi.comprehensiveMetricsDistribution')}
                   </h3>
                   <ResponsiveContainer width="100%" height={400}>
                     <RadarChart data={metricsDistribution}>
@@ -825,7 +986,7 @@ export default function BIDashboard() {
                       <PolarAngleAxis dataKey="name" />
                       <PolarRadiusAxis />
                       <Radar
-                        name="Coverage"
+                        name={t('bi.coverage')}
                         dataKey="value"
                         stroke="#8884d8"
                         fill="#8884d8"
@@ -852,7 +1013,7 @@ export default function BIDashboard() {
                         {metric.value}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Articles analyzed
+                        {t('bi.metric.articlesAnalyzed')}
                       </div>
                       <div className="mt-2 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                         <div
@@ -872,18 +1033,44 @@ export default function BIDashboard() {
             {activeView === 'primary-metrics' && (
               <div className="space-y-6">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                  <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                    Primary Metrics Breakdown
-                  </h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      {t('bi.primaryMetricsBreakdown')}
+                    </h3>
+                    {selectedPrimaryCategory && (
+                      <button
+                        onClick={() => setSelectedPrimaryCategory(null)}
+                        className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
+                      >
+                        <X className="w-4 h-4" />
+                        {t('bi.clearFilter')}
+                      </button>
+                    )}
+                  </div>
                   <ResponsiveContainer width="100%" height={350}>
-                    <BarChart data={primaryMetricsBreakdown} layout="horizontal">
+                    <BarChart data={primaryMetricsBreakdown}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis dataKey="name" type="category" width={150} />
+                      <XAxis dataKey="name" />
+                      <YAxis 
+                        domain={[0, 'dataMax']} 
+                        allowDecimals={false}
+                      />
                       <Tooltip />
-                      <Bar dataKey="value" fill="#3B82F6" />
+                      <Bar 
+                        dataKey="value" 
+                        fill="#3B82F6"
+                        cursor="pointer"
+                        onClick={(data) => {
+                          if (data && data.name) {
+                            setSelectedPrimaryCategory(data.name);
+                          }
+                        }}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                    {t('bi.clickToFilter')}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -896,7 +1083,7 @@ export default function BIDashboard() {
                         {category.value}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Articles with data
+                        {t('bi.metric.articlesWithData')}
                       </div>
                     </div>
                   ))}
@@ -904,192 +1091,311 @@ export default function BIDashboard() {
 
                 {/* Individual Articles with Primary Metrics */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                  <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                    Articles with Primary Metrics ({dashboard.primary_metrics.length})
-                  </h3>
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {dashboard.primary_metrics.map((article) => (
-                      <div key={article.article_id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-                              {article.title}
-                            </h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              Analyzed: {new Date(article.analyzed_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setSelectedArticle(article);
-                              setShowArticleModal(true);
-                            }}
-                            className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors text-sm"
-                          >
-                            <Eye className="w-4 h-4" />
-                            View Article
-                          </button>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {/* Economic Growth */}
-                          {(article.economic_growth_indicators.investment_projects.length > 0 ||
-                            article.economic_growth_indicators.export_promotion.length > 0 ||
-                            article.economic_growth_indicators.foreign_investment.length > 0) && (
-                            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                              <h5 className="font-medium text-green-800 dark:text-green-200 mb-2">Economic Growth</h5>
-                              <div className="space-y-1 text-sm">
-                                {article.economic_growth_indicators.investment_projects.length > 0 && (
-                                  <p className="text-green-700 dark:text-green-300">
-                                    💰 {article.economic_growth_indicators.investment_projects.length} investment projects
-                                  </p>
-                                )}
-                                {article.economic_growth_indicators.export_promotion.length > 0 && (
-                                  <p className="text-green-700 dark:text-green-300">
-                                    📈 {article.economic_growth_indicators.export_promotion.length} export promotions
-                                  </p>
-                                )}
-                                {article.economic_growth_indicators.foreign_investment.length > 0 && (
-                                  <p className="text-green-700 dark:text-green-300">
-                                    🌍 {article.economic_growth_indicators.foreign_investment.length} foreign investments
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Productivity & Innovation */}
-                          {(article.productivity_innovation_indicators.innovation_policies.length > 0 ||
-                            article.productivity_innovation_indicators.startup_support.length > 0 ||
-                            article.productivity_innovation_indicators.digital_transformation.length > 0) && (
-                            <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
-                              <h5 className="font-medium text-purple-800 dark:text-purple-200 mb-2">Productivity & Innovation</h5>
-                              <div className="space-y-1 text-sm">
-                                {article.productivity_innovation_indicators.innovation_policies.length > 0 && (
-                                  <p className="text-purple-700 dark:text-purple-300">
-                                    💡 {article.productivity_innovation_indicators.innovation_policies.length} innovation policies
-                                  </p>
-                                )}
-                                {article.productivity_innovation_indicators.startup_support.length > 0 && (
-                                  <p className="text-purple-700 dark:text-purple-300">
-                                    🚀 {article.productivity_innovation_indicators.startup_support.length} startup supports
-                                  </p>
-                                )}
-                                {article.productivity_innovation_indicators.digital_transformation.length > 0 && (
-                                  <p className="text-purple-700 dark:text-purple-300">
-                                    💻 {article.productivity_innovation_indicators.digital_transformation.length} digital transformations
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Social Welfare */}
-                          {(article.social_welfare_inequality_indicators.poverty_reduction.length > 0 ||
-                            article.social_welfare_inequality_indicators.social_protection.length > 0 ||
-                            article.social_welfare_inequality_indicators.education_access.length > 0) && (
-                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                              <h5 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Social Welfare</h5>
-                              <div className="space-y-1 text-sm">
-                                {article.social_welfare_inequality_indicators.poverty_reduction.length > 0 && (
-                                  <p className="text-blue-700 dark:text-blue-300">
-                                    🤝 {article.social_welfare_inequality_indicators.poverty_reduction.length} poverty reductions
-                                  </p>
-                                )}
-                                {article.social_welfare_inequality_indicators.social_protection.length > 0 && (
-                                  <p className="text-blue-700 dark:text-blue-300">
-                                    🛡️ {article.social_welfare_inequality_indicators.social_protection.length} social protections
-                                  </p>
-                                )}
-                                {article.social_welfare_inequality_indicators.education_access.length > 0 && (
-                                  <p className="text-blue-700 dark:text-blue-300">
-                                    📚 {article.social_welfare_inequality_indicators.education_access.length} education accesses
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Environmental & Energy */}
-                          {(article.environmental_energy_indicators.renewable_energy.length > 0 ||
-                            article.environmental_energy_indicators.carbon_reduction.length > 0 ||
-                            article.environmental_energy_indicators.conservation_projects.length > 0) && (
-                            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg">
-                              <h5 className="font-medium text-emerald-800 dark:text-emerald-200 mb-2">Environmental & Energy</h5>
-                              <div className="space-y-1 text-sm">
-                                {article.environmental_energy_indicators.renewable_energy.length > 0 && (
-                                  <p className="text-emerald-700 dark:text-emerald-300">
-                                    🌱 {article.environmental_energy_indicators.renewable_energy.length} renewable energy initiatives
-                                  </p>
-                                )}
-                                {article.environmental_energy_indicators.carbon_reduction.length > 0 && (
-                                  <p className="text-emerald-700 dark:text-emerald-300">
-                                    🌍 {article.environmental_energy_indicators.carbon_reduction.length} carbon reductions
-                                  </p>
-                                )}
-                                {article.environmental_energy_indicators.conservation_projects.length > 0 && (
-                                  <p className="text-emerald-700 dark:text-emerald-300">
-                                    🏞️ {article.environmental_energy_indicators.conservation_projects.length} conservation projects
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Healthcare Capacity */}
-                          {(article.healthcare_capacity.hospital_construction.length > 0 ||
-                            article.healthcare_capacity.medical_personnel.length > 0 ||
-                            article.healthcare_capacity.health_insurance.length > 0) && (
-                            <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-                              <h5 className="font-medium text-red-800 dark:text-red-200 mb-2">Healthcare Capacity</h5>
-                              <div className="space-y-1 text-sm">
-                                {article.healthcare_capacity.hospital_construction.length > 0 && (
-                                  <p className="text-red-700 dark:text-red-300">
-                                    🏥 {article.healthcare_capacity.hospital_construction.length} hospital constructions
-                                  </p>
-                                )}
-                                {article.healthcare_capacity.medical_personnel.length > 0 && (
-                                  <p className="text-red-700 dark:text-red-300">
-                                    👨‍⚕️ {article.healthcare_capacity.medical_personnel.length} medical personnel initiatives
-                                  </p>
-                                )}
-                                {article.healthcare_capacity.health_insurance.length > 0 && (
-                                  <p className="text-red-700 dark:text-red-300">
-                                    🩺 {article.healthcare_capacity.health_insurance.length} health insurance programs
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Governance & Digital */}
-                          {(article.governance_digital_government_indicators.e_governance.length > 0 ||
-                            article.governance_digital_government_indicators.transparency_measures.length > 0 ||
-                            article.governance_digital_government_indicators.anti_corruption.length > 0) && (
-                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg">
-                              <h5 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2">Governance & Digital</h5>
-                              <div className="space-y-1 text-sm">
-                                {article.governance_digital_government_indicators.e_governance.length > 0 && (
-                                  <p className="text-indigo-700 dark:text-indigo-300">
-                                    💻 {article.governance_digital_government_indicators.e_governance.length} e-governance initiatives
-                                  </p>
-                                )}
-                                {article.governance_digital_government_indicators.transparency_measures.length > 0 && (
-                                  <p className="text-indigo-700 dark:text-indigo-300">
-                                    👁️ {article.governance_digital_government_indicators.transparency_measures.length} transparency measures
-                                  </p>
-                                )}
-                                {article.governance_digital_government_indicators.anti_corruption.length > 0 && (
-                                  <p className="text-indigo-700 dark:text-indigo-300">
-                                    ⚖️ {article.governance_digital_government_indicators.anti_corruption.length} anti-corruption measures
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      {t('bi.articlesWithPrimaryMetrics')} {selectedPrimaryCategory ? `(${selectedPrimaryCategory})` : ''} ({filteredPrimaryMetrics.length})
+                    </h3>
+                    {selectedPrimaryCategory && (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 rounded-lg">
+                        <span className="text-sm font-medium">{t('bi.filteredBy')}: {selectedPrimaryCategory}</span>
                       </div>
-                    ))}
+                    )}
+                  </div>
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {filteredPrimaryMetrics.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                        <p>{t('bi.noArticlesFound')}</p>
+                        <p className="text-sm mt-2">{t('bi.tryDifferentCategory')}</p>
+                      </div>
+                    ) : (
+                      filteredPrimaryMetrics.map((article) => (
+                        <div key={article.article_id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+                                {article.title}
+                              </h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Analyzed: {new Date(article.analyzed_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setSelectedArticle(article);
+                                setShowArticleModal(true);
+                              }}
+                              className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors text-sm"
+                            >
+                              <Eye className="w-4 h-4" />
+                              {t('bi.viewArticle')}
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {/* Show Primary Socioeconomic Category */}
+                            <div className={`p-3 rounded-lg ${
+                              article.primary_socioeconomic_category === 'ECONOMIC_GROWTH_COMPETITIVENESS' ? 'bg-green-50 dark:bg-green-900/20' :
+                              article.primary_socioeconomic_category === 'HUMAN_RESOURCE_DEVELOPMENT' ? 'bg-purple-50 dark:bg-purple-900/20' :
+                              article.primary_socioeconomic_category === 'SOCIAL_WELFARE_INEQUALITY_REDUCTION' ? 'bg-blue-50 dark:bg-blue-900/20' :
+                              article.primary_socioeconomic_category === 'HEALTH_SECURITY_PUBLIC_HEALTH' ? 'bg-red-50 dark:bg-red-900/20' :
+                              article.primary_socioeconomic_category === 'FOOD_ENERGY_ENVIRONMENTAL_SECURITY' ? 'bg-emerald-50 dark:bg-emerald-900/20' :
+                              'bg-indigo-50 dark:bg-indigo-900/20'
+                            }`}>
+                              <h5 className={`font-medium mb-2 ${
+                                article.primary_socioeconomic_category === 'ECONOMIC_GROWTH_COMPETITIVENESS' ? 'text-green-800 dark:text-green-200' :
+                                article.primary_socioeconomic_category === 'HUMAN_RESOURCE_DEVELOPMENT' ? 'text-purple-800 dark:text-purple-200' :
+                                article.primary_socioeconomic_category === 'SOCIAL_WELFARE_INEQUALITY_REDUCTION' ? 'text-blue-800 dark:text-blue-200' :
+                                article.primary_socioeconomic_category === 'HEALTH_SECURITY_PUBLIC_HEALTH' ? 'text-red-800 dark:text-red-200' :
+                                article.primary_socioeconomic_category === 'FOOD_ENERGY_ENVIRONMENTAL_SECURITY' ? 'text-emerald-800 dark:text-emerald-200' :
+                                'text-indigo-800 dark:text-indigo-200'
+                              }`}>
+                                {t('bi.primaryCategory')}: {
+                                  article.primary_socioeconomic_category === 'ECONOMIC_GROWTH_COMPETITIVENESS' ? t('bi.category.economicGrowth') :
+                                  article.primary_socioeconomic_category === 'HUMAN_RESOURCE_DEVELOPMENT' ? t('bi.category.humanResource') :
+                                  article.primary_socioeconomic_category === 'SOCIAL_WELFARE_INEQUALITY_REDUCTION' ? t('bi.category.socialWelfare') :
+                                  article.primary_socioeconomic_category === 'HEALTH_SECURITY_PUBLIC_HEALTH' ? t('bi.category.healthSecurity') :
+                                  article.primary_socioeconomic_category === 'FOOD_ENERGY_ENVIRONMENTAL_SECURITY' ? t('bi.category.environmentalSecurity') :
+                                  t('bi.category.governance')
+                                }
+                              </h5>
+                              <div className="space-y-1 text-sm">
+                                <p className={`${
+                                  article.primary_socioeconomic_category === 'ECONOMIC_GROWTH_COMPETITIVENESS' ? 'text-green-700 dark:text-green-300' :
+                                  article.primary_socioeconomic_category === 'HUMAN_RESOURCE_DEVELOPMENT' ? 'text-purple-700 dark:text-purple-300' :
+                                  article.primary_socioeconomic_category === 'SOCIAL_WELFARE_INEQUALITY_REDUCTION' ? 'text-blue-700 dark:text-blue-300' :
+                                  article.primary_socioeconomic_category === 'HEALTH_SECURITY_PUBLIC_HEALTH' ? 'text-red-700 dark:text-red-300' :
+                                  article.primary_socioeconomic_category === 'FOOD_ENERGY_ENVIRONMENTAL_SECURITY' ? 'text-emerald-700 dark:text-emerald-300' :
+                                  'text-indigo-700 dark:text-indigo-300'
+                                }`}>
+                                  <strong>{t('bi.confidence')}:</strong> {(article.category_confidence * 100).toFixed(1)}%
+                                </p>
+                                {article.category_reasoning && (
+                                  <p className={`${
+                                    article.primary_socioeconomic_category === 'ECONOMIC_GROWTH_COMPETITIVENESS' ? 'text-green-600 dark:text-green-400' :
+                                    article.primary_socioeconomic_category === 'HUMAN_RESOURCE_DEVELOPMENT' ? 'text-purple-600 dark:text-purple-400' :
+                                    article.primary_socioeconomic_category === 'SOCIAL_WELFARE_INEQUALITY_REDUCTION' ? 'text-blue-600 dark:text-blue-400' :
+                                    article.primary_socioeconomic_category === 'HEALTH_SECURITY_PUBLIC_HEALTH' ? 'text-red-600 dark:text-red-400' :
+                                    article.primary_socioeconomic_category === 'FOOD_ENERGY_ENVIRONMENTAL_SECURITY' ? 'text-emerald-600 dark:text-emerald-400' :
+                                    'text-indigo-600 dark:text-indigo-400'
+                                  }`}>
+                                    {article.category_reasoning}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Economic Growth & Competitiveness */}
+                            {(article.economic_growth_competitiveness &&
+                              (article.economic_growth_competitiveness.gdp_growth_rate ||
+                               article.economic_growth_competitiveness.investment_volume?.fdi_foreign_direct_investment ||
+                               article.economic_growth_competitiveness.investment_volume?.domestic_investment ||
+                               article.economic_growth_competitiveness.export_value?.overall_export_value ||
+                               article.economic_growth_competitiveness.export_value?.key_sector_exports?.length > 0 ||
+                               article.economic_growth_competitiveness.news_signals_economic?.length > 0)) && (
+                              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                                <h5 className="font-medium text-green-800 dark:text-green-200 mb-2">{t('bi.category.economicGrowth')}</h5>
+                                <div className="space-y-1 text-sm">
+                                  {article.economic_growth_competitiveness.gdp_growth_rate && (
+                                    <p className="text-green-700 dark:text-green-300">
+                                      📈 {t('bi.metric.gdpGrowth')}: {article.economic_growth_competitiveness.gdp_growth_rate}
+                                    </p>
+                                  )}
+                                  {article.economic_growth_competitiveness.investment_volume?.fdi_foreign_direct_investment && (
+                                    <p className="text-green-700 dark:text-green-300">
+                                      💰 {t('bi.metric.fdi')}: {article.economic_growth_competitiveness.investment_volume.fdi_foreign_direct_investment}
+                                    </p>
+                                  )}
+                                  {article.economic_growth_competitiveness.export_value?.key_sector_exports?.length > 0 && (
+                                    <p className="text-green-700 dark:text-green-300">
+                                      🌍 {article.economic_growth_competitiveness.export_value.key_sector_exports.length} {t('bi.metric.keyExports')}
+                                    </p>
+                                  )}
+                                  {article.economic_growth_competitiveness.news_signals_economic?.length > 0 && (
+                                    <p className="text-green-700 dark:text-green-300">
+                                      📰 {article.economic_growth_competitiveness.news_signals_economic.length} {t('bi.metric.newsSignals')}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Human Resource Development */}
+                            {(article.human_resource_development &&
+                              (article.human_resource_development.education_quality?.pisa_scores ||
+                               article.human_resource_development.stem_graduates?.stem_graduate_numbers ||
+                               article.human_resource_development.skill_upgrading?.reskilling_programs?.length > 0 ||
+                               article.human_resource_development.employment_indicators?.unemployment_rate ||
+                               article.human_resource_development.news_signals_hr?.length > 0)) && (
+                              <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
+                                <h5 className="font-medium text-purple-800 dark:text-purple-200 mb-2">{t('bi.category.humanResource')}</h5>
+                                <div className="space-y-1 text-sm">
+                                  {article.human_resource_development.education_quality?.pisa_scores && (
+                                    <p className="text-purple-700 dark:text-purple-300">
+                                      📚 {t('bi.metric.pisaScores')}: {article.human_resource_development.education_quality.pisa_scores}
+                                    </p>
+                                  )}
+                                  {article.human_resource_development.stem_graduates?.stem_graduate_numbers && (
+                                    <p className="text-purple-700 dark:text-purple-300">
+                                      🔬 {t('bi.metric.stemGraduates')}: {article.human_resource_development.stem_graduates.stem_graduate_numbers}
+                                    </p>
+                                  )}
+                                  {article.human_resource_development.skill_upgrading?.reskilling_programs?.length > 0 && (
+                                    <p className="text-purple-700 dark:text-purple-300">
+                                      🚀 {article.human_resource_development.skill_upgrading.reskilling_programs.length} {t('bi.metric.reskillingPrograms')}
+                                    </p>
+                                  )}
+                                  {article.human_resource_development.employment_indicators?.unemployment_rate && (
+                                    <p className="text-purple-700 dark:text-purple-300">
+                                      💼 {t('bi.metric.unemployment')}: {article.human_resource_development.employment_indicators.unemployment_rate}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Social Welfare & Inequality Reduction */}
+                            {(article.social_welfare_inequality_reduction &&
+                              (article.social_welfare_inequality_reduction.income_inequality?.gini_coefficient ||
+                               article.social_welfare_inequality_reduction.household_debt?.household_debt_gdp_ratio ||
+                               article.social_welfare_inequality_reduction.poverty_indicators?.poverty_rate ||
+                               article.social_welfare_inequality_reduction.cost_of_living?.inflation_rate ||
+                               article.social_welfare_inequality_reduction.news_signals_social?.length > 0)) && (
+                              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                                <h5 className="font-medium text-blue-800 dark:text-blue-200 mb-2">{t('bi.category.socialWelfare')}</h5>
+                                <div className="space-y-1 text-sm">
+                                  {article.social_welfare_inequality_reduction.income_inequality?.gini_coefficient && (
+                                    <p className="text-blue-700 dark:text-blue-300">
+                                      📊 {t('bi.metric.giniCoefficient')}: {article.social_welfare_inequality_reduction.income_inequality.gini_coefficient}
+                                    </p>
+                                  )}
+                                  {article.social_welfare_inequality_reduction.household_debt?.household_debt_gdp_ratio && (
+                                    <p className="text-blue-700 dark:text-blue-300">
+                                      🏠 {t('bi.metric.householdDebt')}: {article.social_welfare_inequality_reduction.household_debt.household_debt_gdp_ratio}
+                                    </p>
+                                  )}
+                                  {article.social_welfare_inequality_reduction.poverty_indicators?.poverty_rate && (
+                                    <p className="text-blue-700 dark:text-blue-300">
+                                      🤝 {t('bi.metric.povertyRate')}: {article.social_welfare_inequality_reduction.poverty_indicators.poverty_rate}
+                                    </p>
+                                  )}
+                                  {article.social_welfare_inequality_reduction.cost_of_living?.inflation_rate && (
+                                    <p className="text-blue-700 dark:text-blue-300">
+                                      💰 {t('bi.metric.inflationRate')}: {article.social_welfare_inequality_reduction.cost_of_living.inflation_rate}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Health Security & Public Health */}
+                            {(article.health_security_public_health &&
+                              (article.health_security_public_health.hospital_capacity_upgrades?.hospitals_upgraded ||
+                               article.health_security_public_health.healthcare_coverage_metrics?.healthcare_coverage_rate ||
+                               article.health_security_public_health.public_health_capacity?.beds_per_population ||
+                               article.health_security_public_health.communicable_disease_trends?.vaccination_coverage ||
+                               article.health_security_public_health.news_signals_health?.length > 0)) && (
+                              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                                <h5 className="font-medium text-red-800 dark:text-red-200 mb-2">{t('bi.category.healthSecurity')}</h5>
+                                <div className="space-y-1 text-sm">
+                                  {article.health_security_public_health.hospital_capacity_upgrades?.hospitals_upgraded && (
+                                    <p className="text-red-700 dark:text-red-300">
+                                      🏥 {t('bi.metric.hospitalsUpgraded')}: {article.health_security_public_health.hospital_capacity_upgrades.hospitals_upgraded}
+                                    </p>
+                                  )}
+                                  {article.health_security_public_health.healthcare_coverage_metrics?.healthcare_coverage_rate && (
+                                    <p className="text-red-700 dark:text-red-300">
+                                      🩺 {t('bi.metric.healthcareCoverage')}: {article.health_security_public_health.healthcare_coverage_metrics.healthcare_coverage_rate}
+                                    </p>
+                                  )}
+                                  {article.health_security_public_health.public_health_capacity?.beds_per_population && (
+                                    <p className="text-red-700 dark:text-red-300">
+                                      🛏️ {t('bi.metric.bedsPopulation')}: {article.health_security_public_health.public_health_capacity.beds_per_population}
+                                    </p>
+                                  )}
+                                  {article.health_security_public_health.communicable_disease_trends?.vaccination_coverage && (
+                                    <p className="text-red-700 dark:text-red-300">
+                                      💉 {t('bi.metric.vaccinationCoverage')}: {article.health_security_public_health.communicable_disease_trends.vaccination_coverage}
+                                    </p>
+                                  )}
+                                  {article.health_security_public_health.news_signals_health?.length > 0 && (
+                                    <p className="text-red-700 dark:text-red-300">
+                                      📰 {article.health_security_public_health.news_signals_health.length} {t('bi.metric.healthSignals')}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Food, Energy & Environmental Security */}
+                            {(article.food_energy_environmental_security &&
+                              (article.food_energy_environmental_security.renewable_energy_share?.renewable_energy_percentage ||
+                               article.food_energy_environmental_security.carbon_emission_reduction?.carbon_reduction_targets ||
+                               article.food_energy_environmental_security.air_quality_indicators?.pm25_levels ||
+                               article.food_energy_environmental_security.waste_management_performance?.waste_recycling_rate ||
+                               article.food_energy_environmental_security.news_signals_environment?.length > 0)) && (
+                              <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg">
+                                <h5 className="font-medium text-emerald-800 dark:text-emerald-200 mb-2">{t('bi.category.environmentalSecurity')}</h5>
+                                <div className="space-y-1 text-sm">
+                                  {article.food_energy_environmental_security.renewable_energy_share?.renewable_energy_percentage && (
+                                    <p className="text-emerald-700 dark:text-emerald-300">
+                                      🌱 {t('bi.metric.renewableEnergy')}: {article.food_energy_environmental_security.renewable_energy_share.renewable_energy_percentage}
+                                    </p>
+                                  )}
+                                  {article.food_energy_environmental_security.carbon_emission_reduction?.carbon_reduction_targets && (
+                                    <p className="text-emerald-700 dark:text-emerald-300">
+                                      🌍 {t('bi.metric.carbonReduction')}: {article.food_energy_environmental_security.carbon_emission_reduction.carbon_reduction_targets}
+                                    </p>
+                                  )}
+                                  {article.food_energy_environmental_security.air_quality_indicators?.pm25_levels && (
+                                    <p className="text-emerald-700 dark:text-emerald-300">
+                                      💨 {t('bi.metric.pm25Levels')}: {article.food_energy_environmental_security.air_quality_indicators.pm25_levels}
+                                    </p>
+                                  )}
+                                  {article.food_energy_environmental_security.waste_management_performance?.waste_recycling_rate && (
+                                    <p className="text-emerald-700 dark:text-emerald-300">
+                                      ♻️ {t('bi.metric.recyclingRate')}: {article.food_energy_environmental_security.waste_management_performance.waste_recycling_rate}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Public Administration & Governance */}
+                            {(article.public_administration_governance &&
+                              (article.public_administration_governance.e_government_adoption?.e_gov_services_coverage ||
+                               article.public_administration_governance.open_data_metrics?.open_data_portals ||
+                               article.public_administration_governance.anti_corruption_performance?.corruption_perception_index ||
+                               article.public_administration_governance.news_signals_governance?.length > 0)) && (
+                              <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg">
+                                <h5 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2">{t('bi.category.governance')}</h5>
+                                <div className="space-y-1 text-sm">
+                                  {article.public_administration_governance.e_government_adoption?.e_gov_services_coverage && (
+                                    <p className="text-indigo-700 dark:text-indigo-300">
+                                      💻 {t('bi.metric.eGovCoverage')}: {article.public_administration_governance.e_government_adoption.e_gov_services_coverage}
+                                    </p>
+                                  )}
+                                  {article.public_administration_governance.open_data_metrics?.open_data_portals && (
+                                    <p className="text-indigo-700 dark:text-indigo-300">
+                                      📊 {t('bi.metric.openDataPortals')}: {article.public_administration_governance.open_data_metrics.open_data_portals}
+                                    </p>
+                                  )}
+                                  {article.public_administration_governance.anti_corruption_performance?.corruption_perception_index && (
+                                    <p className="text-indigo-700 dark:text-indigo-300">
+                                      ⚖️ {t('bi.metric.corruptionIndex')}: {article.public_administration_governance.anti_corruption_performance.corruption_perception_index}
+                                    </p>
+                                  )}
+                                  {article.public_administration_governance.news_signals_governance?.length > 0 && (
+                                    <p className="text-indigo-700 dark:text-indigo-300">
+                                      📰 {article.public_administration_governance.news_signals_governance.length} {t('bi.metric.governanceSignals')}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -1099,7 +1405,7 @@ export default function BIDashboard() {
               <div className="space-y-6">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
                   <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                    Operational Metrics Breakdown
+                    {t('bi.operationalMetricsBreakdown')}
                   </h3>
                   <ResponsiveContainer width="100%" height={350}>
                     <AreaChart data={operationalMetricsBreakdown}>
@@ -1122,7 +1428,7 @@ export default function BIDashboard() {
                         {category.value}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Articles with data
+                        {t('bi.metric.articlesWithData')}
                       </div>
                     </div>
                   ))}
@@ -1134,7 +1440,7 @@ export default function BIDashboard() {
               <div className="space-y-6">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
                   <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                    AI Metadata Insights Breakdown
+                    {t('bi.aiMetadataInsightsBreakdown')}
                   </h3>
                   <ResponsiveContainer width="100%" height={350}>
                     <ComposedChart data={aiMetadataBreakdown}>
@@ -1158,7 +1464,7 @@ export default function BIDashboard() {
                         {category.value}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Articles with insights
+                        {t('bi.metric.articlesWithInsights')}
                       </div>
                     </div>
                   ))}
@@ -1170,7 +1476,7 @@ export default function BIDashboard() {
               <div className="space-y-6">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
                   <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                    Media Sentiment Distribution
+                    {t('bi.mediaSentimentDistribution')}
                   </h3>
                   <ResponsiveContainer width="100%" height={350}>
                     <PieChart>
@@ -1180,7 +1486,7 @@ export default function BIDashboard() {
                         cy="50%"
                         outerRadius={120}
                         dataKey="value"
-                        label={({ name, value }) => `${name}: ${value}`}
+                        label={({ name, value }) => `${name === 'Positive' ? t('bi.positive') : name === 'Negative' ? t('bi.negative') : t('bi.neutral')}: ${value}`}
                       >
                         {sentimentData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={
@@ -1199,7 +1505,7 @@ export default function BIDashboard() {
                   {sentimentData.map((sentiment, index) => (
                     <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
                       <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                        {sentiment.name} Sentiment
+                        {sentiment.name === 'Positive' ? t('bi.positive') : sentiment.name === 'Negative' ? t('bi.negative') : t('bi.neutral')} {t('bi.sentiment')}
                       </h4>
                       <div className={`text-2xl font-bold mb-1 ${
                         sentiment.name === 'Positive' ? 'text-green-600' :
@@ -1209,7 +1515,7 @@ export default function BIDashboard() {
                         {sentiment.value}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Articles
+                        {t('bi.metric.articles')}
                       </div>
                     </div>
                   ))}
@@ -1221,7 +1527,7 @@ export default function BIDashboard() {
               <div className="space-y-6">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
                   <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                    Risk Analysis Dashboard
+                    {t('bi.riskAnalysisDashboard')}
                   </h3>
                   <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={riskAnalysisData}>
@@ -1248,7 +1554,7 @@ export default function BIDashboard() {
                           {risk.value}
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                          Identified risks
+                          {t('bi.metric.identifiedRisks')}
                         </div>
                         <div className="mt-2 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                           <div
@@ -1269,12 +1575,12 @@ export default function BIDashboard() {
               <div className="space-y-6">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
                   <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                    Comparative Metrics Analysis
+                    {t('bi.comparativeMetricsAnalysis')}
                   </h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
                       <h4 className="text-lg font-medium mb-3 text-gray-900 dark:text-white">
-                        Metrics Coverage Comparison
+                        {t('bi.metricsCoverageComparison')}
                       </h4>
                       <ResponsiveContainer width="100%" height={250}>
                         <BarChart data={metricsDistribution}>
@@ -1289,17 +1595,17 @@ export default function BIDashboard() {
 
                     <div>
                       <h4 className="text-lg font-medium mb-3 text-gray-900 dark:text-white">
-                        Primary vs Operational Metrics
+                        {t('bi.primaryVsOperationalMetrics')}
                       </h4>
                       <ResponsiveContainer width="100%" height={250}>
                         <ScatterChart data={[
                           { x: dashboard.summary_metrics.primary_metrics_articles, y: dashboard.summary_metrics.operational_metrics_articles, name: 'Current State' }
                         ]}>
                           <CartesianGrid />
-                          <XAxis type="number" dataKey="x" name="Primary Metrics" />
-                          <YAxis type="number" dataKey="y" name="Operational Metrics" />
+                          <XAxis type="number" dataKey="x" name={t('bi.primaryMetrics')} />
+                          <YAxis type="number" dataKey="y" name={t('bi.operationalMetrics')} />
                           <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                          <Scatter name="Metrics" dataKey="y" fill="#8884d8" />
+                          <Scatter name={t('bi.metrics')} dataKey="y" fill="#8884d8" />
                         </ScatterChart>
                       </ResponsiveContainer>
                     </div>
@@ -1316,7 +1622,7 @@ export default function BIDashboard() {
                         {((dashboard.summary_metrics.primary_metrics_articles / Math.max(dashboard.summary_metrics.total_articles_analyzed, 1)) * 100).toFixed(1)}%
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Primary Metrics Coverage
+                        {t('bi.primaryMetricsCoverage')}
                       </div>
                     </div>
                     <div className="text-center p-4">
@@ -1324,7 +1630,7 @@ export default function BIDashboard() {
                         {((dashboard.summary_metrics.operational_metrics_articles / Math.max(dashboard.summary_metrics.total_articles_analyzed, 1)) * 100).toFixed(1)}%
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Operational Metrics Coverage
+                        {t('bi.operationalMetricsCoverage')}
                       </div>
                     </div>
                     <div className="text-center p-4">
@@ -1332,7 +1638,7 @@ export default function BIDashboard() {
                         {((dashboard.summary_metrics.ai_metadata_articles / Math.max(dashboard.summary_metrics.total_articles_analyzed, 1)) * 100).toFixed(1)}%
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        AI Metadata Coverage
+                        {t('bi.aiMetadataCoverage')}
                       </div>
                     </div>
                     <div className="text-center p-4">
@@ -1340,7 +1646,7 @@ export default function BIDashboard() {
                         {dashboard.summary_metrics.policy_projects}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Policy Projects Identified
+                        {t('bi.policyProjectsIdentified')}
                       </div>
                     </div>
                   </div>
@@ -1356,7 +1662,7 @@ export default function BIDashboard() {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
               <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-600">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Article Details
+                  {t('bi.articleDetails')}
                 </h2>
                 <button
                   onClick={() => setShowArticleModal(false)}
@@ -1372,52 +1678,57 @@ export default function BIDashboard() {
                     {selectedArticle.title}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Article ID: {selectedArticle.article_id} | Analyzed: {new Date(selectedArticle.analyzed_at).toLocaleString()}
+                    {t('bi.articleId')}: {selectedArticle.article_id} | {t('bi.analyzedAt')}: {new Date(selectedArticle.analyzed_at).toLocaleString('th-TH')}
                   </p>
                 </div>
 
                 {/* Primary Metrics Details */}
                 <div className="mb-6">
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Primary Metrics Extracted
+                    {t('bi.extractedData')}
                   </h4>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Economic Growth */}
+                    {/* Economic Growth & Competitiveness */}
                     <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                      <h5 className="font-semibold text-green-800 dark:text-green-200 mb-3">Economic Growth Indicators</h5>
+                      <h5 className="font-semibold text-green-800 dark:text-green-200 mb-3">{t('bi.category.economicGrowth')}</h5>
                       <div className="space-y-2">
-                        {selectedArticle.economic_growth_indicators.gdp_growth && (
+                        {selectedArticle.economic_growth_competitiveness?.gdp_growth_rate && (
                           <p className="text-sm text-green-700 dark:text-green-300">
-                            <strong>GDP Growth:</strong> {selectedArticle.economic_growth_indicators.gdp_growth}
+                            <strong>GDP Growth Rate:</strong> {selectedArticle.economic_growth_competitiveness.gdp_growth_rate}
                           </p>
                         )}
-                        {selectedArticle.economic_growth_indicators.investment_projects.length > 0 && (
+                        {selectedArticle.economic_growth_competitiveness?.productivity_indicators?.labor_productivity && (
+                          <p className="text-sm text-green-700 dark:text-green-300">
+                            <strong>Labor Productivity:</strong> {selectedArticle.economic_growth_competitiveness.productivity_indicators.labor_productivity}
+                          </p>
+                        )}
+                        {selectedArticle.economic_growth_competitiveness?.investment_volume?.fdi_foreign_direct_investment && (
+                          <p className="text-sm text-green-700 dark:text-green-300">
+                            <strong>FDI:</strong> {selectedArticle.economic_growth_competitiveness.investment_volume.fdi_foreign_direct_investment}
+                          </p>
+                        )}
+                        {selectedArticle.economic_growth_competitiveness?.export_value?.overall_export_value && (
+                          <p className="text-sm text-green-700 dark:text-green-300">
+                            <strong>Export Value:</strong> {selectedArticle.economic_growth_competitiveness.export_value.overall_export_value}
+                          </p>
+                        )}
+                        {selectedArticle.economic_growth_competitiveness?.export_value?.key_sector_exports?.length > 0 && (
                           <div>
-                            <p className="text-sm font-medium text-green-700 dark:text-green-300 mb-1">Investment Projects:</p>
+                            <p className="text-sm font-medium text-green-700 dark:text-green-300 mb-1">Key Sector Exports:</p>
                             <ul className="text-sm text-green-600 dark:text-green-400 list-disc list-inside space-y-1">
-                              {selectedArticle.economic_growth_indicators.investment_projects.map((project: string, idx: number) => (
-                                <li key={idx}>{project}</li>
+                              {selectedArticle.economic_growth_competitiveness.export_value.key_sector_exports.map((export_item: string, idx: number) => (
+                                <li key={idx}>{export_item}</li>
                               ))}
                             </ul>
                           </div>
                         )}
-                        {selectedArticle.economic_growth_indicators.export_promotion.length > 0 && (
+                        {selectedArticle.economic_growth_competitiveness?.news_signals_economic?.length > 0 && (
                           <div>
-                            <p className="text-sm font-medium text-green-700 dark:text-green-300 mb-1">Export Promotion:</p>
+                            <p className="text-sm font-medium text-green-700 dark:text-green-300 mb-1">News Signals:</p>
                             <ul className="text-sm text-green-600 dark:text-green-400 list-disc list-inside space-y-1">
-                              {selectedArticle.economic_growth_indicators.export_promotion.map((promotion: string, idx: number) => (
-                                <li key={idx}>{promotion}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {selectedArticle.economic_growth_indicators.foreign_investment.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-green-700 dark:text-green-300 mb-1">Foreign Investment:</p>
-                            <ul className="text-sm text-green-600 dark:text-green-400 list-disc list-inside space-y-1">
-                              {selectedArticle.economic_growth_indicators.foreign_investment.map((investment: string, idx: number) => (
-                                <li key={idx}>{investment}</li>
+                              {selectedArticle.economic_growth_competitiveness.news_signals_economic.map((signal: string, idx: number) => (
+                                <li key={idx}>{signal}</li>
                               ))}
                             </ul>
                           </div>
@@ -1425,46 +1736,51 @@ export default function BIDashboard() {
                       </div>
                     </div>
 
-                    {/* Productivity & Innovation */}
+                    {/* Human Resource Development */}
                     <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
-                      <h5 className="font-semibold text-purple-800 dark:text-purple-200 mb-3">Productivity & Innovation</h5>
+                      <h5 className="font-semibold text-purple-800 dark:text-purple-200 mb-3">{t('bi.category.humanResource')}</h5>
                       <div className="space-y-2">
-                        {selectedArticle.productivity_innovation_indicators.innovation_policies.length > 0 && (
+                        {selectedArticle.human_resource_development?.education_quality?.pisa_scores && (
+                          <p className="text-sm text-purple-700 dark:text-purple-300">
+                            <strong>PISA Scores:</strong> {selectedArticle.human_resource_development.education_quality.pisa_scores}
+                          </p>
+                        )}
+                        {selectedArticle.human_resource_development?.education_quality?.literacy_rate && (
+                          <p className="text-sm text-purple-700 dark:text-purple-300">
+                            <strong>Literacy Rate:</strong> {selectedArticle.human_resource_development.education_quality.literacy_rate}
+                          </p>
+                        )}
+                        {selectedArticle.human_resource_development?.stem_graduates?.stem_graduate_numbers && (
+                          <p className="text-sm text-purple-700 dark:text-purple-300">
+                            <strong>STEM Graduates:</strong> {selectedArticle.human_resource_development.stem_graduates.stem_graduate_numbers}
+                          </p>
+                        )}
+                        {selectedArticle.human_resource_development?.skill_upgrading?.reskilling_programs?.length > 0 && (
                           <div>
-                            <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">Innovation Policies:</p>
+                            <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">Reskilling Programs:</p>
                             <ul className="text-sm text-purple-600 dark:text-purple-400 list-disc list-inside space-y-1">
-                              {selectedArticle.productivity_innovation_indicators.innovation_policies.map((policy: string, idx: number) => (
-                                <li key={idx}>{policy}</li>
+                              {selectedArticle.human_resource_development.skill_upgrading.reskilling_programs.map((program: string, idx: number) => (
+                                <li key={idx}>{program}</li>
                               ))}
                             </ul>
                           </div>
                         )}
-                        {selectedArticle.productivity_innovation_indicators.startup_support.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">Startup Support:</p>
-                            <ul className="text-sm text-purple-600 dark:text-purple-400 list-disc list-inside space-y-1">
-                              {selectedArticle.productivity_innovation_indicators.startup_support.map((support: string, idx: number) => (
-                                <li key={idx}>{support}</li>
-                              ))}
-                            </ul>
-                          </div>
+                        {selectedArticle.human_resource_development?.employment_indicators?.unemployment_rate && (
+                          <p className="text-sm text-purple-700 dark:text-purple-300">
+                            <strong>Unemployment Rate:</strong> {selectedArticle.human_resource_development.employment_indicators.unemployment_rate}
+                          </p>
                         )}
-                        {selectedArticle.productivity_innovation_indicators.research_funding.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">Research Funding:</p>
-                            <ul className="text-sm text-purple-600 dark:text-purple-400 list-disc list-inside space-y-1">
-                              {selectedArticle.productivity_innovation_indicators.research_funding.map((funding: string, idx: number) => (
-                                <li key={idx}>{funding}</li>
-                              ))}
-                            </ul>
-                          </div>
+                        {selectedArticle.human_resource_development?.labor_market_wages?.average_wage_growth && (
+                          <p className="text-sm text-purple-700 dark:text-purple-300">
+                            <strong>Average Wage Growth:</strong> {selectedArticle.human_resource_development.labor_market_wages.average_wage_growth}
+                          </p>
                         )}
-                        {selectedArticle.productivity_innovation_indicators.digital_transformation.length > 0 && (
+                        {selectedArticle.human_resource_development?.news_signals_hr?.length > 0 && (
                           <div>
-                            <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">Digital Transformation:</p>
+                            <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">News Signals:</p>
                             <ul className="text-sm text-purple-600 dark:text-purple-400 list-disc list-inside space-y-1">
-                              {selectedArticle.productivity_innovation_indicators.digital_transformation.map((transformation: string, idx: number) => (
-                                <li key={idx}>{transformation}</li>
+                              {selectedArticle.human_resource_development.news_signals_hr.map((signal: string, idx: number) => (
+                                <li key={idx}>{signal}</li>
                               ))}
                             </ul>
                           </div>
@@ -1472,46 +1788,56 @@ export default function BIDashboard() {
                       </div>
                     </div>
 
-                    {/* Social Welfare */}
+                    {/* Social Welfare & Inequality Reduction */}
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                      <h5 className="font-semibold text-blue-800 dark:text-blue-200 mb-3">Social Welfare & Inequality</h5>
+                      <h5 className="font-semibold text-blue-800 dark:text-blue-200 mb-3">{t('bi.category.socialWelfare')}</h5>
                       <div className="space-y-2">
-                        {selectedArticle.social_welfare_inequality_indicators.poverty_reduction.length > 0 && (
+                        {selectedArticle.social_welfare_inequality_reduction?.income_inequality?.gini_coefficient && (
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            <strong>Gini Coefficient:</strong> {selectedArticle.social_welfare_inequality_reduction.income_inequality.gini_coefficient}
+                          </p>
+                        )}
+                        {selectedArticle.social_welfare_inequality_reduction?.household_debt?.household_debt_gdp_ratio && (
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            <strong>Household Debt/GDP:</strong> {selectedArticle.social_welfare_inequality_reduction.household_debt.household_debt_gdp_ratio}
+                          </p>
+                        )}
+                        {selectedArticle.social_welfare_inequality_reduction?.household_debt?.debt_reduction_programs?.length > 0 && (
                           <div>
-                            <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Poverty Reduction:</p>
+                            <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Debt Reduction Programs:</p>
                             <ul className="text-sm text-blue-600 dark:text-blue-400 list-disc list-inside space-y-1">
-                              {selectedArticle.social_welfare_inequality_indicators.poverty_reduction.map((reduction: string, idx: number) => (
-                                <li key={idx}>{reduction}</li>
+                              {selectedArticle.social_welfare_inequality_reduction.household_debt.debt_reduction_programs.map((program: string, idx: number) => (
+                                <li key={idx}>{program}</li>
                               ))}
                             </ul>
                           </div>
                         )}
-                        {selectedArticle.social_welfare_inequality_indicators.income_distribution.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Income Distribution:</p>
-                            <ul className="text-sm text-blue-600 dark:text-blue-400 list-disc list-inside space-y-1">
-                              {selectedArticle.social_welfare_inequality_indicators.income_distribution.map((distribution: string, idx: number) => (
-                                <li key={idx}>{distribution}</li>
-                              ))}
-                            </ul>
-                          </div>
+                        {selectedArticle.social_welfare_inequality_reduction?.poverty_indicators?.poverty_rate && (
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            <strong>Poverty Rate:</strong> {selectedArticle.social_welfare_inequality_reduction.poverty_indicators.poverty_rate}
+                          </p>
                         )}
-                        {selectedArticle.social_welfare_inequality_indicators.social_protection.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Social Protection:</p>
-                            <ul className="text-sm text-blue-600 dark:text-blue-400 list-disc list-inside space-y-1">
-                              {selectedArticle.social_welfare_inequality_indicators.social_protection.map((protection: string, idx: number) => (
-                                <li key={idx}>{protection}</li>
-                              ))}
-                            </ul>
-                          </div>
+                        {selectedArticle.social_welfare_inequality_reduction?.cost_of_living?.inflation_rate && (
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            <strong>Inflation Rate:</strong> {selectedArticle.social_welfare_inequality_reduction.cost_of_living.inflation_rate}
+                          </p>
                         )}
-                        {selectedArticle.social_welfare_inequality_indicators.education_access.length > 0 && (
+                        {selectedArticle.social_welfare_inequality_reduction?.social_welfare_coverage?.social_security_coverage && (
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            <strong>Social Security Coverage:</strong> {selectedArticle.social_welfare_inequality_reduction.social_welfare_coverage.social_security_coverage}
+                          </p>
+                        )}
+                        {selectedArticle.social_welfare_inequality_reduction?.healthcare_access?.universal_healthcare_coverage && (
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            <strong>Universal Healthcare:</strong> {selectedArticle.social_welfare_inequality_reduction.healthcare_access.universal_healthcare_coverage}
+                          </p>
+                        )}
+                        {selectedArticle.social_welfare_inequality_reduction?.news_signals_social?.length > 0 && (
                           <div>
-                            <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Education Access:</p>
+                            <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">News Signals:</p>
                             <ul className="text-sm text-blue-600 dark:text-blue-400 list-disc list-inside space-y-1">
-                              {selectedArticle.social_welfare_inequality_indicators.education_access.map((access: string, idx: number) => (
-                                <li key={idx}>{access}</li>
+                              {selectedArticle.social_welfare_inequality_reduction.news_signals_social.map((signal: string, idx: number) => (
+                                <li key={idx}>{signal}</li>
                               ))}
                             </ul>
                           </div>
@@ -1519,93 +1845,46 @@ export default function BIDashboard() {
                       </div>
                     </div>
 
-                    {/* Environmental & Energy */}
-                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg">
-                      <h5 className="font-semibold text-emerald-800 dark:text-emerald-200 mb-3">Environmental & Energy</h5>
-                      <div className="space-y-2">
-                        {selectedArticle.environmental_energy_indicators.renewable_energy.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-1">Renewable Energy:</p>
-                            <ul className="text-sm text-emerald-600 dark:text-emerald-400 list-disc list-inside space-y-1">
-                              {selectedArticle.environmental_energy_indicators.renewable_energy.map((energy: string, idx: number) => (
-                                <li key={idx}>{energy}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {selectedArticle.environmental_energy_indicators.carbon_reduction.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-1">Carbon Reduction:</p>
-                            <ul className="text-sm text-emerald-600 dark:text-emerald-400 list-disc list-inside space-y-1">
-                              {selectedArticle.environmental_energy_indicators.carbon_reduction.map((reduction: string, idx: number) => (
-                                <li key={idx}>{reduction}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {selectedArticle.environmental_energy_indicators.conservation_projects.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-1">Conservation Projects:</p>
-                            <ul className="text-sm text-emerald-600 dark:text-emerald-400 list-disc list-inside space-y-1">
-                              {selectedArticle.environmental_energy_indicators.conservation_projects.map((project: string, idx: number) => (
-                                <li key={idx}>{project}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {selectedArticle.environmental_energy_indicators.climate_adaptation.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-1">Climate Adaptation:</p>
-                            <ul className="text-sm text-emerald-600 dark:text-emerald-400 list-disc list-inside space-y-1">
-                              {selectedArticle.environmental_energy_indicators.climate_adaptation.map((adaptation: string, idx: number) => (
-                                <li key={idx}>{adaptation}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Healthcare Capacity */}
+                    {/* Health Security & Public Health */}
                     <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
-                      <h5 className="font-semibold text-red-800 dark:text-red-200 mb-3">Healthcare Capacity</h5>
+                      <h5 className="font-semibold text-red-800 dark:text-red-200 mb-3">{t('bi.category.healthSecurity')}</h5>
                       <div className="space-y-2">
-                        {selectedArticle.healthcare_capacity.hospital_construction.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">Hospital Construction:</p>
-                            <ul className="text-sm text-red-600 dark:text-red-400 list-disc list-inside space-y-1">
-                              {selectedArticle.healthcare_capacity.hospital_construction.map((construction: string, idx: number) => (
-                                <li key={idx}>{construction}</li>
-                              ))}
-                            </ul>
-                          </div>
+                        {selectedArticle.health_security_public_health?.hospital_capacity_upgrades?.hospitals_upgraded && (
+                          <p className="text-sm text-red-700 dark:text-red-300">
+                            <strong>Hospitals Upgraded:</strong> {selectedArticle.health_security_public_health.hospital_capacity_upgrades.hospitals_upgraded}
+                          </p>
                         )}
-                        {selectedArticle.healthcare_capacity.medical_personnel.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">Medical Personnel:</p>
-                            <ul className="text-sm text-red-600 dark:text-red-400 list-disc list-inside space-y-1">
-                              {selectedArticle.healthcare_capacity.medical_personnel.map((personnel: string, idx: number) => (
-                                <li key={idx}>{personnel}</li>
-                              ))}
-                            </ul>
-                          </div>
+                        {selectedArticle.health_security_public_health?.hospital_capacity_upgrades?.new_hospital_construction && (
+                          <p className="text-sm text-red-700 dark:text-red-300">
+                            <strong>New Hospital Construction:</strong> {selectedArticle.health_security_public_health.hospital_capacity_upgrades.new_hospital_construction}
+                          </p>
                         )}
-                        {selectedArticle.healthcare_capacity.health_insurance.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">Health Insurance:</p>
-                            <ul className="text-sm text-red-600 dark:text-red-400 list-disc list-inside space-y-1">
-                              {selectedArticle.healthcare_capacity.health_insurance.map((insurance: string, idx: number) => (
-                                <li key={idx}>{insurance}</li>
-                              ))}
-                            </ul>
-                          </div>
+                        {selectedArticle.health_security_public_health?.healthcare_coverage_metrics?.healthcare_coverage_rate && (
+                          <p className="text-sm text-red-700 dark:text-red-300">
+                            <strong>Healthcare Coverage Rate:</strong> {selectedArticle.health_security_public_health.healthcare_coverage_metrics.healthcare_coverage_rate}
+                          </p>
                         )}
-                        {selectedArticle.healthcare_capacity.disease_prevention.length > 0 && (
+                        {selectedArticle.health_security_public_health?.public_health_capacity?.beds_per_population && (
+                          <p className="text-sm text-red-700 dark:text-red-300">
+                            <strong>Beds per Population:</strong> {selectedArticle.health_security_public_health.public_health_capacity.beds_per_population}
+                          </p>
+                        )}
+                        {selectedArticle.health_security_public_health?.digital_health_adoption?.telemedicine_implementation && (
+                          <p className="text-sm text-red-700 dark:text-red-300">
+                            <strong>Telemedicine Implementation:</strong> {selectedArticle.health_security_public_health.digital_health_adoption.telemedicine_implementation}
+                          </p>
+                        )}
+                        {selectedArticle.health_security_public_health?.communicable_disease_trends?.vaccination_coverage && (
+                          <p className="text-sm text-red-700 dark:text-red-300">
+                            <strong>Vaccination Coverage:</strong> {selectedArticle.health_security_public_health.communicable_disease_trends.vaccination_coverage}
+                          </p>
+                        )}
+                        {selectedArticle.health_security_public_health?.news_signals_health?.length > 0 && (
                           <div>
-                            <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">Disease Prevention:</p>
+                            <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">News Signals:</p>
                             <ul className="text-sm text-red-600 dark:text-red-400 list-disc list-inside space-y-1">
-                              {selectedArticle.healthcare_capacity.disease_prevention.map((prevention: string, idx: number) => (
-                                <li key={idx}>{prevention}</li>
+                              {selectedArticle.health_security_public_health.news_signals_health.map((signal: string, idx: number) => (
+                                <li key={idx}>{signal}</li>
                               ))}
                             </ul>
                           </div>
@@ -1613,46 +1892,113 @@ export default function BIDashboard() {
                       </div>
                     </div>
 
-                    {/* Governance & Digital */}
-                    <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg">
-                      <h5 className="font-semibold text-indigo-800 dark:text-indigo-200 mb-3">Governance & Digital Government</h5>
+                    {/* Food, Energy & Environmental Security */}
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg">
+                      <h5 className="font-semibold text-emerald-800 dark:text-emerald-200 mb-3">{t('bi.category.environmentalSecurity')}</h5>
                       <div className="space-y-2">
-                        {selectedArticle.governance_digital_government_indicators.e_governance.length > 0 && (
+                        {selectedArticle.food_energy_environmental_security?.renewable_energy_share?.renewable_energy_percentage && (
+                          <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                            <strong>Renewable Energy %:</strong> {selectedArticle.food_energy_environmental_security.renewable_energy_share.renewable_energy_percentage}
+                          </p>
+                        )}
+                        {selectedArticle.food_energy_environmental_security?.renewable_energy_share?.renewable_energy_targets && (
+                          <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                            <strong>Renewable Energy Targets:</strong> {selectedArticle.food_energy_environmental_security.renewable_energy_share.renewable_energy_targets}
+                          </p>
+                        )}
+                        {selectedArticle.food_energy_environmental_security?.carbon_emission_reduction?.carbon_reduction_targets && (
+                          <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                            <strong>Carbon Reduction Targets:</strong> {selectedArticle.food_energy_environmental_security.carbon_emission_reduction.carbon_reduction_targets}
+                          </p>
+                        )}
+                        {selectedArticle.food_energy_environmental_security?.air_quality_indicators?.pm25_levels && (
+                          <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                            <strong>PM2.5 Levels:</strong> {selectedArticle.food_energy_environmental_security.air_quality_indicators.pm25_levels}
+                          </p>
+                        )}
+                        {selectedArticle.food_energy_environmental_security?.water_resource_management?.water_resource_index && (
+                          <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                            <strong>Water Resource Index:</strong> {selectedArticle.food_energy_environmental_security.water_resource_management.water_resource_index}
+                          </p>
+                        )}
+                        {selectedArticle.food_energy_environmental_security?.waste_management_performance?.waste_recycling_rate && (
+                          <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                            <strong>Waste Recycling Rate:</strong> {selectedArticle.food_energy_environmental_security.waste_management_performance.waste_recycling_rate}
+                          </p>
+                        )}
+                        {selectedArticle.food_energy_environmental_security?.food_security_indicators?.food_security_index && (
+                          <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                            <strong>Food Security Index:</strong> {selectedArticle.food_energy_environmental_security.food_security_indicators.food_security_index}
+                          </p>
+                        )}
+                        {selectedArticle.food_energy_environmental_security?.news_signals_environment?.length > 0 && (
                           <div>
-                            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-1">E-Governance:</p>
-                            <ul className="text-sm text-indigo-600 dark:text-indigo-400 list-disc list-inside space-y-1">
-                              {selectedArticle.governance_digital_government_indicators.e_governance.map((governance: string, idx: number) => (
-                                <li key={idx}>{governance}</li>
+                            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-1">News Signals:</p>
+                            <ul className="text-sm text-emerald-600 dark:text-emerald-400 list-disc list-inside space-y-1">
+                              {selectedArticle.food_energy_environmental_security.news_signals_environment.map((signal: string, idx: number) => (
+                                <li key={idx}>{signal}</li>
                               ))}
                             </ul>
                           </div>
                         )}
-                        {selectedArticle.governance_digital_government_indicators.transparency_measures.length > 0 && (
+                      </div>
+                    </div>
+
+                    {/* Public Administration & Governance */}
+                    <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg">
+                      <h5 className="font-semibold text-indigo-800 dark:text-indigo-200 mb-3">{t('bi.category.governance')}</h5>
+                      <div className="space-y-2">
+                        {selectedArticle.public_administration_governance?.e_government_adoption?.e_gov_services_coverage && (
+                          <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                            <strong>{t('bi.metric.eGovCoverage')}:</strong> {selectedArticle.public_administration_governance.e_government_adoption.e_gov_services_coverage}
+                          </p>
+                        )}
+                        {selectedArticle.public_administration_governance?.e_government_adoption?.digital_service_utilization && (
+                          <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                            <strong>{t('bi.metric.digitalServiceUtilization')}:</strong> {selectedArticle.public_administration_governance.e_government_adoption.digital_service_utilization}
+                          </p>
+                        )}
+                        {selectedArticle.public_administration_governance?.g_cloud_usage?.government_cloud_migration && (
+                          <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                            <strong>{t('bi.metric.govCloudMigration')}:</strong> {selectedArticle.public_administration_governance.g_cloud_usage.government_cloud_migration}
+                          </p>
+                        )}
+                        {selectedArticle.public_administration_governance?.open_data_metrics?.open_data_portals && (
+                          <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                            <strong>{t('bi.metric.openDataPortals')}:</strong> {selectedArticle.public_administration_governance.open_data_metrics.open_data_portals}
+                          </p>
+                        )}
+                        {selectedArticle.public_administration_governance?.public_sector_modernization?.digital_transformation_initiatives?.length > 0 && (
                           <div>
-                            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-1">Transparency Measures:</p>
+                            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-1">{t('bi.metric.digitalTransformationInitiatives')}:</p>
                             <ul className="text-sm text-indigo-600 dark:text-indigo-400 list-disc list-inside space-y-1">
-                              {selectedArticle.governance_digital_government_indicators.transparency_measures.map((measure: string, idx: number) => (
+                              {selectedArticle.public_administration_governance.public_sector_modernization.digital_transformation_initiatives.map((initiative: string, idx: number) => (
+                                <li key={idx}>{initiative}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedArticle.public_administration_governance?.anti_corruption_performance?.corruption_perception_index && (
+                          <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                            <strong>{t('bi.metric.corruptionIndex')}:</strong> {selectedArticle.public_administration_governance.anti_corruption_performance.corruption_perception_index}
+                          </p>
+                        )}
+                        {selectedArticle.public_administration_governance?.anti_corruption_performance?.anti_corruption_measures?.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-1">{t('bi.metric.antiCorruptionMeasures')}:</p>
+                            <ul className="text-sm text-indigo-600 dark:text-indigo-400 list-disc list-inside space-y-1">
+                              {selectedArticle.public_administration_governance.anti_corruption_performance.anti_corruption_measures.map((measure: string, idx: number) => (
                                 <li key={idx}>{measure}</li>
                               ))}
                             </ul>
                           </div>
                         )}
-                        {selectedArticle.governance_digital_government_indicators.anti_corruption.length > 0 && (
+                        {selectedArticle.public_administration_governance?.news_signals_governance?.length > 0 && (
                           <div>
-                            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-1">Anti-Corruption:</p>
+                            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-1">{t('bi.metric.newsSignals')}:</p>
                             <ul className="text-sm text-indigo-600 dark:text-indigo-400 list-disc list-inside space-y-1">
-                              {selectedArticle.governance_digital_government_indicators.anti_corruption.map((corruption: string, idx: number) => (
-                                <li key={idx}>{corruption}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {selectedArticle.governance_digital_government_indicators.public_service_digitalization.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-1">Public Service Digitalization:</p>
-                            <ul className="text-sm text-indigo-600 dark:text-indigo-400 list-disc list-inside space-y-1">
-                              {selectedArticle.governance_digital_government_indicators.public_service_digitalization.map((digitalization: string, idx: number) => (
-                                <li key={idx}>{digitalization}</li>
+                              {selectedArticle.public_administration_governance.news_signals_governance.map((signal: string, idx: number) => (
+                                <li key={idx}>{signal}</li>
                               ))}
                             </ul>
                           </div>
@@ -1666,7 +2012,7 @@ export default function BIDashboard() {
                 <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Original Article Content
+                      {t('bi.originalContent')}
                     </h4>
                     {selectedArticle.source_url ? (
                       <a
@@ -1676,7 +2022,7 @@ export default function BIDashboard() {
                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         <ExternalLink className="w-4 h-4" />
-                        View Full Article
+                        {t('bi.readFullArticle')}
                       </a>
                     ) : (
                       <button
@@ -1684,7 +2030,7 @@ export default function BIDashboard() {
                         className="flex items-center gap-2 px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed"
                       >
                         <ExternalLink className="w-4 h-4" />
-                        Article URL Not Available
+                        {t('bi.noArticleUrl')}
                       </button>
                     )}
                   </div>
@@ -1697,7 +2043,7 @@ export default function BIDashboard() {
                         }
                       </div>
                     ) : (
-                      "Click 'View Full Article' to read the original article on the source website."
+                      "คลิก '{t('bi.readFullArticle')}' เพื่ออ่านบทความต้นฉบับบนเว็บไซต์ต้นทาง"
                     )}
                   </div>
                 </div>
