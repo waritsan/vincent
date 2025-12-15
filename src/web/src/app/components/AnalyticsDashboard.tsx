@@ -413,11 +413,10 @@ export default function AnalyticsDashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab.id
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
                     ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -502,9 +501,8 @@ export default function AnalyticsDashboard() {
                   <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-semibold text-sm text-gray-900 dark:text-white">{topic.topic}</h4>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        topic.growth_rate > 0.1 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span className={`px-2 py-1 rounded text-xs ${topic.growth_rate > 0.1 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
                         +{(topic.growth_rate * 100).toFixed(1)}%
                       </span>
                     </div>
@@ -553,7 +551,7 @@ export default function AnalyticsDashboard() {
                           {new Date(metric.analyzed_at).toLocaleDateString()}
                         </span>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Minister Mentions */}
                         <div className="space-y-2">
@@ -566,7 +564,7 @@ export default function AnalyticsDashboard() {
                             )}
                           </div>
                         </div>
-                        
+
                         {/* Achievements & Actions */}
                         <div className="space-y-2">
                           <h5 className="text-sm font-medium text-green-600 dark:text-green-400">Achievements & Actions</h5>
@@ -582,7 +580,7 @@ export default function AnalyticsDashboard() {
                             )}
                           </div>
                         </div>
-                        
+
                         {/* Responsibility Areas */}
                         <div className="space-y-2">
                           <h5 className="text-sm font-medium text-purple-600 dark:text-purple-400">Responsibility Areas</h5>
@@ -625,7 +623,7 @@ export default function AnalyticsDashboard() {
                           {new Date(metric.analyzed_at).toLocaleDateString()}
                         </span>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Policy Identification */}
                         <div className="space-y-2">
@@ -645,7 +643,7 @@ export default function AnalyticsDashboard() {
                             )}
                           </div>
                         </div>
-                        
+
                         {/* Public Impact */}
                         <div className="space-y-2">
                           <h5 className="text-sm font-medium text-blue-600 dark:text-blue-400">Public Impact</h5>
@@ -662,7 +660,7 @@ export default function AnalyticsDashboard() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Financial Info & Risks */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                         <div className="space-y-2">
@@ -676,7 +674,7 @@ export default function AnalyticsDashboard() {
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="space-y-2">
                           <h5 className="text-sm font-medium text-red-600 dark:text-red-400">Risks & Issues</h5>
                           <div className="text-xs space-y-1">
@@ -713,18 +711,17 @@ export default function AnalyticsDashboard() {
                           {new Date(metric.analyzed_at).toLocaleDateString()}
                         </span>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Sentiment Analysis */}
                         <div className="space-y-2">
                           <h5 className="text-sm font-medium text-orange-600 dark:text-orange-400">Sentiment Analysis</h5>
                           <div className="text-xs space-y-1">
-                            <div><strong>Overall:</strong> 
-                              <span className={`ml-1 px-2 py-1 rounded text-xs ${
-                                metric.sentiment_analysis.overall_sentiment === 'positive' ? 'bg-green-100 text-green-800' :
-                                metric.sentiment_analysis.overall_sentiment === 'negative' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
+                            <div><strong>Overall:</strong>
+                              <span className={`ml-1 px-2 py-1 rounded text-xs ${metric.sentiment_analysis.overall_sentiment === 'positive' ? 'bg-green-100 text-green-800' :
+                                  metric.sentiment_analysis.overall_sentiment === 'negative' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                                }`}>
                                 {metric.sentiment_analysis.overall_sentiment}
                               </span>
                             </div>
@@ -733,12 +730,12 @@ export default function AnalyticsDashboard() {
                             <div><strong>Policy:</strong> {metric.sentiment_analysis.policy_sentiment}</div>
                           </div>
                         </div>
-                        
+
                         {/* Tone & Framing */}
                         <div className="space-y-2">
                           <h5 className="text-sm font-medium text-purple-600 dark:text-purple-400">Tone & Framing</h5>
                           <div className="text-xs space-y-1">
-                            <div><strong>Tone:</strong> {metric.tone_framing.tone} 
+                            <div><strong>Tone:</strong> {metric.tone_framing.tone}
                               {metric.tone_framing.tone_confidence && (
                                 <span className="text-gray-500"> ({(metric.tone_framing.tone_confidence * 100).toFixed(0)}%)</span>
                               )}
@@ -747,7 +744,7 @@ export default function AnalyticsDashboard() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Media Metadata & Named Entities */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                         <div className="space-y-2">
@@ -764,7 +761,7 @@ export default function AnalyticsDashboard() {
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="space-y-2">
                           <h5 className="text-sm font-medium text-cyan-600 dark:text-cyan-400">Named Entities</h5>
                           <div className="text-xs space-y-1">
@@ -1075,12 +1072,11 @@ export default function AnalyticsDashboard() {
                           <h5 className="text-sm font-medium text-orange-600 dark:text-orange-400">Policy Sentiment</h5>
                           <div className="text-xs space-y-1">
                             <div><strong>Policy Effectiveness:</strong>
-                              <span className={`ml-1 px-2 py-1 rounded text-xs ${
-                                metric.policy_sentiment.policy_effectiveness === 'highly_effective' ? 'bg-green-100 text-green-800' :
-                                metric.policy_sentiment.policy_effectiveness === 'effective' ? 'bg-green-100 text-green-800' :
-                                metric.policy_sentiment.policy_effectiveness === 'ineffective' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
+                              <span className={`ml-1 px-2 py-1 rounded text-xs ${metric.policy_sentiment.policy_effectiveness === 'highly_effective' ? 'bg-green-100 text-green-800' :
+                                  metric.policy_sentiment.policy_effectiveness === 'effective' ? 'bg-green-100 text-green-800' :
+                                    metric.policy_sentiment.policy_effectiveness === 'ineffective' ? 'bg-red-100 text-red-800' :
+                                      'bg-gray-100 text-gray-800'
+                                }`}>
                                 {metric.policy_sentiment.policy_effectiveness.replace('_', ' ')}
                               </span>
                             </div>

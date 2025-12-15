@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from "next/link";
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -10,9 +10,11 @@ import { useSearch } from '../contexts/SearchContext';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dashboardDropdownOpen, setDashboardDropdownOpen] = useState(false);
   const { t } = useLanguage();
   const { searchQuery, setSearchQuery } = useSearch();
   const pathname = usePathname();
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isActive = (path: string) => {
     // Normalize paths by removing trailing slashes for comparison
@@ -20,6 +22,24 @@ export default function Navbar() {
     const normalizedPath = path.replace(/\/$/, '');
     return normalizedPathname === normalizedPath;
   };
+
+  const isDashboardActive = () => {
+    return isActive('/dashboard') || isActive('/bi');
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDashboardDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <nav className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white sticky top-0 z-40 border-b border-gray-200 dark:border-gray-700 shadow-sm">
@@ -85,12 +105,35 @@ export default function Navbar() {
               >
                 {t('nav.benefits')}
               </Link>
-              <Link
-                href="/dashboard"
-                className={`transition-colors ${isActive('/dashboard') ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
-              >
-                Dashboard
-              </Link>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDashboardDropdownOpen(!dashboardDropdownOpen)}
+                  className={`transition-colors flex items-center gap-1 ${isDashboardActive() ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
+                >
+                  Dashboards
+                  <svg className={`w-4 h-4 transition-transform ${dashboardDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {dashboardDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                    <Link
+                      href="/dashboard"
+                      className={`block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${isActive('/dashboard') ? 'text-[#0066CC] bg-blue-50 dark:bg-blue-900/20' : 'text-gray-700 dark:text-gray-300'}`}
+                      onClick={() => setDashboardDropdownOpen(false)}
+                    >
+                      Company Dashboard
+                    </Link>
+                    <Link
+                      href="/bi"
+                      className={`block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${isActive('/bi') ? 'text-[#0066CC] bg-blue-50 dark:bg-blue-900/20' : 'text-gray-700 dark:text-gray-300'}`}
+                      onClick={() => setDashboardDropdownOpen(false)}
+                    >
+                      BI Dashboard
+                    </Link>
+                  </div>
+                )}
+              </div>
               <Link href="#" className="hover:text-[#0066CC] transition-colors">{t('nav.laws')}</Link>
             </div>
           </div>
@@ -174,12 +217,35 @@ export default function Navbar() {
             >
               {t('nav.benefits')}
             </Link>
-            <Link
-              href="/dashboard"
-              className={`text-sm font-medium py-1 transition-colors ${isActive('/dashboard') ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
-            >
-              Dashboard
-            </Link>
+            <div className="space-y-2">
+              <button
+                onClick={() => setDashboardDropdownOpen(!dashboardDropdownOpen)}
+                className={`text-sm font-medium py-1 transition-colors flex items-center gap-2 w-full text-left ${isDashboardActive() ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
+              >
+                Dashboards
+                <svg className={`w-4 h-4 transition-transform ${dashboardDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {dashboardDropdownOpen && (
+                <div className="ml-4 space-y-2 border-l border-gray-200 dark:border-gray-700 pl-4">
+                  <Link
+                    href="/dashboard"
+                    className={`block text-sm py-1 transition-colors ${isActive('/dashboard') ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Company Dashboard
+                  </Link>
+                  <Link
+                    href="/bi"
+                    className={`block text-sm py-1 transition-colors ${isActive('/bi') ? 'text-[#0066CC]' : 'hover:text-[#0066CC]'}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    BI Dashboard
+                  </Link>
+                </div>
+              )}
+            </div>
             <Link href="#" className="text-sm font-medium hover:text-[#0066CC] transition-colors py-1">
               {t('nav.services')}
             </Link>

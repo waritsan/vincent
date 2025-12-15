@@ -172,12 +172,12 @@ export default function YouTubeCarousel() {
                   className="absolute inset-0 w-full h-full object-cover"
                   loading="lazy"
                 />
-                
+
                 {/* Play button overlay */}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors duration-300">
                   <div className="bg-red-600 text-white rounded-full p-4 shadow-lg transform group-hover:scale-110 transition-transform duration-300">
                     <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z"/>
+                      <path d="M8 5v14l11-7z" />
                     </svg>
                   </div>
                 </div>
